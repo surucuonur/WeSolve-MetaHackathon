@@ -1,5 +1,7 @@
 # MobileMoE-S-QAT (int4): vLLM serving vs. mlx_lm
 
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
 The same check as [for the SFT model](MobileMoE-S-SFT-serving-parity.md), on the int4 model served in the baseline: the MLX copy with bfloat16 scales made by `bench/convert_qat.py`. vllm-metal rebuilds attention around the port's quantized projections, so this confirms that serving through vLLM gives the same tokens as plain mlx_lm.
 
 Run on 2026-10-29 with vllm-metal's parity tool at its nightly CI settings (40 prompts, 20 greedy tokens, top-5 rule at the first divergence, request batches of 1 and 2):

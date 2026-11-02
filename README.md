@@ -1,18 +1,20 @@
 # MobileMoE-S on vLLM Metal: where does the memory bandwidth go?
 
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](PROVENANCE.md).*
+
 An indie-track project for the Meta Global AI Developer Hackathon (Oct 26 – Nov 4, 2026).
 
 **The question:** when vLLM serves Meta's on-device MobileMoE-S model on an Apple M1 Pro, how much of the GPU's memory bandwidth does it actually use, where does the remaining time go, and which fixes turn unused bandwidth into more tokens per second?
 
-Each measured decode step is plotted against two limits: peak bandwidth (~200 GB/s) and peak compute (~5.2 TFLOPS). One request at a time should be limited by bandwidth. Running more requests per step reuses the weights already read, until compute becomes the limit. In a mixture-of-experts model, each extra request may also pull in different experts, so the bytes read grow too. Terms are defined in [GLOSSARY.md](GLOSSARY.md).
+Each measured decode step is plotted against two limits: peak bandwidth (~200 GB/s) and peak compute (~5.2 TFLOPS). One request at a time should be limited by bandwidth. Running more requests per step reuses the weights already read, until compute becomes the limit. In a mixture-of-experts model, each extra request may also pull in different experts, so the bytes read grow too. Terms are defined in [GLOSSARY.md](claude/GLOSSARY.md).
 
-**Status:** the baseline is measured ([results below](#baseline-results)). vLLM serves MobileMoE-S at 12–17% of the GPU's peak memory bandwidth, and each decode step takes 6–8 times longer than the bandwidth and compute limits require. Microbenchmarks show where the time goes ([documents/findings/](documents/findings/decode-bottlenecks.md)):
+**Status:** the baseline is measured ([results below](#baseline-results)). vLLM serves MobileMoE-S at 12–17% of the GPU's peak memory bandwidth, and each decode step takes 6–8 times longer than the bandwidth and compute limits require. Microbenchmarks show where the time goes ([claude/findings/decode-bottlenecks.md](claude/findings/decode-bottlenecks.md)):
 
 - about 870 small GPU kernels per step, each with a fixed cost;
 - expert weights read once per (token, expert) pair;
 - attention reading each key/value head three times.
 
-A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by side, is in [documents/findings/step-breakdown.md](documents/findings/step-breakdown.md):
+A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by side, is in [claude/findings/step-breakdown.md](claude/findings/step-breakdown.md):
 - vLLM's scheduler and runner are small, 0.5–1.6 ms per step.
 - vLLM's extra 7–20% over plain MLX is in vllm-metal's attention path.
 - With one request, the mixture-of-experts block's routing and combine cost more than its expert products. With 32 requests, the routed experts take half the step.
@@ -21,26 +23,44 @@ A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by
   - With one request each weight is read once.
   - With 32 requests a step reads about twice what the model needs: the routed experts read 908 MB from memory for 443 MB of weights. MLX's split quantized products also write about 170 MB of partial sums per step.
 
-[documents/findings/bottleneck-explained.md](documents/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs.
+[claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs.
 
-Next: fixes, in the priority order listed there.
+Next: Muse Spark picks a bottleneck from these findings and writes GPU kernels against it, checked by a test harness ([ADR 0003](claude/adr/0003-muse-spark-writes-kernels.md)).
 
 ## How Meta's models are used
 
-- **MobileMoE-S** (open weights) is the model under study, served by vLLM through vllm-metal. The baseline serves the int4 `facebook/MobileMoE-S-QAT` ([why](docs/adr/0002-int4-qat-baseline.md)); the bfloat16 `facebook/MobileMoE-S-SFT` is used to check the port.
-- **Muse Spark** (Meta Model API) reads the profiler output and the relevant engine source code and explains each bottleneck. Its explanations are saved in `analysis/findings/`.
+- **MobileMoE-S** (open weights) is the model under study, served by vLLM through vllm-metal. The baseline serves the int4 `facebook/MobileMoE-S-QAT` ([why](claude/adr/0002-int4-qat-baseline.md)); the bfloat16 `facebook/MobileMoE-S-SFT` is used to check the port.
+- **Muse Spark** (`muse-spark-1.3-contributor`, Meta Model API) reads the findings, chooses which bottleneck to attack, and writes fused GPU kernels for it.
+  - A harness compiles and tests each kernel and times it in the real decode step. It sends Muse Spark only the machine output: errors, test failures, timings.
+  - Muse Spark's answers are kept verbatim in [muse-spark/](muse-spark/), and the rules it works under were committed before its first call ([brief](claude/muse-spark-brief.md)).
+
+## Who made what
+
+Every commit is made by **surucuonur**. The co-author on each commit shows whose work it holds:
+
+| Who | What | Where |
+|---|---|---|
+| **surucuonur** | Direction, decisions, running the machine | every commit |
+| **Claude Code** (Claude Opus 5.5) | Harness and benchmark code, measurements, write-ups | `bench/`, `claude/`, this README. Commits co-authored by `claude`. |
+| **Muse Spark** (`muse-spark-1.3-contributor`) | Its choice of target and its kernels, unedited | `muse-spark/`. Commits co-authored by "Muse Spark" and carrying Meta's response ids. |
+| **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, Meta's model weights | `third_party/` at pinned commits, plus the installed wheels |
+
+[PROVENANCE.md](PROVENANCE.md) gives the details and the commands to check them.
 
 ## Layout
 
 ```
-GLOSSARY.md           shared vocabulary
-docs/adr/             decisions and why
+PROVENANCE.md         who made what, and how to check it
+claude/               everything Claude Code wrote, apart from this README
+claude/GLOSSARY.md    shared vocabulary
+claude/adr/           decisions and why
+claude/benchmark/     baseline benchmark write-up: findings, every measurement, method
+claude/findings/      where a decode step's time goes, and the fixes it suggests
+muse-spark/           Muse Spark's answers, verbatim, and the log of every call
 third_party/          pinned submodules: vllm-metal and mlx-lm (forks, where changes go), vLLM v0.32.0 (read-only)
 bench/                benchmark sweep, roofline calculation, port correctness check
 bench/micro/          microbenchmarks of a decode step's parts
-analysis/             map of the hot code path; Muse Spark findings
-documents/benchmark/  baseline benchmark write-up: findings, every measurement, method
-documents/findings/   where a decode step's time goes, and the fixes it suggests
+bench/muse/           the harness that calls Muse Spark and tests its kernels
 results/runs/         every benchmark run, committed
 results/traces/       Metal GPU traces (large, not committed)
 ```
@@ -104,7 +124,7 @@ A second check confirms that serving through vLLM gives the same tokens as plain
 
 ## Baseline results
 
-The unmodified engine (vLLM 0.32.0, vllm-metal 0.32.0.dev20261028121433, mlx 0.32.4) serving MobileMoE-S-QAT on an M1 Pro (16-core GPU, 16 GB, macOS 15.7.4, on AC power). Random-token prompts of 128 or 1,024 tokens, 256 generated tokens each, 1 to 32 requests in flight. Every point ran 3 times in shuffled order. All files are in [results/runs/2026-10-29-baseline/](results/runs/2026-10-29-baseline/), with the [full table](results/runs/2026-10-29-baseline/summary.md). The full write-up, with every measurement and how it was made, is in [documents/benchmark/](documents/benchmark/).
+The unmodified engine (vLLM 0.32.0, vllm-metal 0.32.0.dev20261028121433, mlx 0.32.4) serving MobileMoE-S-QAT on an M1 Pro (16-core GPU, 16 GB, macOS 15.7.4, on AC power). Random-token prompts of 128 or 1,024 tokens, 256 generated tokens each, 1 to 32 requests in flight. Every point ran 3 times in shuffled order. All files are in [results/runs/2026-10-29-baseline/](results/runs/2026-10-29-baseline/), with the [full table](results/runs/2026-10-29-baseline/summary.md). The full write-up, with every measurement and how it was made, is in [claude/benchmark/](claude/benchmark/).
 
 ![Roofline and step-time breakdown](results/runs/2026-10-29-baseline/roofline.png)
 
@@ -121,14 +141,14 @@ Steady decode steps only (no prompt tokens in the step). "MB read" is what the s
 
 What the data shows:
 
-- **No step is bandwidth-bound or compute-bound.** Achieved bandwidth stays at 24–34 GB/s for every setting, and each step takes 6–8 times its lower bound. In the terms of [GLOSSARY.md](GLOSSARY.md), the baseline is overhead-bound everywhere.
+- **No step is bandwidth-bound or compute-bound.** Achieved bandwidth stays at 24–34 GB/s for every setting, and each step takes 6–8 times its lower bound. In the terms of [GLOSSARY.md](claude/GLOSSARY.md), the baseline is overhead-bound everywhere.
 - **Batching helps, but each extra request costs a lot.** With 128-token prompts, 32 requests give 5.9 times the tokens per second of one request. The step grows by about 0.8 ms per request, while the bytes it must read grow by about 17 MB per request, which takes 0.09 ms at peak bandwidth.
 - **With one request, the CPU and the GPU are both near their limit.** vllm-metal's step-submit call uses 4.7 ms of CPU time in a 5.5 ms step, so even a perfect GPU would leave the step near 5 ms.
 - **With more requests, the GPU work sets the pace.** The CPU time grows only to 7 ms at 32 requests. The rest of the submit call is waiting, and macOS reports the GPU busy for 90–100% of every run. The GPU has work queued almost all the time, but that work moves only about 30 GB/s.
 
-Where the time goes, from microbenchmarks run after the sweep ([documents/findings/decode-bottlenecks.md](documents/findings/decode-bottlenecks.md)):
+Where the time goes, from microbenchmarks run after the sweep ([claude/findings/decode-bottlenecks.md](claude/findings/decode-bottlenecks.md)):
 
-- **Kernel count.** vLLM itself adds 7–20%, mostly in vllm-metal's attention path ([step-breakdown.md](documents/findings/step-breakdown.md)). Each step is about 870 small GPU kernels with a fixed cost each.
+- **Kernel count.** vLLM itself adds 7–20%, mostly in vllm-metal's attention path ([step-breakdown.md](claude/findings/step-breakdown.md)). Each step is about 870 small GPU kernels with a fixed cost each.
 - **Expert reads.** MLX reads each expert's weights once per (token, expert) pair, because it picks its grouped kernel only from 60 rows per step.
 - **Attention.** vllm-metal's grouped-query attention kernel doesn't support MobileMoE-S's 12/4 head layout, so the keys and values are read three times.
 

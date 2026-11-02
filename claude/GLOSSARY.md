@@ -1,5 +1,7 @@
 # MobileMoE Bandwidth Study
 
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../PROVENANCE.md).*
+
 How efficiently an inference engine turns an Apple Silicon GPU's memory bandwidth and compute into generated tokens when serving a small mixture-of-experts model.
 
 ## Hardware limits

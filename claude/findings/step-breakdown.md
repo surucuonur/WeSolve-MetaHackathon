@@ -1,5 +1,7 @@
 # Inside a decode step, piece by piece
 
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
 [Where a decode step's time goes](decode-bottlenecks.md) found that a decode step is hundreds of small GPU kernels, and that vLLM adds little over plain MLX. It timed parts of the step on their own. This document measures every piece inside the real step, in vLLM and in plain MLX side by side:
 
 - **inside vllm-metal's model runner:** the scheduler, building the batch, calling the model, encoding the GPU work, sampling and waiting;

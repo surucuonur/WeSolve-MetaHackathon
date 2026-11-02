@@ -1,8 +1,10 @@
 # Findings from the baseline benchmark
 
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
 What the 2026-10-29 sweep shows about vLLM (with vllm-metal) serving MobileMoE-S-QAT on the M1 Pro. Every number below is in [measurements.md](measurements.md); how it was measured is in [method.md](method.md).
 
-A few terms used throughout (full definitions in [GLOSSARY.md](../../GLOSSARY.md)):
+A few terms used throughout (full definitions in [GLOSSARY.md](../GLOSSARY.md)):
 
 - **Decode step:** one engine iteration that produces one new token for each request it includes. **Decode rows** are the requests it includes. In the steady steps studied here, that equals the number of requests the client keeps in flight.
 - **Bytes a step must read:** the weights of the experts its rows use, the rest of the weights, and the rows' attention cache. **Achieved bandwidth** is those bytes divided by the step time.
@@ -128,7 +130,7 @@ The CPU side has a separate open question: where the 4.7 ms of the submit call g
 
 These are not results about speed. They shaped how the run was done.
 
-- **The full-precision model could not be served on this machine.** vllm-metal refuses to start if macOS is swapping out memory while it reserves the attention cache. The 16 GB Mac was already swapping before the sweep: 16.9 GB of swap in use, and 322 swap-outs/s while idle. With the bfloat16 SFT model (2.5 GB), the server refused to start, first while Docker's VM held 12 GB and again after Docker quit (126 MiB still swapped out). The int4 QAT model (760 MB after conversion) started, so it became the baseline ([ADR 0002](../../docs/adr/0002-int4-qat-baseline.md)).
+- **The full-precision model could not be served on this machine.** vllm-metal refuses to start if macOS is swapping out memory while it reserves the attention cache. The 16 GB Mac was already swapping before the sweep: 16.9 GB of swap in use, and 322 swap-outs/s while idle. With the bfloat16 SFT model (2.5 GB), the server refused to start, first while Docker's VM held 12 GB and again after Docker quit (126 MiB still swapped out). The int4 QAT model (760 MB after conversion) started, so it became the baseline ([ADR 0002](../adr/0002-int4-qat-baseline.md)).
 - **The default memory setting gave too little attention cache.** `--gpu-memory-utilization 0.3` left room for 5,504 tokens, but the largest setting needs 32 × (1,024 + 256) = 40,960. A fixed `--kv-cache-memory-bytes` of 1 GiB gives 52,416 tokens.
 - **Meta's int4 checkpoint needed converting for MLX.** It stores signed 4-bit values with one float16 scale per 32 weights, and its experts are laid out [expert, in, out]. The conversion to MLX's format is exact (`bench/convert_qat.py`). The serving copy keeps its scales in bfloat16, because MLX turns bfloat16 activations times float16 scales into float32 work. That rounding is why the bfloat16 correctness gate shows an error ratio of 1.43, against a limit of 1.5.
 - **Counting experts disturbs the timing.** It forces each step's GPU work to finish so the router's choices can be read. That adds 2.5–4.2 ms per step and drops GPU busy to 68–93% on average, which the [GPU chart](measurements.md#gpu-utilization-over-time) shows clearly. So expert counts come from a separate pass of the grid that is not used for timing.

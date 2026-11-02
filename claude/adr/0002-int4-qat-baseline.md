@@ -4,6 +4,8 @@ status: accepted
 
 # The baseline serves MobileMoE-S-QAT (int4), not the bfloat16 SFT model
 
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
 The baseline sweep serves Meta's int4 MobileMoE-S-QAT, converted to MLX's quantized format. On the 16 GB Mac, the 2.5 GB bfloat16 SFT model left too little memory for the attention cache that 32 requests of 1,280 tokens need (about 0.8 GB), and vllm-metal refused to start because macOS swapped while it reserved that cache. The int4 weights take 0.76 GB, and int4 is also the precision Meta trained MobileMoE to run at on devices.
 
 Meta's checkpoint stores the routed experts as [experts, in, out], grouped along out. MLX's standard quantized expert layer expects [experts, out, in] grouped along in, and a 32-value group along out cannot be re-expressed as groups along in without changing the weights. So the port keeps Meta's layout and runs experts with MLX's non-transposed quantized matmul (`transposed_experts`), which is exact. `bench/convert_qat.py` re-encodes the rest without changing any value. The served copy rounds the float16 scales to bfloat16, because MLX computes in the scale dtype and mixed dtypes promote to float32.

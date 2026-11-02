@@ -1,6 +1,8 @@
 # Where a decode step's time goes
 
-The baseline ([documents/benchmark/findings.md](../benchmark/findings.md)) showed that vLLM serves MobileMoE-S-QAT at 12–17% of the M1 Pro's peak bandwidth: every decode step takes 6–8 times its lower bound. It did not show where the time goes. This document does.
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
+The baseline ([claude/benchmark/findings.md](../benchmark/findings.md)) showed that vLLM serves MobileMoE-S-QAT at 12–17% of the M1 Pro's peak bandwidth: every decode step takes 6–8 times its lower bound. It did not show where the time goes. This document does.
 
 The evidence comes from three sources, all gathered on 2026-10-30 with the same machine, software and int4 model as the baseline:
 
@@ -303,7 +305,9 @@ The effects below are estimates from the microbenchmarks, not end-to-end measure
 
 ## Using the Muse Spark credits
 
-Muse Spark (the Meta Model API) is used here only to explain, never as the model under study ([GLOSSARY.md](../../GLOSSARY.md)). This analysis changes where to point it. The slow parts are not in vLLM's scheduler or runner, which take 0.5–1.6 ms per step ([step-breakdown.md](step-breakdown.md#2-inside-vllm-metals-model-runner)). They are in MLX's kernel choice, vllm-metal's per-model fast paths and the model's kernel count. Asking it about vLLM's scheduler would chase the wrong layer.
+> **Superseded on 2026-11-02.** Muse Spark now writes GPU kernels against these bottlenecks instead of only explaining them ([ADR 0003](../adr/0003-muse-spark-writes-kernels.md)). It uses `muse-spark-1.3-contributor`, priced on Meta's own page. The plan below is kept as it was written on 2026-10-30.
+
+Muse Spark (the Meta Model API) is used here only to explain, never as the model under study ([GLOSSARY.md](../GLOSSARY.md)). This analysis changes where to point it. The slow parts are not in vLLM's scheduler or runner, which take 0.5–1.6 ms per step ([step-breakdown.md](step-breakdown.md#2-inside-vllm-metals-model-runner)). They are in MLX's kernel choice, vllm-metal's per-model fast paths and the model's kernel count. Asking it about vLLM's scheduler would chase the wrong layer.
 
 **Plan for `analysis/explain.py`** (not written yet):
 

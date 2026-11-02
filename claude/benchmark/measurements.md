@@ -1,5 +1,7 @@
 # Measurements from the baseline benchmark
 
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
 Every number from the 2026-10-29 sweep. vLLM 0.32.0 with vllm-metal 0.32.0.dev20261028121433 served MobileMoE-S-QAT (int4) on an M1 Pro (16-core GPU, 16 GB). How each number is produced is in [method.md](method.md); what the numbers show is in [findings.md](findings.md).
 
 The tables are generated from [results/runs/2026-10-29-baseline/](../../results/runs/2026-10-29-baseline/):

@@ -1,5 +1,7 @@
 # Where the bottleneck is, explained
 
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
 This is a plain-English companion to [decode-bottlenecks.md](decode-bottlenecks.md) and [step-breakdown.md](step-breakdown.md). It pulls their results into one answer: what limits a decode step of MobileMoE-S on the M1 Pro, and where the waste is. Each number is worked through from its inputs, so every calculation can be checked by hand.
 
 Every number comes from these runs:
@@ -20,7 +22,7 @@ The step is limited by **neither memory bandwidth nor arithmetic**. It is limite
 
 ## Terms
 
-[GLOSSARY.md](../../GLOSSARY.md) defines the project's shared terms. These are the ones this page leans on:
+[GLOSSARY.md](../GLOSSARY.md) defines the project's shared terms. These are the ones this page leans on:
 
 | Term | Meaning |
 |---|---|

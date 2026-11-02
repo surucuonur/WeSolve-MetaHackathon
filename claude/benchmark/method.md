@@ -1,5 +1,7 @@
 # How the baseline benchmark was run
 
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
 How the numbers in [measurements.md](measurements.md) were produced. The tools are `bench/sweep.py`, `bench/steplog/`, `bench/roofline.py` and `bench/run_tables.py`; setup is in the main [README](../../README.md#setup).
 
 ## Machine
@@ -30,7 +32,7 @@ The limits are the manufacturer's ratings, not measured here:
 - **Attention:** 12 query heads and 4 key/value heads of size 64.
 - **Vocabulary:** 128,256 tokens, with the output layer tied to the embedding.
 
-[ADR 0002](../../docs/adr/0002-int4-qat-baseline.md) explains why the int4 model is the baseline. Before the sweep, the port passed its correctness gates against Meta's PyTorch code, and the vLLM serving check found no failures ([README](../../README.md#port-check)).
+[ADR 0002](../adr/0002-int4-qat-baseline.md) explains why the int4 model is the baseline. Before the sweep, the port passed its correctness gates against Meta's PyTorch code, and the vLLM serving check found no failures ([README](../../README.md#port-check)).
 
 ## Server
 

@@ -1,15 +1,17 @@
 # Baseline benchmark: MobileMoE-S on vLLM Metal
 
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
 This folder holds what the baseline benchmark found and everything it measured. The sweep ran on 2026-10-29: vLLM 0.32.0 with the vllm-metal plugin, serving Meta's MobileMoE-S-QAT (int4) on an Apple M1 Pro (16-core GPU, 16 GB).
 
 **The question.** When vLLM serves MobileMoE-S on this Mac, how much of the GPU's memory bandwidth does it use, and where does the rest of the time go?
 
-**The answer.** It uses 12–17% of the bandwidth. A decode step produces one new token for every request in flight. At the GPU's peak bandwidth (200 GB/s) or peak compute (5.2 TFLOPS), whichever is slower, each step would take 0.9–6.2 ms; in practice each takes 5.5–40 ms, 6–8 times longer, at every setting tested. In the terms of [GLOSSARY.md](../../GLOSSARY.md), the engine is overhead-bound: the time goes neither to reading weights nor to arithmetic.
+**The answer.** It uses 12–17% of the bandwidth. A decode step produces one new token for every request in flight. At the GPU's peak bandwidth (200 GB/s) or peak compute (5.2 TFLOPS), whichever is slower, each step would take 0.9–6.2 ms; in practice each takes 5.5–40 ms, 6–8 times longer, at every setting tested. In the terms of [GLOSSARY.md](../GLOSSARY.md), the engine is overhead-bound: the time goes neither to reading weights nor to arithmetic.
 
 - With one request, the CPU work that prepares each step and the GPU work each need about 5 ms.
 - With more requests, the GPU work itself is slow. The GPU is busy almost all the time but moves only 24–34 GB/s.
 
-Where the time goes is analysed in [documents/findings/decode-bottlenecks.md](../findings/decode-bottlenecks.md). In short, a step is hundreds of small GPU kernels, each with a fixed cost. With many requests, the expert and attention kernels also read the same data several times.
+Where the time goes is analysed in [claude/findings/decode-bottlenecks.md](../findings/decode-bottlenecks.md). In short, a step is hundreds of small GPU kernels, each with a fixed cost. With many requests, the expert and attention kernels also read the same data several times.
 
 ![Roofline and step-time breakdown](roofline.png)
 

@@ -1,5 +1,7 @@
 # MobileMoE-S-SFT: vLLM serving vs. mlx_lm
 
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
 vllm-metal does not call the model's own attention code. It rebuilds attention from the module's parts (`q_proj`, `q_norm`, `rope`, `scale`, ...) and runs its paged Metal kernel. This check confirms that serving through vLLM gives the same tokens as plain mlx_lm.
 
 Run on 2026-10-28 with vllm-metal's parity tool, at the settings its nightly CI uses (40 prompts, 20 greedy tokens, top-5 rule at the first divergence, request batches of 1 and 2), in bfloat16:

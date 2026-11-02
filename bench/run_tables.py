@@ -3,7 +3,7 @@
     .venv/bin/python bench/run_tables.py results/runs/<date>-<label>
 
 Run bench/roofline.py first; this reads its roofline.json. The tables are the
-ones in documents/benchmark/measurements.md.
+ones in claude/benchmark/measurements.md.
 """
 
 import argparse

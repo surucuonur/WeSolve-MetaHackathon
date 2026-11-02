@@ -7,7 +7,7 @@ many decode rows as the client concurrency, and the steps before and after
 alike. The step period is the time from one step start to the next.
 
 Bytes per step are the bytes the step must read (see "Achieved bandwidth" in
-GLOSSARY.md), from the served checkpoint's tensor sizes:
+claude/GLOSSARY.md), from the served checkpoint's tensor sizes:
   every step   attention, shared expert, router and norms of all layers
   output       the output layer, read once for all rows (the tied embedding)
   experts      distinct experts per layer (from the experts phase) x the
