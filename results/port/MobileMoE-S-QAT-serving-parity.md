@@ -17,4 +17,4 @@ HF_HUB_OFFLINE=1 .venv/bin/python third_party/vllm-metal/tools/check_parity.py \
 
 All 24 divergences are near-ties: at each one, mlx_lm's log-probabilities for the two tokens are 0.000–0.188 apart (bfloat16 log-probabilities come in steps of 0.0625), and vLLM scores the same two tokens within the same range. 23 swap the first and second choice; in one, vLLM picks mlx_lm's third choice, 0.0625 below its first, where vLLM gives both tokens the same score. There are more near-ties than for the SFT model (13), but none is a clear disagreement.
 
-Versions: vllm 0.32.0, vllm-metal 0.32.0.dev20261028121433 (wheel), mlx 0.32.4, mlx-lm fork commit `d228505` (branch `mobilemoe`; run before the commit, on the same code), model `facebook/MobileMoE-S-QAT` revision `afda132cad380ac47da5ef055f186884d1c12f65`.
+Versions: vllm 0.32.0, vllm-metal 0.32.0.dev20261028121433 (wheel), mlx 0.32.4, mlx-lm fork commit `a6b990a` (branch `mobilemoe`; run before the commit, on the same code), model `facebook/MobileMoE-S-QAT` revision `afda132cad380ac47da5ef055f186884d1c12f65`.

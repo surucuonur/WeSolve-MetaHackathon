@@ -17,4 +17,4 @@ Run on 2026-10-28 with vllm-metal's parity tool, at the settings its nightly CI 
 
 All 13 divergences swap the first and second choice. At each one, mlx_lm's log-probabilities for the two tokens are 0.000–0.312 apart (bfloat16 log-probabilities come in steps of 0.0625), so these are rounding near-ties, not model errors. A missing Q/K norm or a wrong RoPE would produce wrong text, not near-ties.
 
-Versions: vllm 0.32.0, vllm-metal 0.32.0.dev20261028121433 (wheel), mlx 0.32.4, mlx-lm fork commit `854017b` (branch `mobilemoe`; run before the commit, on the same code), model revision `4decae01abfeaf46046b8774fdc4404b3e33a3a4`.
+Versions: vllm 0.32.0, vllm-metal 0.32.0.dev20261028121433 (wheel), mlx 0.32.4, mlx-lm fork commit `796e73d` (branch `mobilemoe`; run before the commit, on the same code), model revision `4decae01abfeaf46046b8774fdc4404b3e33a3a4`.

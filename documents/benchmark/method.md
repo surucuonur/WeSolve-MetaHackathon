@@ -19,8 +19,8 @@ The limits are the manufacturer's ratings, not measured here:
 | vLLM | 0.32.0 (CPU wheel; vllm-metal supplies the Metal backend) | `5df63a7` (`third_party/vllm`, read-only) |
 | vllm-metal | 0.32.0.dev20261028121433 (prebuilt wheel of the pinned commit) | `e177b67` |
 | MLX | 0.32.4 | |
-| mlx-lm | 0.32.0, the fork with the MobileMoE port (branch `mobilemoe`) | `d228505` |
-| This repo, as the sweep ran | | `846bf63` |
+| mlx-lm | 0.32.0, the fork with the MobileMoE port (branch `mobilemoe`) | `a6b990a` |
+| This repo, as the sweep ran | | `44a9ca8` |
 
 ## Model
 
