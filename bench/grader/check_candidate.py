@@ -1,12 +1,14 @@
-"""Check one Muse Spark attempt: compile it, test it on captured inputs, time it.
+"""Grade one kernel attempt: compile it, test it on captured inputs, time it.
 
-Runs in its own process (kernel_loop.py gives it a time limit), on the
-inputs slots.save_inputs captured from a real decode step. Writes
-result.json into the attempt folder and prints it.
+The independent grader for Muse Spark's kernels (claude/muse-agent-brief.md).
+It runs on the inputs `slots.py capture` recorded from a real decode step,
+prints its verdict as JSON, and writes it to --out when given. It never
+writes into the attempt folder, which holds only Muse Spark's files.
 
-  .venv/bin/python bench/muse/check_candidate.py muse-spark/kernels/<slot>/attempt-N <slot>
+  .venv/bin/python bench/grader/check_candidate.py muse-spark/kernels/<slot>/attempt-N <slot> [--out FILE]
 """
 
+import argparse
 import json
 import statistics
 import sys
@@ -18,7 +20,6 @@ import mlx.core as mx
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import client  # noqa: E402
 import slots  # noqa: E402
 
 ROWS = (1, 8, 32)
@@ -32,7 +33,7 @@ def parts(slot):
 def load(attempt, slot):
     spec = json.loads((attempt / "spec.json").read_text())
     sources = [
-        client.read_verbatim(p)
+        p.read_text()
         for p in sorted(attempt.glob("block-*.metal"), key=lambda p: int(p.stem[6:]))
     ]
     specs = spec if slot == "routing+combine" else {slot: spec}
@@ -107,6 +108,27 @@ def check_combine(fn, layer):
     return out
 
 
+def check_experts(fn, layer):
+    names = slots.SLOTS["experts"][0]
+    args = [layer[n] for n in names]
+    ref = slots.ref_experts(*args)
+    got = fn(**{n: layer[n] for n in names})["y"]
+    if got.shape != ref.shape or got.dtype != mx.bfloat16:
+        return {"error": f"y {got.shape} {got.dtype}; want {ref.shape} bfloat16"}
+    r = np.array(ref.astype(mx.float32)).reshape(ref.shape[0], -1)
+    g = np.array(got.astype(mx.float32)).reshape(ref.shape[0], -1)
+    with np.errstate(over="ignore", invalid="ignore"):
+        over = np.nan_to_num(np.abs(g - r) / ulp_bf16(r), nan=1e9, posinf=1e9)
+    out = {"max_ulp": float(min(over.max(), 1e9)), "bad": int((over > 2).sum())}
+    if out["bad"]:
+        i, j = np.unravel_index(over.argmax(), over.shape)
+        k, d = divmod(j, slots.D)
+        out["example"] = (
+            f"row {i} expert slot {k} column {d}: {g[i, j]:.6g}, want {r[i, j]:.6g}"
+        )
+    return out
+
+
 def passes(part, s):
     if "error" in s:
         return False
@@ -141,15 +163,25 @@ def short_error(e):
 
 
 def main():
-    attempt, slot = Path(sys.argv[1]), sys.argv[2]
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("attempt", type=Path)
+    ap.add_argument("slot", choices=tuple(slots.SLOTS))
+    ap.add_argument("--out", type=Path, help="also write the verdict here")
+    args = ap.parse_args()
+    attempt, slot = args.attempt, args.slot
     result = {"slot": slot, "g1": False, "g2": False, "beats_compiled": False}
     try:
         fns = load(attempt, slot)
+        weights = slots.load_expert_weights() if slot == "experts" else None
         stats = {}
         for rows in ROWS:
-            layers = slots.load_inputs(rows)
+            layers = slots.load_inputs(rows, weights)
             for part, fn in fns.items():
-                check = check_routing if part == "routing" else check_combine
+                check = {
+                    "routing": check_routing,
+                    "combine": check_combine,
+                    "experts": check_experts,
+                }[part]
                 per_layer = [check(fn, layer) for layer in layers]
                 errors = [s["error"] for s in per_layer if "error" in s]
                 if errors:
@@ -175,7 +207,7 @@ def main():
         if result["g2"]:
             timing, beats = {}, True
             for rows in ROWS:
-                layers = slots.load_inputs(rows)
+                layers = slots.load_inputs(rows, weights)
                 row = {"reference": 0.0, "compiled": 0.0, "candidate": 0.0}
                 for part, fn in fns.items():
                     names = slots.SLOTS[part][0]
@@ -192,7 +224,9 @@ def main():
             result["beats_compiled"] = beats
     except Exception as e:  # report the failure to Muse Spark as G1
         result["error"] = short_error(e)
-    (attempt / "result.json").write_text(json.dumps(result, indent=1) + "\n")
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(json.dumps(result, indent=1) + "\n")
     print(json.dumps(result))
 
 

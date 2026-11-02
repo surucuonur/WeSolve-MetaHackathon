@@ -305,7 +305,7 @@ The effects below are estimates from the microbenchmarks, not end-to-end measure
 
 ## Using the Muse Spark credits
 
-> **Superseded on 2026-11-02.** Muse Spark now writes GPU kernels against these bottlenecks instead of only explaining them ([ADR 0003](../adr/0003-muse-spark-writes-kernels.md)). It uses `muse-spark-1.3-contributor`, priced on Meta's own page. The plan below is kept as it was written on 2026-10-30.
+> **Superseded on 2026-11-02.** Muse Spark now writes GPU kernels against these bottlenecks as a coding agent of its own, instead of only explaining them ([ADR 0004](../adr/0004-muse-spark-as-claude-code-agent.md)). The plan below is kept as it was written on 2026-10-30.
 
 Muse Spark (the Meta Model API) is used here only to explain, never as the model under study ([GLOSSARY.md](../GLOSSARY.md)). This analysis changes where to point it. The slow parts are not in vLLM's scheduler or runner, which take 0.5–1.6 ms per step ([step-breakdown.md](step-breakdown.md#2-inside-vllm-metals-model-runner)). They are in MLX's kernel choice, vllm-metal's per-model fast paths and the model's kernel count. Asking it about vLLM's scheduler would chase the wrong layer.
 

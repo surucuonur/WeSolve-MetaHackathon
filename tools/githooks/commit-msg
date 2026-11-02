@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""Refuse a commit whose co-author doesn't match its branch (PROVENANCE.md).
+
+On muse-agent: the Muse Spark co-author is required and Claude is refused.
+Anywhere else: the Muse Spark co-author is refused.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import provenance as pv  # noqa: E402
+
+
+def main():
+    message = Path(sys.argv[1]).read_text()
+    branch = pv.git("branch", "--show-current").strip()
+    names = pv.coauthors(message)
+    muse = [n for n in names if pv.is_muse(n)]
+    claude = [n for n in names if pv.is_claude(n)]
+    if branch == pv.MUSE_BRANCH:
+        if not muse:
+            sys.exit(f"commit-msg: commits on {branch} need the trailer\n  {pv.MUSE_COAUTHOR}")
+        if claude:
+            sys.exit(f"commit-msg: commits on {branch} can't name Claude: {claude}")
+    elif muse:
+        sys.exit(
+            f"commit-msg: the Muse Spark co-author belongs only on {pv.MUSE_BRANCH}; "
+            f"this branch is {branch or '(detached)'}"
+        )
+
+
+if __name__ == "__main__":
+    main()

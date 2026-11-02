@@ -1,10 +1,12 @@
 ---
-status: accepted
+status: superseded by 0004
 ---
 
 # Muse Spark chooses a bottleneck and writes the kernels; its output is kept verbatim and apart
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
+> **Superseded by [ADR 0004](0004-muse-spark-as-claude-code-agent.md) on 2026-11-02.** Muse Spark now works as a Claude Code agent session. This API pipeline and its output were removed from the tree; git history keeps them, in commits `d14c4a3` through `2c71eb4`.
 
 Muse Spark (`muse-spark-1.3-contributor`, Meta Model API) does real engineering work in this project: it writes GPU kernels.
 
@@ -13,10 +15,10 @@ Muse Spark (`muse-spark-1.3-contributor`, Meta Model API) does real engineering 
    - the harness compiles each kernel, checks it against the original on real inputs, and times it;
    - it sends Muse Spark back only the machine output: compiler errors, test failures, timings.
 
-**The rules are fixed before the first call.** The task, the parts that can be swapped, the answer format, the pass criteria and the attempt caps are in [muse-spark-brief.md](../muse-spark-brief.md). It was committed before any call, and its commit time proves it.
+**The rules are fixed before the first call.** The task, the parts that can be swapped, the answer format, the pass criteria and the attempt caps are in `claude/muse-spark-brief.md` (removed; see commit `d14c4a3`). It was committed before any call, and its commit time proves it.
 
 **Muse Spark's output is never edited.**
-- Its answers are saved verbatim in [muse-spark/](../../muse-spark/), committed apart from any other work, and co-authored by Muse Spark.
+- Its answers are saved verbatim in `muse-spark/`, committed apart from any other work, and co-authored by Muse Spark.
 - Each file's hash is checked against the raw API response.
 - If no attempt passes, Claude may write one separate version, labelled as Claude's and kept as a diff against Muse Spark's original. It is reported apart from Muse Spark's results.
 

@@ -1,4 +1,4 @@
-"""Stage 3: Muse Spark's kernels in the real decode step, against two baselines.
+"""Muse Spark's kernels in the real decode step, against two baselines.
 
 Variants, applied at runtime to MoE.__call__ in every layer:
 
@@ -11,8 +11,8 @@ G2 end to end: each variant's greedy tokens over 24 generated tokens, at 1
 and 32 requests, must equal base's. G3: the steady decode step period, as
 repeat_fixes.py measures it (3 repeats, shuffled), at 1, 8 and 32 requests.
 
-  .venv/bin/python bench/muse/time_candidates.py plain results/runs/<date>-muse <slot> <attempt dir>
-  .venv/bin/python bench/muse/time_candidates.py vllm  results/runs/<date>-muse <slot> <attempt dir>
+  .venv/bin/python bench/grader/time_candidates.py plain results/runs/<date>-muse <slot> <attempt dir>
+  .venv/bin/python bench/grader/time_candidates.py vllm  results/runs/<date>-muse <slot> <attempt dir>
 """
 
 import argparse
@@ -45,9 +45,14 @@ def as_combine(fn):
     return lambda y, weights, shared: fn(y=y, weights=weights, shared=shared)["out"]
 
 
+def as_experts(fn):
+    names = slots.SLOTS["experts"][0]
+    return lambda *args: fn(**dict(zip(names, args)))["y"]
+
+
 def implementation(parts):
     """make_moe_call keyword arguments for the swapped parts."""
-    wrap = {"routing": as_routing, "combine": as_combine}
+    wrap = {"routing": as_routing, "combine": as_combine, "experts": as_experts}
     return {p: wrap[p](fn) for p, fn in parts.items()}
 
 
@@ -99,7 +104,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("engine", choices=("plain", "vllm"))
     ap.add_argument("out", type=Path)
-    ap.add_argument("slot", choices=("routing", "combine", "routing+combine"))
+    ap.add_argument("slot", choices=tuple(slots.SLOTS))
     ap.add_argument("muse", type=Path, help="Muse Spark's attempt folder")
     ap.add_argument("--claude-fixed", type=Path, help="Claude's labelled version")
     ap.add_argument("--tokens", type=int, default=256, help="output tokens per run")

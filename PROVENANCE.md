@@ -8,31 +8,36 @@ The hackathon rules require judges to tell what was built during the event, and 
 
 | Who | What they made | Where it is | How it is marked |
 |---|---|---|---|
-| **surucuonur** (the entrant) | Direction and every decision; ran the machine; reviewed the results | every commit | Author and committer of every commit |
-| **Claude Code** (Claude Opus 5.5, Anthropic) | The benchmark and test-harness code, the measurements, every write-up | `bench/`, `claude/`, `README.md`, this page, and the Markdown in `results/` | Commits co-authored by `Claude Opus 5.5 <noreply@anthropic.com>`, which GitHub shows as the `claude` account; a byline under each document's title |
-| **Muse Spark** (`muse-spark-1.3-contributor`, Meta Model API) | Its choice of which bottleneck to attack, its plan, and its GPU kernels, exactly as returned | `muse-spark/` | Commits co-authored by `Muse Spark (muse-spark-1.3-contributor)`, with Meta's response ids as trailers; a `[harness]` header above each file's verbatim content |
+| **surucuonur** (the entrant) | Direction and every decision; ran the machine; started the Muse Spark session; reviewed the results | every commit | Author and committer of every commit |
+| **Claude Code** (Claude Opus 5.5, Anthropic) | The benchmark, grader and provenance code, the measurements, every write-up | `bench/`, `claude/`, `tools/`, `README.md`, this page, and the Markdown in `results/` | Commits co-authored by `Claude Opus 5.5 <noreply@anthropic.com>`, which GitHub shows as the `claude` account; a byline under each document's title |
+| **Muse Spark** (`muse-spark-1.3`, Meta Model API), working as a Claude Code agent | Its choice of targets, its kernels and notes, and the transcript of its session | `muse-spark/`, committed on the branch `muse-agent` and merged with `--no-ff` | Commits co-authored by `Muse Spark (Meta Model API)`, subjects starting "Muse Spark:"; the transcript records the model behind every turn |
 | **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, and Meta's MobileMoE-S weights | `third_party/` (pinned submodules) and the installed wheels; the weights are downloaded, not committed | Their own authors and licences |
 
-## How commits are marked
+## How the work is kept apart
 
 Every commit is authored and committed by surucuonur. The `Co-Authored-By` trailer says whose work the content is:
 
 ```
 Claude's work                         Muse Spark's work
 -------------                         -----------------
+branch: main                          branch: muse-agent
 Author: surucuonur                    Author: surucuonur
-Co-Authored-By: Claude Opus 5.5       Co-Authored-By: Muse Spark (muse-spark-1.3-contributor)
+Co-Authored-By: Claude Opus 5.5       Co-Authored-By: Muse Spark (Meta Model API)
   <noreply@anthropic.com>               <muse-spark@meta-model-api.invalid>
-Claude-Session: <session link>        Muse-Spark-Response: resp_...   (one per API call)
-                                      Muse-Spark-Call: muse-spark/calls/...
-                                      Claude-Session: <session link>
+Claude-Session: <session link>        changes only muse-spark/
+never changes muse-spark/
 ```
 
-- **One author's content per commit.** Muse Spark's output never shares a commit with harness code or logs. Commits holding it have subjects starting with "Muse Spark:".
-- **What `Claude-Session` means on a Muse Spark commit:** only that the commit was made through Claude Code. Claude is not a co-author of that content.
-- **The Muse Spark address is not a real mailbox.** The `.invalid` domain is reserved and can never belong to anyone (RFC 2606). Muse Spark has no GitHub account, so we neither claim nor invent one.
-- **Meta issues no signature for its answers.** The record is three things: the response id Meta's API returned, the raw response saved verbatim in `muse-spark/calls/`, and a SHA-256 hash of the content. `bench/muse/verify.py` re-checks the hashes.
-- **Claude never edits Muse Spark's output.** If no Muse Spark kernel passes, Claude may write a separate version, labelled as Claude's, with its diff against Muse Spark's original ([ADR 0003](claude/adr/0003-muse-spark-writes-kernels.md)).
+Muse Spark works in a separate Claude Code session powered by Meta's API, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0004](claude/adr/0004-muse-spark-as-claude-code-agent.md)). Six layers keep its work and Claude's from mixing:
+
+1. **Place.** Muse Spark has its own git worktree on `muse-agent`, writes only in `muse-spark/`, and runs with its own Claude Code configuration folder. It sees none of Claude's history, memory or settings, and its worktree has no `.env`.
+2. **Identity.** Its settings (`tools/muse-agent/settings.json`) put the Muse Spark co-author on its commits instead of Claude Code's default, which would credit the `claude` account. The `.invalid` address is reserved and belongs to no one (RFC 2606); Muse Spark has no GitHub account, so we neither claim nor invent one.
+3. **Hooks.** `tools/githooks/` refuses mixed commits: Muse Spark's co-author off `muse-agent`, Claude's on it, `muse-agent` commits outside `muse-spark/`, other commits inside it (merges of `muse-agent` excepted), and any staged API key.
+4. **Audit.** `tools/provenance_check.py` re-checks the whole history against the same rules, so a commit made around the hooks is caught.
+5. **Evidence.** The session's conversation is saved in `muse-spark/transcripts/` by `tools/export_transcript.py`. Every assistant turn keeps the model that wrote it and Meta's message and request ids. Claude Code's own system prompt and tool definitions are dropped.
+6. **Independent grading.** The grader (`bench/grader/`) is Claude's, fixed before the session; Muse Spark may run it but not change it. Its results in the write-up come from re-running it on the main checkout after the merge.
+
+**The removed API stage.** Before the agent session, Muse Spark was called through a Claude-written API pipeline: 2 calls, a strategy and one routing+combine kernel. That stage was removed so all of Muse Spark's results come from one method. Its commits remain in the history: `d14c4a3` (the brief), `48cb61f` and `8c0a9b0` (Muse Spark's answers), `6c0a0ba` and `2c71eb4` (their logs). The audit lists them under "before".
 
 ## What existed before the event
 
@@ -74,12 +79,12 @@ Commit ids changed as a result. Raw run records (`results/runs/2026-10-29-baseli
 ## How to check
 
 ```bash
-# Author, committer and co-authors of every commit
-git log --format='%h %an | committer %cn | %(trailers:key=Co-Authored-By,valueonly,separator=%x2C )'
+# Who authored, committed and co-authored each commit
+git log --all --format='%h %an | committer %cn | %(trailers:key=Co-Authored-By,valueonly,separator=%x2C )'
 
-# Only the commits that hold Muse Spark's output
-git log --format='%h %s' --grep='Co-Authored-By: Muse Spark'
+# Only Muse Spark's commits, and which files they change
+git log --all --stat --grep='Co-Authored-By: Muse Spark'
 
-# Muse Spark's files match the API responses they came from, and the total cost
-.venv/bin/python bench/muse/verify.py
+# The full audit: identities, folder rules, transcript models, secret scan
+.venv/bin/python tools/provenance_check.py
 ```

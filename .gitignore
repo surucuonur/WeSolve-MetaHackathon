@@ -7,7 +7,7 @@
 .DS_Store
 
 # Python
-.venv*/
+.venv*
 __pycache__/
 *.pyc
 
@@ -22,7 +22,7 @@ results/port/*.npz
 *.egg-info/
 
 # Converted model checkpoints (bench/convert_qat.py)
-models/
+/models
 
 # Claude Code session files
 .claude/scheduled_tasks.lock

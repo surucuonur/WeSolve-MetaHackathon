@@ -25,14 +25,14 @@ A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by
 
 [claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs.
 
-Next: Muse Spark picks a bottleneck from these findings and writes GPU kernels against it, checked by a test harness ([ADR 0003](claude/adr/0003-muse-spark-writes-kernels.md)).
+Next: Muse Spark, working as a coding agent of its own, picks a bottleneck from these findings and writes GPU kernels against it. An independent grader checks them ([ADR 0004](claude/adr/0004-muse-spark-as-claude-code-agent.md)).
 
 ## How Meta's models are used
 
 - **MobileMoE-S** (open weights) is the model under study, served by vLLM through vllm-metal. The baseline serves the int4 `facebook/MobileMoE-S-QAT` ([why](claude/adr/0002-int4-qat-baseline.md)); the bfloat16 `facebook/MobileMoE-S-SFT` is used to check the port.
-- **Muse Spark** (`muse-spark-1.3-contributor`, Meta Model API) reads the findings, chooses which bottleneck to attack, and writes fused GPU kernels for it.
-  - A harness compiles and tests each kernel and times it in the real decode step. It sends Muse Spark only the machine output: errors, test failures, timings.
-  - Muse Spark's answers are kept verbatim in [muse-spark/](muse-spark/), and the rules it works under were committed before its first call ([brief](claude/muse-spark-brief.md)).
+- **Muse Spark** (`muse-spark-1.3`, Meta Model API) works as a coding agent: a Claude Code session powered by Meta's API, started with `tools/muse-agent/start.sh`.
+  - It reads the findings, chooses which bottleneck to attack, writes fused GPU kernels, and runs the grader on them itself.
+  - Its work goes to `muse-spark/` on the branch `muse-agent`, with the transcript of its session. Its task and rules were committed and tagged `agent-era` before it started ([brief](claude/muse-agent-brief.md)).
 
 ## Who made what
 
@@ -40,12 +40,12 @@ Every commit is made by **surucuonur**. The co-author on each commit shows whose
 
 | Who | What | Where |
 |---|---|---|
-| **surucuonur** | Direction, decisions, running the machine | every commit |
-| **Claude Code** (Claude Opus 5.5) | Harness and benchmark code, measurements, write-ups | `bench/`, `claude/`, this README. Commits co-authored by `claude`. |
-| **Muse Spark** (`muse-spark-1.3-contributor`) | Its choice of target and its kernels, unedited | `muse-spark/`. Commits co-authored by "Muse Spark" and carrying Meta's response ids. |
+| **surucuonur** | Direction, decisions, running the machine, starting the Muse Spark session | every commit |
+| **Claude Code** (Claude Opus 5.5) | Benchmark, grader and provenance code, measurements, write-ups | `bench/`, `claude/`, `tools/`, this README. Commits co-authored by `claude`. |
+| **Muse Spark** (`muse-spark-1.3`), as a coding agent | Its choice of target, its kernels, its session transcript | `muse-spark/`, on the branch `muse-agent`. Commits co-authored by "Muse Spark". |
 | **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, Meta's model weights | `third_party/` at pinned commits, plus the installed wheels |
 
-[PROVENANCE.md](PROVENANCE.md) gives the details and the commands to check them.
+Git hooks refuse commits that mix the two, and `tools/provenance_check.py` audits the whole history. [PROVENANCE.md](PROVENANCE.md) gives the details and the commands to check them.
 
 ## Layout
 
@@ -56,11 +56,12 @@ claude/GLOSSARY.md    shared vocabulary
 claude/adr/           decisions and why
 claude/benchmark/     baseline benchmark write-up: findings, every measurement, method
 claude/findings/      where a decode step's time goes, and the fixes it suggests
-muse-spark/           Muse Spark's answers, verbatim, and the log of every call
+muse-spark/           Muse Spark's work: its strategy, kernels and session transcript (branch muse-agent)
 third_party/          pinned submodules: vllm-metal and mlx-lm (forks, where changes go), vLLM v0.32.0 (read-only)
 bench/                benchmark sweep, roofline calculation, port correctness check
 bench/micro/          microbenchmarks of a decode step's parts
-bench/muse/           the harness that calls Muse Spark and tests its kernels
+bench/grader/         the independent grader for Muse Spark's kernels
+tools/                provenance hooks and audit; the Muse Spark agent's settings and launcher
 results/runs/         every benchmark run, committed
 results/traces/       Metal GPU traces (large, not committed)
 ```
