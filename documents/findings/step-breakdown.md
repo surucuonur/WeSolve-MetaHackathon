@@ -7,7 +7,7 @@
 
 For each piece it reports the GPU kernels it launches, the CPU time it takes to build, and what the step saves without it. It then lists the work that is repeated in every step for nothing, and measures what removing it saves.
 
-Everything was measured on 2026-11-01, on the baseline's machine, software and int4 model ([method](../benchmark/method.md)). Each claim is marked **measured** (timed here), **from the code** (read in the source) or **estimate** (reasoned from those two). The scripts are in [bench/micro/](../../bench/micro/): `breakdown.py`, `breakdown_tables.py`, `repeat_fixes.py` and `lm_head_shapes.py`. The raw data is in [results/runs/2026-11-01-breakdown/](../../results/runs/2026-11-01-breakdown/), and every number below is in its [tables.md](../../results/runs/2026-11-01-breakdown/tables.md).
+Everything was measured on 2026-11-01, and the GPU counters on 2026-11-02, on the baseline's machine, software and int4 model ([method](../benchmark/method.md)). Each claim is marked **measured** (timed here), **from the code** (read in the source) or **estimate** (reasoned from those two). The scripts are in [bench/micro/](../../bench/micro/): `breakdown.py`, `breakdown_tables.py`, `repeat_fixes.py`, `lm_head_shapes.py` and `gpu_counters.py`. The raw data is in [results/runs/2026-11-01-breakdown/](../../results/runs/2026-11-01-breakdown/) and [results/runs/2026-11-02-gpu-counters/](../../results/runs/2026-11-02-gpu-counters/), and every number below is in their `tables.md` files ([breakdown](../../results/runs/2026-11-01-breakdown/tables.md), [counters](../../results/runs/2026-11-02-gpu-counters/tables.md)).
 
 ## Summary
 
@@ -25,9 +25,11 @@ Everything was measured on 2026-11-01, on the baseline's machine, software and i
   - The mixture-of-experts block's bookkeeping, routing and combine, costs 1.6 ms. That is more than its expert products, at 0.9 ms.
   - The output layer reads its 61.6 MB at about 158 GB/s, close to peak.
 - **With 32 requests, the routed experts take half the step:** 14.7 of 28.4 ms in plain MLX and 14.9 of 30.3 ms in vLLM. Attention comes next, at 5.6 and 7.5 ms.
-- **The step uses 12–19% of peak memory bandwidth** (derived from bytes and times, not hardware counters).
-  - With one request only the output layer comes close, at 158 GB/s. The other pieces' kernels read too little each to get past their fixed cost.
-  - With 32 requests the routed experts reach 30 GB/s on the bytes they need, but about 97 GB/s counting the weights they read again for every (token, expert) pair. The output layer reaches 48% of peak compute.
+- **The GPU is busy 92–98% of the time but moves only 17–28% of its peak memory bandwidth** (measured with the GPU's own counters).
+  - With one request each weight is read once: 193 MB per step against the 180 MB the model needs. Only the output layer comes close to peak, at about 160 GB/s. The other pieces' kernels read too little each to get past their fixed cost.
+  - From 8 requests up, the step reads 1.7–2.2 times what the model needs. At 32 requests the routed experts read 908 MB from memory against the 443 MB they need: about half their repeat reads per (token, expert) pair reach memory, the rest come from cache.
+  - At 32 requests MLX's split quantized products also write about 170 MB of partial sums per step.
+  - While busy, the GPU's arithmetic units are 14–45% used and most of its thread slots are empty.
 - **The repeated work is real but cheap.**
   - Three changes that leave the outputs bit-identical remove 140 of vLLM's 967 kernel operations per step.
   - They save 0.17 ms per step at 8 requests (1.2%). Where a gain stood clear of the run-to-run noise, it was at most 1.5% of the step.
@@ -224,7 +226,7 @@ What it shows:
 
 ### Memory bandwidth and compute, piece by piece
 
-**Derived from the measurements above, not read from hardware counters** (only Xcode's GPU tools can read those on this Mac; see [Limits](#limits)). For each piece:
+**Derived from the measurements above**: the bytes the model must read, over measured times. The [next subsection](#memory-traffic-counted-by-the-gpu) checks them against the traffic the GPU counted. For each piece:
 
 - **MB to read:** the weights it uses in one step, summed over the 20 layers. Only the experts the step's tokens picked count, each once. The attention kernel also reads the key/value cache up to each row's position (bfloat16, 1 KB per token per layer).
 - **GFLOP:** its multiply-adds, counted as 2 operations each.
@@ -285,6 +287,92 @@ What it shows:
   - **The routed experts read the same weights again and again.** On the 443.5 MB they need, they reach 30 GB/s. But the per-pair kernel reads an expert once per (token, expert) pair: 32 × 4 pairs per layer, 1,416 MB per step. Counted that way they move 97 GB/s, half of peak, and two thirds of those bytes are repeats (estimate). A grouped kernel that reads each expert once targets this ([decode-bottlenecks fix 4](decode-bottlenecks.md#what-to-do-in-priority-order)).
   - **The attention kernel reads the cache at 54 GB/s in plain MLX and 39 GB/s in vLLM.** vllm-metal's kernel reads each key/value head once per query head, 3 times ([decode-bottlenecks finding 6](decode-bottlenecks.md#6-at-long-contexts-attention-reads-each-keyvalue-head-three-times)). Counted that way, it moves about 117 GB/s (estimate).
   - **The dense layers lean towards compute.** The output layer reaches 48% of peak compute in plain MLX (6.3 GFLOP in 2.50 ms), the shared expert 30%, the projections 14–19%. vLLM's output layer shows half that only because of the unexplained 5.08 ms above.
+
+The next subsection checks these figures against the memory traffic the GPU itself counted.
+
+### Memory traffic counted by the GPU
+
+**Measured on 2026-11-02 with the GPU's own counters**, through Xcode's `xctrace` and its Metal GPU Counters instrument. The script is [`bench/micro/gpu_counters.py`](../../bench/micro/gpu_counters.py); the data and every number below are in [results/runs/2026-11-02-gpu-counters/](../../results/runs/2026-11-02-gpu-counters/tables.md). For each setting it:
+
+1. decodes 100 steady steps;
+2. pauses, starts the recording and records 0.3 s of idle GPU;
+3. lets about one second of steady steps run;
+4. pauses again and stops the recording.
+
+The GPU sends a sample about every 20 µs while it has work and none while it is idle. Each sample holds 31 counters, among them:
+- **read and write bandwidth:** traffic between the GPU and memory;
+- **ALU utilization:** how busy the arithmetic units are;
+- **occupancy:** how full the GPU's slots for running threads are;
+- **limiters:** how close each unit came to its throughput limit.
+
+The counters cover the whole GPU, not one program.
+
+Terms used below:
+- **Read bandwidth is a percentage of the 200 GB/s peak.** Each run first reads a 512 MB buffer over and over. That is larger than any cache, so every byte must come from memory. The bandwidth counter's average, times 2.002, gives the bytes actually read: 2.002 and 2.001 in the two calibration runs.
+- **MB read per step** is the average read bandwidth over the window (counting idle gaps as zero) times the step period. It counts traffic that reached memory; reads served by the GPU's caches are not in it (estimate, from the experts below).
+- **GPU busy** is the share of the window in which the GPU sent samples.
+
+**The whole step:**
+
+| Engine | Requests × prompt tokens | MB read per step (counter) | MB the model must read | Ratio | GB/s at the unrecorded step time (share of peak) | MB written per step | GPU busy | ALU utilization while busy | Occupancy while busy |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| plain | 1 × 128 | 193 | 180 | 1.07 | 41 (20%) | 3 | 96% | 17% | 9% |
+| plain | 8 × 128 | 685 | 393 | 1.74 | 51 (26%) | 21 | 98% | 45% | 23% |
+| plain | 32 × 128 | 1,561 | 731 | 2.14 | 55 (28%) | 266 | 92% | 37% | 26% |
+| plain | 32 × 1,024 | 2,297 | 1,275 | 1.80 | not used | 380 | 74% | 38% | 27% |
+| vLLM | 1 × 128 | 193 | 180 | 1.07 | 34 (17%) | 3 | 95% | 14% | 8% |
+| vLLM | 8 × 128 | 684 | 389 | 1.76 | 48 (24%) | 20 | 96% | 42% | 21% |
+| vLLM | 32 × 128 | 1,511 | 692 | 2.18 | 50 (25%) | 251 | 97% | 36% | 24% |
+| vLLM | 32 × 1,024 | 2,250 | 1,268 | 1.77 | 57 (28%) | 253 | 97% | 33% | 26% |
+
+The GB/s use the step periods measured without recording (section 1), because recording slows the step a little ([Limits](#limits)). Plain MLX at 32 × 1,024 is left out: recording slowed its steps from 33 to 57 ms, with the GPU idle a quarter of the window.
+
+**Each piece (plain MLX):** the bytes the step stops reading or writing when the piece is knocked out, against the recorded step with every wrapper idle. The time saved is the unrecorded one from the tables above.
+
+| Requests | Piece | MB read saved (counter) | MB it must read (model) | MB written saved (counter) | Saved ms | GB/s while it runs |
+|---:|---|---:|---:|---:|---:|---:|
+| 1 | q, k and v projections | 14 | 12 | 0 | 0.39 | 35 |
+| 1 | attention kernel | 11 | 7 | 0 | 0.41 | 26 |
+| 1 | routing | 4 | 4 | 0 | 1.02 | 4 |
+| 1 | routed experts | 51 | 44 | 1 | 0.92 | 55 |
+| 1 | shared expert | 45 | 44 | 0 | 0.51 | 88 |
+| 1 | output layer | 65 | 62 | 0 | 0.39 | 167 |
+| 32 | attention kernel | 265 | 160 | 2 | 3.12 | 85 |
+| 32 | routed experts | 908 | 443 (1,416 once per pair) | 26 | 14.67 | 62 |
+| 32 | q, k and v projections | −11 | 12 | 57 | 1.67 | |
+| 32 | shared expert | −51 | 44 | 102 | 2.90 | |
+
+What the counters show:
+
+- **The GPU is never idle, yet uses only a fifth to a quarter of its memory bandwidth (measured).**
+  - The GPU is busy 92–98% of every window, in both engines.
+  - It moves 17–28% of peak bandwidth, counting every byte it really reads.
+  - While busy, its arithmetic units are 14–17% used with one request and 33–45% from 8 requests up.
+  - Occupancy is 8–9% and 21–27%: most of the GPU's thread slots are empty.
+  - No counter is near its limit. The highest are the buffer-read and last-level-cache limiters, at 53–56% with 32 requests.
+  - This is what a chain of small dependent kernels looks like from the hardware side: each kernel launches too few threads to fill the GPU, and the next one waits for it.
+- **With one request, the derived figures above hold (measured).**
+  - Both engines read 193 MB per step, 7% more than the 180 MB of weights and cache the model needs. The difference is activations and small reads.
+  - Every piece reads within 1–7 MB of what the model says, so each weight is read once.
+  - The output layer's 65 MB over its 0.39 ms is 167 GB/s, against the derived 158.
+- **From 8 requests up, the step reads 1.7–2.2 times what the model needs (measured).** It is the bandwidth spent on reading again, not the bytes needed, that grows with the requests.
+- **The routed experts' repeat reads come half from memory, half from cache.**
+  - **Measured:** at 32 requests they read 908 MB from memory, against the 443 MB they need and the 1,416 MB they would read once per (token, expert) pair. That is 62 GB/s over their 14.67 ms, against the derived 30 (on the bytes needed) and 97 (counting every pair).
+  - **Estimate:** about half of the 973 MB of repeat reads reached memory (465 MB); the GPU's caches served the rest.
+  - A grouped kernel that reads each expert once targets those 465 MB per step, 30% of the step's reads.
+- **Plain MLX's attention kernel reads 265 MB at 32 requests, 1.7 times the cache it needs (measured).**
+  - It moves 85 GB/s over its 3.12 ms.
+  - **Estimate:** the extra reads are consistent with key/value heads being read for more than one query head, partly from cache. This is plain MLX's own kernel, not vllm-metal's, whose triple reads ([decode-bottlenecks finding 6](decode-bottlenecks.md#6-at-long-contexts-attention-reads-each-keyvalue-head-three-times)) were not knocked out here.
+- **With 32 requests, the step writes 251–266 MB, and most of it is partial sums (measured and from the code).**
+  - **From the code:** for a quantized product with a few rows, MLX splits the long inner dimension into `split_k` chunks. Each chunk writes its own float32 copy of the output, of `split_k × rows × outputs` numbers. A second kernel then reads them back and adds them up. MLX picks `split_k` to give the GPU about 512 groups of threads to run (`mlx/backend/metal/quantized.cpp:1166-1226`, chosen at `:1909-1915`). On this GPU (`applegpu_g13s`), MLX switches to this kernel at 14 rows for these layer sizes (`quantized.cpp:89-125`). That is why the step writes 20–21 MB at 8 requests and 251–266 MB at 32.
+  - **From the code, worked out:** for MobileMoE-S at 32 rows this gives `split_k` = 12, 24 and 24 for the q, k and v projections, 8, 8 and 16 for the shared expert's three products, and 12 for the o projection. The temporaries come to 55 MB, 94 MB and 24 MB per step: 173 MB.
+  - **Measured:** knocking out the q, k and v projections cuts the writes by 57 MB, and the shared expert by 102 MB. The output layer has 4,000 tiles of outputs, so it is not split, and it cuts them by only 7 MB, about the size of its logits.
+  - **Not measured:** whether the partial sums are read back from memory or from cache. Nor has a smaller `split_k` been tried, which would trade these bytes for fewer threads running at once.
+- **Not resolved: the small pieces at 32 requests.**
+  - Knocking out the q, k and v projections or the shared expert raises the step's reads, by 11 and 51 MB, although each needs 12 and 44 MB of weights.
+  - Two recordings of the same step agree to 0.5% (1,561 and 1,555 MB), so this is not counter noise.
+  - **Estimate:** removing a piece changes what stays in the GPU's caches for the rest of the step. Changes below about 60 MB are therefore not attributed to one piece.
+  - The output layer's knock-out (197 MB) is left out too: its recording ran slower than the step with the layer still in, with the GPU idle 19% of the time.
 
 ## 4. Where vLLM differs from plain MLX
 
@@ -387,8 +475,14 @@ Compared with [decode-bottlenecks.md](decode-bottlenecks.md#what-to-do-in-priori
   - Storing `expert_bias` in float32 belongs in `bench/convert_qat.py`. The row indices need an MLX change to help from 16 rows up.
 - **Fixes 4 and 5 are confirmed where they run.**
   - The routed experts are half the step at 32 rows (14.7–14.9 ms).
+  - The GPU's counters put fix 4's target at 465 MB per step of repeat expert reads that reach memory, 30% of the step's reads at 32 rows. That is smaller than the 973 MB of repeat reads, because the caches serve the rest.
   - vLLM's attention kernel costs 4.3 ms at 32 rows with 128-token prompts.
   - The engines' gap reaches 6.5 ms with 1,024-token prompts.
+- **A new lead, not yet a fix: MLX's split quantized products.**
+  - From 14 rows, the q, k, v and o projections and the shared expert write about 173 MB of float32 partial sums per step, which a second kernel adds up.
+  - Measured for the q, k and v projections and the shared expert; worked out from the code for the o projection.
+  - A smaller split, or partial sums in bfloat16, would cut that traffic, but would change how many threads run at once and, for bfloat16, the rounding. Neither has been tried.
+- **None of this makes the step bandwidth-bound.** The GPU is busy 92–98% of the time at 17–28% of peak bandwidth, with most thread slots empty. Fewer, larger kernels (fixes 1 and 4) stay the main lever.
 
 ## Limits
 
@@ -409,10 +503,19 @@ Compared with [decode-bottlenecks.md](decode-bottlenecks.md#what-to-do-in-priori
 - **Knock-outs measure a piece where it runs.**
   - A faster version of the piece gains less than its full saving.
   - Removing a large piece changes the overlap of the rest, and the replayed outputs change the tokens generated. Savings at 32 rows are therefore not additive (section 3).
-- **No GPU trace and no hardware counters.**
-  - Without Xcode, the GPU side is inferred from step periods and knock-outs, not seen kernel by kernel.
-  - The bandwidths are bytes the model must read over measured times, not memory traffic counted by the hardware. On this Mac, `powermetrics` offers only GPU clock, busy time and power (`gpu_power`), and `ioreg` only a device-wide busy percentage. Neither was recorded during these runs, so whether the GPU ran at full clock is not known.
-  - Xcode's GPU capture would give each kernel's real memory bandwidth and unit occupancy. It is the next measurement.
+- **No per-kernel GPU trace.** The GPU side comes from step periods, knock-outs and whole-GPU counters, not from a timeline of each kernel. The GPU clock was not recorded, so whether the GPU ran at full clock is not known.
+- **The GPU counters ([Memory traffic counted by the GPU](#memory-traffic-counted-by-the-gpu)):**
+  - **Recording changes the step.** Recording only the counters cost plain MLX 3–9% of its step time at 1 and 32 requests in an interleaved check. Recorded vLLM steps were 1–6% longer than unrecorded ones.
+    - Plain MLX at 32 requests with 1,024-token prompts went from 33 to 57–102 ms per step while recording, with the GPU idle for long stretches. The cause was not found, and its times are not used.
+    - Xcode's full Metal System Trace template, used first, cost up to 20% and was dropped.
+  - **One recording of about one second per setting.**
+    - Bytes per step repeat within 0.5% (two recordings of the same step).
+    - Step times at 32 requests vary by about ±10% between recordings, so the GB/s use the unrecorded step periods.
+  - **The counters cover the whole GPU.**
+    - In clean runs, other programs added under 0.2 GB/s (under 1 MB per step).
+    - In four runs another program used the GPU just before the window: three plain MLX knock-outs with one request, and one with 32. That work did not carry on into the window, so nothing is subtracted for it.
+  - **What "read bandwidth" counts.** Apple does not document whether reads served by the GPU's caches are counted. The calibration shows the units, and the experts' 908 MB against 1,416 MB read per pair suggests cache hits are not counted (estimate).
+  - **Knock-outs and caches.** Removing a piece changes what the rest of the step finds in cache, so changes below about 60 MB at 32 requests are not attributed to a piece.
 - **Prompts are random tokens**, as in the sweep. The two engines draw them from different generators, so their routing differs slightly: at 32 rows, 40.1 distinct experts per layer in plain MLX against 36.4 in vLLM, in the counted step.
 
 ## How this was measured
@@ -445,3 +548,22 @@ Drop `VLLM_METAL_KV_COMMIT_PROBE=0` on a machine with memory to spare.
 | `machine-start.txt`, `machine-between.txt`, `machine-end.txt` | memory, swap and the largest processes before, between and after the runs |
 | `lm_head_shapes.txt` | the output layer on both row layouts |
 | `tables.md` | every table, generated by `breakdown_tables.py` |
+
+**The GPU counters** ran on 2026-11-02 between 02:10 and 02:16 EST, after the user's other jobs had finished. Docker's VM was running (about 330 MB resident), Chrome was open, and swap was 12.8–13.9 GB in use. No run swapped out pages except plain MLX at 32 × 1,024, during its prompt. They need full Xcode (26.3 here) with its license accepted. To reproduce (about 10 minutes of recording, then about 20 minutes to export the traces):
+
+```bash
+R=results/runs/<date>-gpu-counters
+.venv/bin/python bench/micro/gpu_counters.py record plain $R
+VLLM_METAL_KV_COMMIT_PROBE=0 .venv/bin/python bench/micro/gpu_counters.py record vllm $R
+.venv/bin/python bench/micro/gpu_counters.py tables $R > $R/tables.md
+```
+
+The `tables` step reads the 2026-11-01 breakdown for the unrecorded step periods and the model's byte counts. `--only MODE:ROWS:PROMPT` records one setting again; the newest recording of a setting is the one used.
+
+| File in [results/runs/2026-11-02-gpu-counters/](../../results/runs/2026-11-02-gpu-counters/) | What it holds |
+|---|---|
+| `counters.jsonl` | one record per recording: its trace, steps and window length, the mean context, the swap-outs before and after |
+| `counters-summary.json` | the same, with every counter's mean while busy and time average over the window and the lead-in, and the busy shares |
+| `tables.md` | every table, generated by `gpu_counters.py tables` |
+
+The traces themselves (1.4 GB) are in `results/traces/2026-11-02-gpu-counters/`, which is not committed.

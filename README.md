@@ -16,7 +16,10 @@ A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by
 - vLLM's scheduler and runner are small, 0.5–1.6 ms per step.
 - vLLM's extra 7–20% over plain MLX is in vllm-metal's attention path.
 - With one request, the mixture-of-experts block's routing and combine cost more than its expert products. With 32 requests, the routed experts take half the step.
-- Piece by piece, only the output layer gets near peak bandwidth (158 GB/s with one request). The routed experts reach 30 GB/s on the weights they need, about 97 GB/s counting the weights they read again for each (token, expert) pair. These figures are bytes over measured times, not hardware counters.
+- Piece by piece, only the output layer gets near peak bandwidth (about 160 GB/s with one request).
+- The GPU's own counters, recorded with Xcode, show the GPU busy 92–98% of the time at only 17–28% of peak bandwidth, with most of its thread slots empty.
+  - With one request each weight is read once.
+  - With 32 requests a step reads about twice what the model needs: the routed experts read 908 MB from memory for 443 MB of weights. MLX's split quantized products also write about 170 MB of partial sums per step.
 
 Next: fixes, in the priority order listed there.
 
@@ -42,7 +45,7 @@ results/traces/       Metal GPU traces (large, not committed)
 
 ## Setup
 
-Requirements: Apple Silicon, macOS 15 or later, [uv](https://docs.astral.sh/uv/), and Hugging Face access to `facebook/MobileMoE-S-SFT`. Full Xcode 26.2 or later is only needed to open GPU traces and to rebuild vllm-metal's kernels.
+Requirements: Apple Silicon, macOS 15 or later, [uv](https://docs.astral.sh/uv/), and Hugging Face access to `facebook/MobileMoE-S-SFT`. Full Xcode 26.2 or later is only needed to record GPU counters (`bench/micro/gpu_counters.py`), open GPU traces and rebuild vllm-metal's kernels.
 
 ```bash
 git clone --recurse-submodules https://github.com/surucuonur/meta-hackathon.git
