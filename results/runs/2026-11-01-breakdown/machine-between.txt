@@ -1,0 +1,14 @@
+Sun Nov  1 01:51:16 EDT 2026
+Docker VM running: no
+total = 29696.00M  used = 28176.62M  free = 1519.38M  (encrypted)
+System-wide memory free percentage: 47%
+Pages wired down:                        391316.
+Swapouts:                             724339444.
+24093 2716336 llama-server
+27109 346544 claude
+12433 159520 claude
+  927 146592 /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+84509 111824 /Users/onur/Desktop/Github/AgentControlCenter-source/dist/Agent Control Center.app/Contents/MacOS/AgentControlCenter
+84529 105520 claude
+ 3280  82608 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/155.0.8059.39/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)
+48747  74928 claude

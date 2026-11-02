@@ -1,0 +1,14 @@
+Sun Nov  1 01:37:15 EDT 2026
+Docker VM running: no
+total = 24576.00M  used = 24208.81M  free = 367.19M  (encrypted)
+System-wide memory free percentage: 22%
+Pages wired down:                        425481.
+Swapouts:                             717072597.
+24093 2716304 llama-server
+27109 358432 claude
+  657 278608 /System/Library/Frameworks/CoreServices.framework/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+37435 214288 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+  927 180208 /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+ 3280 149056 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/155.0.8059.39/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)
+37235 110720 claude
+23714 103312 claude

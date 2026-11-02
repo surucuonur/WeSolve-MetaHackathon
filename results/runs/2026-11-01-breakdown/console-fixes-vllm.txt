@@ -1,0 +1,85 @@
+W1101 01:20:06.145000 91107 torch/_library/triton.py:53] Triton not available, find_triton_kernels = []
+(MainProcess pid=91107) WARNING 11-01 01:20:06 [arg_utils.py:1945] The global random seed is set to 0. Since VLLM_ENABLE_V1_MULTIPROCESSING is set to False, this may affect the random state of the Python process that launched vLLM.
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+vllm check        base rows  1: 967 kernels
+vllm check    bias_f32 rows  1: 947 kernels, exact True
+vllm check lhs_indices rows  1: 907 kernels, exact True
+vllm check    qkv_view rows  1: 907 kernels, exact True
+vllm check         all rows  1: 827 kernels, exact True
+vllm check        base rows 32: 1087 kernels
+vllm check    bias_f32 rows 32: 1067 kernels, exact True
+vllm check lhs_indices rows 32: 1087 kernels, exact True
+vllm check    qkv_view rows 32: 1027 kernels, exact True
+vllm check         all rows 32: 1007 kernels, exact True
+vllm rep0    qkv_view rows 32:  30.014 ms/step
+vllm rep0 lhs_indices rows 32:  30.053 ms/step
+vllm rep0         all rows  1:   5.410 ms/step
+vllm rep0    bias_f32 rows  1:   5.759 ms/step
+vllm rep0    qkv_view rows  1:   5.222 ms/step
+vllm rep0        base rows  1:   5.361 ms/step
+vllm rep0    bias_f32 rows  8:  14.135 ms/step
+vllm rep0        base rows  8:  14.226 ms/step
+vllm rep0    qkv_view rows  8:  14.000 ms/step
+vllm rep0    bias_f32 rows 32:  29.824 ms/step
+vllm rep0 lhs_indices rows  1:   5.553 ms/step
+vllm rep0         all rows 32:  29.434 ms/step
+vllm rep0         all rows  8:  14.001 ms/step
+vllm rep0 lhs_indices rows  8:  14.261 ms/step
+vllm rep0        base rows 32:  30.202 ms/step
+vllm rep1    qkv_view rows  8:  14.019 ms/step
+vllm rep1    qkv_view rows 32:  29.772 ms/step
+vllm rep1 lhs_indices rows  1:   5.256 ms/step
+vllm rep1         all rows 32:  29.526 ms/step
+vllm rep1        base rows 32:  29.854 ms/step
+vllm rep1        base rows  8:  14.230 ms/step
+vllm rep1    bias_f32 rows  8:  14.371 ms/step
+vllm rep1         all rows  1:   5.708 ms/step
+vllm rep1        base rows  1:   6.195 ms/step
+vllm rep1 lhs_indices rows  8:  14.374 ms/step
+vllm rep1    bias_f32 rows 32:  29.850 ms/step
+vllm rep1 lhs_indices rows 32:  29.852 ms/step
+vllm rep1    bias_f32 rows  1:   5.317 ms/step
+vllm rep1         all rows  8:  14.056 ms/step
+vllm rep1    qkv_view rows  1:   5.209 ms/step
+vllm rep2        base rows  8:  14.204 ms/step
+vllm rep2    qkv_view rows 32:  29.490 ms/step
+vllm rep2 lhs_indices rows  8:  14.160 ms/step
+vllm rep2        base rows  1:   5.808 ms/step
+vllm rep2    bias_f32 rows  1:   6.349 ms/step
+vllm rep2    bias_f32 rows  8:  14.127 ms/step
+vllm rep2         all rows  1:   5.455 ms/step
+vllm rep2 lhs_indices rows  1:   6.139 ms/step
+vllm rep2         all rows  8:  14.069 ms/step
+vllm rep2 lhs_indices rows 32:  29.981 ms/step
+vllm rep2         all rows 32:  29.847 ms/step
+vllm rep2    bias_f32 rows 32:  30.089 ms/step
+vllm rep2    qkv_view rows  1:   5.741 ms/step
+vllm rep2    qkv_view rows  8:  14.192 ms/step
+vllm rep2        base rows 32:  29.632 ms/step
+
+vllm: median step ms over 3 repeats (change against base)
+  rows  1        base:   5.808 [5.361-6.195]
+  rows  1    bias_f32:   5.759 [5.317-6.349] (-0.049 ms, -0.8%)
+  rows  1 lhs_indices:   5.553 [5.256-6.139] (-0.255 ms, -4.4%)
+  rows  1    qkv_view:   5.222 [5.209-5.741] (-0.586 ms, -10.1%)
+  rows  1         all:   5.455 [5.410-5.708] (-0.353 ms, -6.1%)
+  rows  8        base:  14.226 [14.204-14.230]
+  rows  8    bias_f32:  14.135 [14.127-14.371] (-0.091 ms, -0.6%)
+  rows  8 lhs_indices:  14.261 [14.160-14.374] (+0.035 ms, +0.2%)
+  rows  8    qkv_view:  14.019 [14.000-14.192] (-0.207 ms, -1.5%)
+  rows  8         all:  14.056 [14.001-14.069] (-0.170 ms, -1.2%)
+  rows 32        base:  29.854 [29.632-30.202]
+  rows 32    bias_f32:  29.850 [29.824-30.089] (-0.004 ms, -0.0%)
+  rows 32 lhs_indices:  29.981 [29.852-30.053] (+0.127 ms, +0.4%)
+  rows 32    qkv_view:  29.772 [29.490-30.014] (-0.082 ms, -0.3%)
+  rows 32         all:  29.526 [29.434-29.847] (-0.328 ms, -1.1%)
+vllm exit 0 (VLLM_METAL_KV_COMMIT_PROBE=0)

@@ -1,0 +1,5 @@
+same logits: True
+(32, 1, 768): median 2.351 ms per call [2.348-2.362]
+(1, 32, 768): median 2.356 ms per call [2.349-2.361]
+
+Run Sun Nov  1 01:25:42 EST 2026 with Docker running (VM up).

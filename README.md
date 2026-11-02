@@ -12,6 +12,12 @@ Each measured decode step is plotted against two limits: peak bandwidth (~200 GB
 - expert weights read once per (token, expert) pair;
 - attention reading each key/value head three times.
 
+A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by side, is in [documents/findings/step-breakdown.md](documents/findings/step-breakdown.md):
+- vLLM's scheduler and runner are small, 0.5–1.6 ms per step.
+- vLLM's extra 7–20% over plain MLX is in vllm-metal's attention path.
+- With one request, the mixture-of-experts block's routing and combine cost more than its expert products. With 32 requests, the routed experts take half the step.
+- Piece by piece, only the output layer gets near peak bandwidth (158 GB/s with one request). The routed experts reach 30 GB/s on the weights they need, about 97 GB/s counting the weights they read again for each (token, expert) pair. These figures are bytes over measured times, not hardware counters.
+
 Next: fixes, in the priority order listed there.
 
 ## How Meta's models are used
@@ -117,7 +123,7 @@ What the data shows:
 
 Where the time goes, from microbenchmarks run after the sweep ([documents/findings/decode-bottlenecks.md](documents/findings/decode-bottlenecks.md)):
 
-- **Kernel count.** vLLM itself adds only 5–10%. Each step is about 870 small GPU kernels with a fixed cost each.
+- **Kernel count.** vLLM itself adds 7–20%, mostly in vllm-metal's attention path ([step-breakdown.md](documents/findings/step-breakdown.md)). Each step is about 870 small GPU kernels with a fixed cost each.
 - **Expert reads.** MLX reads each expert's weights once per (token, expert) pair, because it picks its grouped kernel only from 60 rows per step.
 - **Attention.** vllm-metal's grouped-query attention kernel doesn't support MobileMoE-S's 12/4 head layout, so the keys and values are read three times.
 

@@ -1,0 +1,98 @@
+plain check        base rows  1: 866 kernels
+plain check    bias_f32 rows  1: 846 kernels, exact True
+plain check lhs_indices rows  1: 806 kernels, exact True
+plain check         all rows  1: 786 kernels, exact True
+plain check        base rows 32: 986 kernels
+plain check    bias_f32 rows 32: 966 kernels, exact True
+plain check lhs_indices rows 32: 986 kernels, exact True
+plain check         all rows 32: 966 kernels, exact True
+plain rep0        base rows  8:  13.394 ms/step
+plain rep0    bias_f32 rows  8:  13.317 ms/step
+plain rep0         all rows  1:   4.678 ms/step
+plain rep0        base rows  1:   4.729 ms/step
+plain rep0    bias_f32 rows  1:   4.648 ms/step
+plain rep0 lhs_indices rows 32:  28.425 ms/step
+plain rep0    bias_f32 rows 32:  28.496 ms/step
+plain rep0 lhs_indices rows  1:   4.753 ms/step
+plain rep0         all rows 32:  28.423 ms/step
+plain rep0         all rows  8:  13.373 ms/step
+plain rep0 lhs_indices rows  8:  13.331 ms/step
+plain rep0        base rows 32:  28.253 ms/step
+plain rep1         all rows  8:  13.305 ms/step
+plain rep1 lhs_indices rows  1:   4.620 ms/step
+plain rep1        base rows 32:  28.258 ms/step
+plain rep1        base rows  8:  13.386 ms/step
+plain rep1    bias_f32 rows  8:  13.639 ms/step
+plain rep1         all rows 32:  28.298 ms/step
+plain rep1        base rows  1:   4.690 ms/step
+plain rep1 lhs_indices rows  8:  13.352 ms/step
+plain rep1    bias_f32 rows 32:  28.280 ms/step
+plain rep1 lhs_indices rows 32:  28.253 ms/step
+plain rep1    bias_f32 rows  1:   4.648 ms/step
+plain rep1         all rows  1:   4.612 ms/step
+plain rep2        base rows  1:   4.683 ms/step
+plain rep2 lhs_indices rows  8:  13.388 ms/step
+plain rep2    bias_f32 rows  1:   4.647 ms/step
+plain rep2        base rows  8:  13.443 ms/step
+plain rep2 lhs_indices rows  1:   4.673 ms/step
+python(90798) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90799) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90800) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+plain rep2 lhs_indices rows 32:  28.296 ms/step
+python(90801) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90802) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90803) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90829) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90830) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90831) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+plain rep2    bias_f32 rows  8:  13.365 ms/step
+python(90832) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90833) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90834) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90882) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90883) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90884) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+plain rep2         all rows 32:  28.293 ms/step
+python(90886) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90887) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(90888) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91007) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91008) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91009) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+plain rep2    bias_f32 rows 32:  28.351 ms/step
+python(91010) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91011) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91012) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91019) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91020) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91021) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+plain rep2         all rows  1:   4.627 ms/step
+python(91022) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91023) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91024) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91049) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91050) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91051) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+plain rep2         all rows  8:  13.326 ms/step
+python(91052) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91053) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91054) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91088) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91089) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+python(91090) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+plain rep2        base rows 32:  28.250 ms/step
+
+plain: median step ms over 3 repeats (change against base)
+  rows  1        base:   4.690 [4.683-4.729]
+  rows  1    bias_f32:   4.648 [4.647-4.648] (-0.042 ms, -0.9%)
+  rows  1 lhs_indices:   4.673 [4.620-4.753] (-0.017 ms, -0.4%)
+  rows  1         all:   4.627 [4.612-4.678] (-0.063 ms, -1.4%)
+  rows  8        base:  13.394 [13.386-13.443]
+  rows  8    bias_f32:  13.365 [13.317-13.639] (-0.028 ms, -0.2%)
+  rows  8 lhs_indices:  13.352 [13.331-13.388] (-0.042 ms, -0.3%)
+  rows  8         all:  13.326 [13.305-13.373] (-0.068 ms, -0.5%)
+  rows 32        base:  28.253 [28.250-28.258]
+  rows 32    bias_f32:  28.351 [28.280-28.496] (+0.098 ms, +0.3%)
+  rows 32 lhs_indices:  28.296 [28.253-28.425] (+0.042 ms, +0.2%)
+  rows 32         all:  28.298 [28.293-28.423] (+0.045 ms, +0.2%)
+plain exit 0

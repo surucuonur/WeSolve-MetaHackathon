@@ -12,9 +12,11 @@ No GPU trace was taken, because that needs Xcode 26.2 or later. Each claim below
 
 The scripts are in [bench/micro/](../../bench/micro/), and their raw output is in [results/runs/2026-10-30-micro/](../../results/runs/2026-10-30-micro/). See [How these were measured](#how-these-were-measured).
 
+A follow-up, [Inside a decode step, piece by piece](step-breakdown.md), measures every piece inside the real step, in vLLM and plain MLX side by side. It corrects finding 1 and the output-layer figure in section 7.
+
 ## Summary
 
-- **vLLM's own engine is not the problem.** Without vLLM, plain MLX runs the same model only 5–10% faster per step. The time goes to the model's GPU work as MLX runs it.
+- **vLLM's own engine is not the problem.** Without vLLM, plain MLX runs the same model 7–20% faster per step, mostly because of vllm-metal's attention path ([measured later](step-breakdown.md#1-vllm-against-plain-mlx-on-the-same-harness)). The time goes to the model's GPU work as MLX runs it.
 - **With one request, a step is about 870 small GPU kernels run one after another.** Each kernel has a fixed cost of a few microseconds, so the step takes about 5 ms, although reading its bytes needs only 0.9 ms.
   - Compiling the mixture-of-experts block into fewer kernels cuts that block's time by 29%.
   - vllm-metal already has an option that does this, but it doesn't recognise MobileMoE-S.
@@ -68,6 +70,13 @@ The plain MLX figures are the median of 4 repeats; the vLLM figures come from th
 | 32 | 28.73 ms | 28.57–30.50 | 30.04 ms | +4.6% |
 
 The profile agrees: vLLM's scheduler takes 0.09 ms per step. Tuning vLLM itself can recover at most about a tenth of the step. The fixes have to make the model's GPU work, and the CPU work of encoding it, cheaper.
+
+**Update (2026-11-01).** Measured on one harness, the gap is larger with one request and with long prompts ([step-breakdown.md](step-breakdown.md#1-vllm-against-plain-mlx-on-the-same-harness)):
+- +19% with one request;
+- +7–8% with 8 and 32 requests;
+- +20% with 1,024-token prompts at 32 requests.
+
+The scheduler is still small, at 0.06–0.30 ms per step. Most of the gap is vllm-metal's attention path: its Python, extra copies of q, k and v, and its attention kernel.
 
 ## 2. With one request, the step is about 870 kernels in a chain
 
@@ -230,6 +239,7 @@ What the table shows:
 - **Output layer (measured, cause unverified).** Alone, the 61.6 MB tied output layer takes 0.931 ms at 1 row (66 GB/s) and 2.644 ms at 32 rows.
   - At 1 row that would be 17% of the step.
   - It was timed alone in short bursts, which macOS may run at lower GPU clocks ([vllm-metal issue #713](https://github.com/vllm-project/vllm-metal/issues/713)). The figure may be pessimistic.
+  - **Update (2026-11-01):** inside the real step it costs 0.39 ms at 1 row, about 158 GB/s, so the standalone figure was pessimistic ([step-breakdown.md](step-breakdown.md#with-one-request)).
 - **Time to first token.**
   - Prompt steps already run at 52–58% of peak compute ([baseline finding 5](../benchmark/findings.md#5-steps-with-many-prompt-tokens-run-several-times-closer-to-peak-compute)).
   - Under load, the time is mostly waiting: 32 prompts of 1,024 tokens fill 16 steps of 2,048 tokens at about 0.4 s each ([finding 6](../benchmark/findings.md#6-long-prompts-stall-the-requests-already-running-for-about-04-s)).
@@ -293,7 +303,7 @@ The effects below are estimates from the microbenchmarks, not end-to-end measure
 
 ## Using the Muse Spark credits
 
-Muse Spark (the Meta Model API) is used here only to explain, never as the model under study ([GLOSSARY.md](../../GLOSSARY.md)). This analysis changes where to point it. The slow parts are not in vLLM's own code, which adds 5–10%. They are in MLX's kernel choice, vllm-metal's per-model fast paths and the model's kernel count. Asking it about vLLM's scheduler would chase the wrong layer.
+Muse Spark (the Meta Model API) is used here only to explain, never as the model under study ([GLOSSARY.md](../../GLOSSARY.md)). This analysis changes where to point it. The slow parts are not in vLLM's scheduler or runner, which take 0.5–1.6 ms per step ([step-breakdown.md](step-breakdown.md#2-inside-vllm-metals-model-runner)). They are in MLX's kernel choice, vllm-metal's per-model fast paths and the model's kernel count. Asking it about vLLM's scheduler would chase the wrong layer.
 
 **Plan for `analysis/explain.py`** (not written yet):
 

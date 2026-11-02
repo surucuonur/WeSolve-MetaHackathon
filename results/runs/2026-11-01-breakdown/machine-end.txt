@@ -1,0 +1,15 @@
+Sun Nov  1 01:24:26 EST 2026
+Docker VM running: no
+total = 27648.00M  used = 26080.00M  free = 1568.00M  (encrypted)
+System-wide memory free percentage: 32%
+Pages wired down:                        427396.
+Swapouts:                             758693342.
+24093 2716144 llama-server
+27109 278272 claude
+37435 160544 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+  657 109584 /System/Library/Frameworks/CoreServices.framework/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+57095 100080 claude
+  927  99808 /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+84509  96096 /Users/onur/Desktop/Github/AgentControlCenter-source/dist/Agent Control Center.app/Contents/MacOS/AgentControlCenter
+23714  94912 claude
+Docker reopened Sun Nov  1 01:24:26 EST 2026

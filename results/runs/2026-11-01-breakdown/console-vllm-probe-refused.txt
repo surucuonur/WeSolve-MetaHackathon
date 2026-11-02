@@ -1,0 +1,63 @@
+W1101 01:37:26.036000 60882 torch/_library/triton.py:53] Triton not available, find_triton_kernels = []
+(MainProcess pid=60882) WARNING 11-01 01:37:26 [arg_utils.py:1945] The global random seed is set to 0. Since VLLM_ENABLE_V1_MULTIPROCESSING is set to False, this may affect the random state of the Python process that launched vLLM.
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/bench/micro/breakdown.py", line 702, in <module>
+[rank0]:     main()
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/bench/micro/breakdown.py", line 642, in main
+[rank0]:     llm = LLM(
+[rank0]:           ^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm/entrypoints/llm.py", line 342, in __init__
+[rank0]:     self.llm_engine = LLMEngine.from_engine_args(
+[rank0]:                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm/v1/engine/llm_engine.py", line 191, in from_engine_args
+[rank0]:     return cls(
+[rank0]:            ^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm/v1/engine/llm_engine.py", line 116, in __init__
+[rank0]:     self.engine_core = EngineCoreClient.make_client(
+[rank0]:                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 133, in make_client
+[rank0]:     return InprocClient(vllm_config, executor_class, log_stats)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 373, in __init__
+[rank0]:     self.engine_core = EngineCore(
+[rank0]:                        ^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 157, in __init__
+[rank0]:     kv_cache_config = self._initialize_kv_caches(vllm_config)
+[rank0]:                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm/tracing/otel.py", line 175, in sync_wrapper
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 315, in _initialize_kv_caches
+[rank0]:     available_gpu_memory = self.model_executor.determine_available_memory()
+[rank0]:                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm/v1/executor/abstract.py", line 163, in determine_available_memory
+[rank0]:     return self.collective_rpc("determine_available_memory")
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm/v1/executor/uniproc_executor.py", line 103, in collective_rpc
+[rank0]:     result = run_method(self.driver_worker, method, args, kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm/v1/serial_utils.py", line 508, in run_method
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm_metal/v1/worker.py", line 225, in determine_available_memory
+[rank0]:     return WorkerCachePlanner(self).determine_available_memory()
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm_metal/v1/cache_policy.py", line 1177, in determine_available_memory
+[rank0]:     plan = self._paged_attention_plan(overhead=overhead)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm_metal/v1/cache_policy.py", line 1271, in _paged_attention_plan
+[rank0]:     plan, room = self._probe_committed_pool(
+[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/Users/onur/Desktop/Github/Hackathon/.venv/lib/python3.12/site-packages/vllm_metal/v1/cache_policy.py", line 1484, in _probe_committed_pool
+[rank0]:     raise ValueError(
+[rank0]: ValueError: KV commit probe: the machine paged memory out while testing --kv-cache-memory-bytes=1073741824 (1.07GB). Refusing to silently shrink an explicit budget. Lower that value or free memory before retrying. forced 512 MiB resident in 0.20s: available 1.4->1.6 GiB, compressed +688 MiB, swap out +169 MiB
+vllm exit 1
