@@ -21,6 +21,8 @@ A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by
   - With one request each weight is read once.
   - With 32 requests a step reads about twice what the model needs: the routed experts read 908 MB from memory for 443 MB of weights. MLX's split quantized products also write about 170 MB of partial sums per step.
 
+[documents/findings/bottleneck-explained.md](documents/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs.
+
 Next: fixes, in the priority order listed there.
 
 ## How Meta's models are used

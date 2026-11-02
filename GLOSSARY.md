@@ -42,6 +42,18 @@ _Avoid_: latency-bound, CPU-bound (unless the CPU specifically is the cause)
 The single cause, identified from measurements, that most limits throughput for a given workload.
 _Avoid_: issue, slowness
 
+**Kernel**:
+One program the GPU runs as a unit, such as one matrix product or one element-wise add; a decode step is a chain of hundreds of them, each with a fixed start-up cost.
+_Avoid_: GPU job, op (for a kernel launch)
+
+**Occupancy**:
+The share of the GPU's thread slots in use while it runs; low occupancy means most of the chip is idle even when the GPU counts as busy.
+_Avoid_: GPU utilization (which only says the GPU had work)
+
+**Knock-out**:
+A measurement in which one piece of the decode step is replaced by a stand-in that returns the right shape without GPU work; the time and bytes the step saves are that piece's cost.
+_Avoid_: ablation
+
 **Baseline**:
 The unmodified engine serving MobileMoE-S-QAT (int4), against which every fix is measured.
 

@@ -7,6 +7,8 @@
 
 For each piece it reports the GPU kernels it launches, the CPU time it takes to build, and what the step saves without it. It then lists the work that is repeated in every step for nothing, and measures what removing it saves.
 
+[bottleneck-explained.md](bottleneck-explained.md) explains these results in plain English, with the expert, attention and split-K byte counts worked through step by step.
+
 Everything was measured on 2026-11-01, and the GPU counters on 2026-11-02, on the baseline's machine, software and int4 model ([method](../benchmark/method.md)). Each claim is marked **measured** (timed here), **from the code** (read in the source) or **estimate** (reasoned from those two). The scripts are in [bench/micro/](../../bench/micro/): `breakdown.py`, `breakdown_tables.py`, `repeat_fixes.py`, `lm_head_shapes.py` and `gpu_counters.py`. The raw data is in [results/runs/2026-11-01-breakdown/](../../results/runs/2026-11-01-breakdown/) and [results/runs/2026-11-02-gpu-counters/](../../results/runs/2026-11-02-gpu-counters/), and every number below is in their `tables.md` files ([breakdown](../../results/runs/2026-11-01-breakdown/tables.md), [counters](../../results/runs/2026-11-02-gpu-counters/tables.md)).
 
 ## Summary
