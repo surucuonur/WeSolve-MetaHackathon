@@ -23,3 +23,6 @@ results/port/*.npz
 
 # Converted model checkpoints (bench/convert_qat.py)
 models/
+
+# Claude Code session files
+.claude/scheduled_tasks.lock

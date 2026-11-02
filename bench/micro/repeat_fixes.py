@@ -219,8 +219,19 @@ def vllm_checks(llm, variants):
             out[(name, rows)] = dict(found)
         for name in variants.names[1:]:
             out[(name, rows)]["exact"] = tokens[name] == tokens["base"]
+            out[(name, rows)].update(divergence(tokens[name], tokens["base"]))
     variants.apply("base")
     return out
+
+
+def divergence(got, want):
+    """How many sequences' greedy tokens differ, and the first step where any does."""
+    first = [
+        next((i for i, (a, b) in enumerate(zip(g, w)) if a != b), None)
+        for g, w in zip(got, want)
+    ]
+    differ = [f for f in first if f is not None]
+    return {"rows_differ": len(differ), "first_differ_step": min(differ, default=None)}
 
 
 def main():
@@ -259,13 +270,18 @@ def main():
         variants = Variants("vllm", bd.RUNNER[0].model)
         checks = vllm_checks(llm, variants)
 
+    time_variants(args.engine, variants, checks, run, log)
+
+
+def time_variants(engine, variants, checks, run, log):
+    """Log the checks, then time every variant at SETTINGS in shuffled repeats."""
     with log.open("a") as f:
         for (name, rows), c in checks.items():
             f.write(
                 json.dumps({"kind": "check", "variant": name, "rows": rows, **c}) + "\n"
             )
             print(
-                f"{args.engine} check {name:>11} rows {rows:2d}: {c.get('kernels')} kernels"
+                f"{engine} check {name:>11} rows {rows:2d}: {c.get('kernels')} kernels"
                 f"{'' if name == 'base' else ', exact ' + str(c.get('exact'))}",
                 flush=True,
             )
@@ -285,7 +301,7 @@ def main():
         del record["spans"]
         record.update(
             kind="run",
-            engine=args.engine,
+            engine=engine,
             variant=name,
             rows=rows,
             prompt=prompt,
@@ -296,15 +312,13 @@ def main():
         with log.open("a") as f:
             f.write(json.dumps(record) + "\n")
         print(
-            f"{args.engine} rep{rep} {name:>11} rows {rows:2d}: "
+            f"{engine} rep{rep} {name:>11} rows {rows:2d}: "
             f"{record['period_median_ms']:7.3f} ms/step",
             flush=True,
         )
     variants.apply("base")
 
-    print(
-        f"\n{args.engine}: median step ms over {REPEATS} repeats (change against base)"
-    )
+    print(f"\n{engine}: median step ms over {REPEATS} repeats (change against base)")
     runs = [json.loads(line) for line in log.read_text().splitlines()]
     for rows, prompt in SETTINGS:
         base = None
@@ -315,7 +329,7 @@ def main():
                 if r["kind"] == "run"
                 and r["variant"] == name
                 and r["rows"] == rows
-                and r["engine"] == args.engine
+                and r["engine"] == engine
             ]
             med = statistics.median(meds)
             base = med if name == "base" else base
