@@ -138,7 +138,7 @@ Then open the next-ranked inefficiency. **Done** when no confirmed inefficiency 
 ## Commits
 
 You are the only agent that commits. Commit only on `muse-agent`.
-- **What to add:** the phase folders and the attempt folders that came back. An attempt another builder is still writing waits for its own commit. An entry that is mid-edit is committed as it stands, and finished in a later commit.
+- **What to add:** the phase folders that exist so far (only `exploration` until implementation starts) and the attempt folders that came back. An attempt another builder is still writing waits for its own commit. An entry that is mid-edit is committed as it stands, and finished in a later commit.
 - **The message:** start the subject with `Muse Spark:`, and end with this exact trailer.
 
 ```bash

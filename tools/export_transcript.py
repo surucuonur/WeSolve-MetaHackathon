@@ -53,7 +53,14 @@ def find(store, session):
     if session and Path(session).is_dir():
         return [Path(session)]
     logs = sorted(store.glob("[0-9]*/*/*/*/session.jsonl"))
-    folders = [log.parent for log in logs if session in (None, log.parent.name)]
+    # Muse Code also leaves a small top-level folder for each helper, holding only
+    # its approval records; the full log is in its session's subagent/ folder.
+    children = {log.parent.name for log in store.rglob("subagent/*/session.jsonl")}
+    folders = [
+        log.parent
+        for log in logs
+        if log.parent.name not in children and session in (None, log.parent.name)
+    ]
     if not folders:
         raise SystemExit(f"no Muse Code session {session or ''} under {store}")
     return folders

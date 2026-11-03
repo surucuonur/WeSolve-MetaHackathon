@@ -60,7 +60,7 @@ On 2026-11-02, before Meta's settings were confined to the launcher ([ADR 0005](
 
 ## Personal context in the first Muse Code smoke test (2026-11-03)
 
-Before round 1, Claude ran two short smoke tests with the launcher, at surucuonur's request. Each was a headless Muse Spark session in the worktree that only ran read-only checks: git status, the brief's first line, one MLX operation on the GPU and one read-only helper agent.
+Before round 1, Claude ran two short smoke tests with the launcher, at surucuonur's request. Each was a headless Muse Spark session in the worktree that only ran read-only checks: git status, the brief's first line, one MLX operation on the GPU and one read-only helper agent. A third test, after the move to a swarm (session `01a1a2eb-a2fd-79f1-a880-1d7b36e56322`), started two explorers. They wrote entries and log lines in a scratch folder outside `muse-spark/`, each added a note to the other's entry, and the folder was then deleted. None of the three committed anything.
 - **What went wrong in the first** (session `01a1a2a2-76ea-7fe3-95d8-7df76e209c74`):
   - The launcher then relied on Muse Code's settings for leaving personal skills and rules out, and they didn't work ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)).
   - The context of the lead and its helper held surucuonur's global instructions (`~/.claude/CLAUDE.md`) and the names and descriptions of 43 personal skills from `~/.agents/skills` and `~/.claude/skills`.
