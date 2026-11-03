@@ -64,8 +64,11 @@ if [ ! -d "$WT" ]; then
   else
     git worktree add -b muse-agent "$WT" "$TAG"
   fi
-  git -C "$WT" submodule update --init --reference "$MAIN/third_party/mlx-lm" third_party/mlx-lm
 fi
+# The submodules the round reads: the model code and the engine's decode path.
+for SM in third_party/mlx-lm third_party/vllm-metal; do
+  git -C "$WT" submodule update --init --reference "$MAIN/$SM" "$SM"
+done
 ln -sfn "$MAIN/.venv" "$WT/.venv"
 ln -sfn "$MAIN/models" "$WT/models"
 [ "$(git -C "$WT" branch --show-current)" = "muse-agent" ] \
