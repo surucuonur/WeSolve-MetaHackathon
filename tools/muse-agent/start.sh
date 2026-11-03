@@ -5,7 +5,8 @@
 #   tools/muse-agent/start.sh [muse flags]   # run from anywhere; you start it, not Claude
 #
 # The session's first prompt is fixed here (PROMPT): run the round skill,
-# .agents/skills/muse-round/SKILL.md. Extra flags go to muse before it,
+# .agents/skills/muse-round/SKILL.md. MUSE_PROMPT replaces it for a one-off
+# session such as a smoke test. Extra flags go to muse before it,
 # e.g. --reasoning-effort xhigh.
 #
 # This script is the only way to start one. It
@@ -34,7 +35,7 @@ MODEL="${MUSE_MODEL:-muse-spark-1.3-contributor}"
 TAG="muse-code-era"
 ENV_FILE="$MAIN/legal-agent-workshop/agent/.env"  # also scanned by tools/provenance.py
 PY="$MAIN/.venv/bin/python"
-PROMPT="Run the muse-round skill: read .agents/skills/muse-round/SKILL.md and follow it."
+PROMPT="${MUSE_PROMPT:-Run the muse-round skill: read .agents/skills/muse-round/SKILL.md and follow it.}"
 
 command -v muse >/dev/null \
   || { echo "Muse Code isn't installed (https://dev.meta.ai/docs/muse-code)" >&2; exit 1; }
