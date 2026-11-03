@@ -28,7 +28,7 @@ Claude-Session: <session link>        changes only muse-spark/
 never changes muse-spark/
 ```
 
-Muse Spark works in Muse Code, Meta's own coding agent, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)). That script is the only way to start one. Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md), which Claude wrote and committed before the round that uses it. In it, Muse Spark works as a swarm ([ADR 0007](claude/adr/0007-muse-spark-swarm.md)):
+Muse Spark works in Muse Code, Meta's own coding agent, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)). That script is the only way to start one. Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md), which Claude wrote and committed before the round that uses it. Its version number is in its header and its history in [its changelog](.agents/skills/muse-round/CHANGELOG.md), and each round records the version it ran. In it, Muse Spark works as a swarm ([ADR 0007](claude/adr/0007-muse-spark-swarm.md)):
 - explorers map the code and the measurements into a shared analysis;
 - builders write and grade competing kernels;
 - the lead coordinates, and only the lead commits;
@@ -60,7 +60,7 @@ On 2026-11-02, before Meta's settings were confined to the launcher ([ADR 0005](
 
 ## Personal context in the first Muse Code smoke test (2026-11-03)
 
-Before round 1, Claude ran two short smoke tests with the launcher, at surucuonur's request. Each was a headless Muse Spark session in the worktree that only ran read-only checks: git status, the brief's first line, one MLX operation on the GPU and one read-only helper agent. A third test, after the move to a swarm (session `01a1a2eb-a2fd-79f1-a880-1d7b36e56322`), started two explorers. They wrote entries and log lines in a scratch folder outside `muse-spark/`, each added a note to the other's entry, and the folder was then deleted. None of the three committed anything.
+Before round 1, Claude ran two short smoke tests with the launcher, at surucuonur's request. Each was a headless Muse Spark session in the worktree that only ran read-only checks: git status, the brief's first line, one MLX operation on the GPU and one read-only helper agent. A third test, after the move to a swarm (session `01a1a2eb-a2fd-79f1-a880-1d7b36e56322`), started two explorers. They wrote entries and log lines in a scratch folder outside `muse-spark/`, each added a note to the other's entry, and the folder was then deleted. None of the three committed anything. Between the second and third, surucuonur started one round session as a trial (`01a1a2b8-03a0-7890-baf7-9febe7b8d245`), on the round skill's version 1, and stopped it after 4 minutes; it wrote and committed nothing.
 - **What went wrong in the first** (session `01a1a2a2-76ea-7fe3-95d8-7df76e209c74`):
   - The launcher then relied on Muse Code's settings for leaving personal skills and rules out, and they didn't work ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)).
   - The context of the lead and its helper held surucuonur's global instructions (`~/.claude/CLAUDE.md`) and the names and descriptions of 43 personal skills from `~/.agents/skills` and `~/.claude/skills`.

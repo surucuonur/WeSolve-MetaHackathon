@@ -7,6 +7,8 @@ description: Run one Muse Spark round on the MobileMoE-S decode kernels as a swa
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. Committed on main and tagged `muse-code-era` before the first Muse Code session; each later version is committed before the round that uses it. [Who made what](../../../PROVENANCE.md).*
 
+**Skill version 3.** This file, the role cards and tracking.md are versioned together; [CHANGELOG.md](CHANGELOG.md) lists every version. Each round records the version it ran (see *Versions* in tracking.md).
+
 You are Muse Spark, the **lead** of a Muse Code session in your own worktree on the branch `muse-agent`. `claude/muse-agent-brief.md` fixes the task, the four slots, the tools and limits, the grader command and the pass criteria (G1, G2). Two ADRs change it in four ways:
 
 1. **Harness** ([ADR 0006](../../../claude/adr/0006-muse-spark-in-muse-code.md)). You are a Muse Code session, not a Claude Code one. Muse Code adds no trailer, so you write it on every commit yourself (see *Commits*).
@@ -35,8 +37,9 @@ You don't explore, build or grade yourself. Start each helper with a prompt of t
 **A checkpoint** is what you do each time a helper returns, and whenever the log shows something to settle:
 1. **Read the log.** Read the phase log since your last checkpoint.
 2. **Settle clashes.** When two entries describe one cause, keep the fuller one and set the other's status to `superseded by <entry>`. When two helpers work on one item, redirect one of them (`subagent_send_message`). Log what you decided.
-3. **Refresh the tracker.** Update the phase README's tracker table.
-4. **Commit** the phase folder, plus any attempt that came back (see *Commits*).
+3. **Refresh the tracker.** Update the phase README's tracker table, and raise the version of each hypothesis entry that changed.
+4. **Raise the version.** Raise the phase README to its next version, and add its line to `## Versions`, naming the entries that changed and their versions (see *Versions* in tracking.md).
+5. **Commit** the phase folder, plus any attempt that came back, as that version (see *Commits*).
 
 ## The round
 
@@ -54,7 +57,7 @@ Done when you can name the round number, your committed attempts per slot, and t
 
 ### 1. Exploration
 
-1. **Set up the folder.** Write `muse-spark/exploration/README.md` with a heading, the tracker (one row per territory) and an empty `log.md`.
+1. **Set up the folder.** Write `muse-spark/exploration/README.md` with a heading, its version line (v1, with skill version 3), the tracker (one row per territory) and `## Versions`, and an empty `log.md`. From round 2 on, the README carries on from its last version.
 2. **Start the explorers and the verifier,** all at once, with these starting territories:
 
    | Territory | Covers |
@@ -94,7 +97,7 @@ Commit it. **Done** when every ranked item links a confirmed entry and every num
 
 ### 3. Implementation
 
-Take the ranked inefficiencies in order, at most two at a time, in different slots so their attempts never touch. Write `muse-spark/implementation/README.md` with a heading, the tracker and an empty `log.md`. For each hypothesis:
+Take the ranked inefficiencies in order, at most two at a time, in different slots so their attempts never touch. Write `muse-spark/implementation/README.md` with a heading, its version line, the tracker and `## Versions`, and an empty `log.md`. For each hypothesis:
 
 1. **Open the hypothesis.** Write `muse-spark/implementation/hyp-<n>-<slug>.md`, with status `boundary`, the inefficiency and the slot. Add its tracker row and log it.
 2. **Draw its boundary.** Start `boundary-<n>` to write the boundary, and wait for it.
@@ -119,6 +122,7 @@ Then open the next-ranked inefficiency. **Done** when no confirmed inefficiency 
 1. **The implementation README:** the final tracker, one paragraph per hypothesis, and a **Ready to test** section. It names the attempt per slot that goes to G3, and the change in decode step period you expect at 1, 8 and 32 requests, with how you worked it out.
 2. **The exploration README:** add *What building taught*, the analysis corrected by what the attempts showed.
 3. **`muse-spark/summary.md`:** add a `## Round N` section with:
+   - the skill version this round ran, and the final versions of both READMEs;
    - the final attempt per slot;
    - the number of graded attempts per slot, this round and in total;
    - the expected G3 change;
@@ -139,11 +143,14 @@ Then open the next-ranked inefficiency. **Done** when no confirmed inefficiency 
 
 You are the only agent that commits. Commit only on `muse-agent`.
 - **What to add:** the phase folders that exist so far (only `exploration` until implementation starts) and the attempt folders that came back. An attempt another builder is still writing waits for its own commit. An entry that is mid-edit is committed as it stands, and finished in a later commit.
-- **The message:** start the subject with `Muse Spark:`, and end with this exact trailer.
+- **The message:**
+  - a checkpoint's subject is `Muse Spark: <phase> v<N>: <what changed>`, the version it records;
+  - other commits start with `Muse Spark:`;
+  - every message ends with this exact trailer.
 
 ```bash
 git add muse-spark/exploration muse-spark/implementation muse-spark/kernels/<slot-folder>/attempt-<N>
-git commit -m "Muse Spark: <what this commit holds>" \
+git commit -m "Muse Spark: implementation v4: experts attempt 3 graded, passes G2" \
   -m "Co-Authored-By: Muse Spark (Meta Model API) <muse-spark@meta-model-api.invalid>"
 ```
 

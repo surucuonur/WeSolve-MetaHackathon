@@ -15,9 +15,32 @@ Kernels stay where the grader reads them: `muse-spark/kernels/<slot-folder>/atte
 
 Each folder has three kinds of document:
 
-- **`README.md`.** The phase's document. Only the lead writes it, refreshing it at every checkpoint. It opens with the tracker table below.
+- **`README.md`.** The phase's document. Only the lead writes it, refreshing it and raising its version at every checkpoint. It opens with its version line and the tracker table below.
 - **Entries.** One file per territory, inefficiency or hypothesis. The owner keeps it current, and other agents append notes.
 - **`log.md`.** One line per event, from every agent, appended only.
+
+## Versions
+
+Every shared document carries a version number, so a reader knows which version they're looking at, and git holds every version.
+
+**Phase versions.** Each README opens with its version line:
+
+```markdown
+**Version:** v5 · 2026-11-04T09:40Z · skill version 3
+```
+
+- **Who raises it:** the lead, at every checkpoint, and each version is exactly one commit.
+- **The commit:** its subject names the version, `Muse Spark: exploration v5: <what changed>`. `git log --grep 'exploration v5:'` finds it, and `git diff` between two such commits shows what changed.
+- **The changelog:** the README ends with `## Versions`, one line per version, newest first, naming the entries that changed and their new versions:
+
+```markdown
+- v5 · 2026-11-04T09:40Z · split quantized-kernels in two · changed: territory-quantized-kernels v4, ineff-quantized-kernels-2 v2
+```
+
+**Entry versions.** Each entry's status block has a `Version` line, starting at 1:
+- **Territory and inefficiency entries:** the owner raises it with every change to its own text. The verifier raises it when it writes the verdict.
+- **Hypothesis entries:** the lead raises it at each checkpoint where the entry changed, builders' and the boundary agent's sections included.
+- **Notes:** a note under `## From other agents` leaves the version alone. The owner raises it when folding the note in.
 
 ## The README trackers
 
@@ -40,6 +63,7 @@ Each entry opens with a status block that its owner keeps current:
 ```markdown
 - **Owner:** explorer-quantized-kernels
 - **Status:** exploring
+- **Version:** 3
 - **Updated:** 2026-11-04T09:40Z
 - **Next:** read the 32-row dispatch of affine_gather_qmm
 ```

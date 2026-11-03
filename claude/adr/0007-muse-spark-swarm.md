@@ -51,6 +51,22 @@ surucuonur also asked that both phases be "trackable by the documents … so tha
 
 The files are live in the worktree while the round runs (`tail -f …/log.md`), and the lead commits them at every checkpoint.
 
+## Versions
+
+surucuonur asked for version numbers that git commits control. Each version is raised by a single writer, so no number is taken twice:
+- **Phase versions:**
+  - each README opens with its version, vN, and the skill version the round runs;
+  - the lead raises it at every checkpoint, and each version is exactly one commit, whose subject names it (`Muse Spark: exploration v5: …`);
+  - the README ends with a changelog naming the entries each version changed.
+- **Entry versions:**
+  - each entry's status block has a version, which its owner raises with every change to its own text;
+  - the verifier raises it with its verdict, and the lead raises it for hypothesis entries;
+  - notes from other agents leave it alone.
+- **Skill versions:**
+  - the skill folder carries one number, raised by Claude with every change ([CHANGELOG.md](../../.agents/skills/muse-round/CHANGELOG.md)), and each round records the version it ran;
+  - this design is version 2, and versioning arrived in version 3.
+- **No tags for versions.** Tags stay for the era markers (`agent-era`, `muse-code-era`), and Muse Spark creates none.
+
 ## What changes in the brief, beyond ADR 0006
 
 - **`strategy.md` and its targets JSON give way to hypothesis entries.** No code reads the JSON.

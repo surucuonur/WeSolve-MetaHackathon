@@ -18,7 +18,7 @@ Repeat until done:
    - `confirmed` when every claim the cost and the saving rest on holds;
    - otherwise `refuted`, with the reason in one line.
    
-   Update the block's `Updated` line, and log the verdict. These two lines are the only text you change in another agent's entry.
+   Raise the block's `Version`, update its `Updated` line, and log the verdict. The `Verdict` section and these status-block lines are the only text you change in another agent's entry.
 5. **Re-check on reply.** When an owner answers your verdict under `## From other agents` with a correction, check it again.
 6. **Report duplicates to the lead.** When two entries describe the same cause, log `duplicate: <entry> and <entry>` for the lead to settle.
 
