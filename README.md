@@ -36,7 +36,7 @@ Next: Muse Spark, working in Muse Code, Meta's own coding agent, works as a swar
     - competing builders write fused GPU kernels for the top inefficiencies and run the grader on them;
     - the lead coordinates and commits.
     
-    Both phases are tracked live in shared documents in `muse-spark/exploration/` and `muse-spark/implementation/`.
+    Both phases are tracked live in shared documents in `muse-spark/exploration/` and `muse-spark/implementation/`. [How the swarm works](claude/muse-swarm.md), with diagrams.
   - Its work goes to `muse-spark/` on the branch `muse-agent`, with the transcripts of its sessions. Its task was committed and tagged `agent-era` ([brief](claude/muse-agent-brief.md)); the move to Muse Code and the skill were committed and tagged `muse-code-era` before its first Muse Code session.
 
 ## Who made what
