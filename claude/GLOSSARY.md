@@ -100,6 +100,40 @@ Meta's smallest on-device mixture-of-experts model (about 1.3B parameters in tot
 **Muse Spark**:
 Meta's hosted model. In this project it chooses which pieces of the decode step to replace and writes their kernels, working in its own Muse Spark session; it is never the model under study.
 
+**Muse Code**:
+Meta's own coding agent for the terminal, built on Muse Spark; the only program in which Muse Spark does its work in this project.
+_Avoid_: Muse CLI, Meta Code
+
 **Muse Spark session**:
-A coding-agent session in which Muse Spark writes every turn, kept apart from Claude's work by its own branch, folder and settings.
+A Muse Code session in which Muse Spark writes every turn, the lead's and every helper's, kept apart from Claude's work by its own branch, folder and commit trailer.
 _Avoid_: guardrail (for the session itself), Meta mode
+
+## Muse Spark's work
+
+**Slot**:
+One replaceable piece of the mixture-of-experts block (routing, combine, or the routed experts), with fixed inputs and outputs, that Muse Spark may replace with its own kernels.
+_Avoid_: target (that is a slot Muse Spark has chosen), module
+
+**Round**:
+One Muse Spark session working through the round skill, followed by Claude's independent measurement of what it produced.
+_Avoid_: iteration, cycle
+
+**Lead agent**:
+The one agent in a Muse Spark session that grades kernels and commits; it starts the helpers and decides what they work on.
+_Avoid_: orchestrator, main agent
+
+**Helper agent**:
+An agent the lead starts for one bounded task (investigating one lens, drafting a design, reviewing a draft, verifying claims), which reports back and never grades or commits.
+_Avoid_: swarm, worker, subagent (when the role matters, not the mechanism)
+
+**Diagnosis**:
+Muse Spark's written account of why each slot is slow: its cost, the kind of limit it hits, and the root cause in the code, every claim with a source.
+_Avoid_: analysis, findings (those are Claude's)
+
+**Draft**:
+A candidate kernel a helper writes for the lead to choose from; never graded on its own.
+_Avoid_: attempt, candidate
+
+**Attempt**:
+A kernel the lead has graded and committed; attempts for a slot are numbered in order and have no limit.
+_Avoid_: try, submission

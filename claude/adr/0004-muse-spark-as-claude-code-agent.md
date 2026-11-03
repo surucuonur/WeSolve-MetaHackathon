@@ -1,12 +1,12 @@
 ---
-status: accepted
+status: superseded by 0006
 ---
 
 # Muse Spark works as a Claude Code agent session, kept apart by place, identity, hooks and audit
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
 
-*[ADR 0005](0005-muse-spark-launcher-only-contributor-tier.md) changes three parts of this decision: Meta's settings exist only in the session the launcher starts, the default model is the contributor tier from the third session on, and there is no sandbox.*
+*[ADR 0006](0006-muse-spark-in-muse-code.md) replaces the Claude Code harness with Muse Code, Meta's own coding agent, on 2026-11-02; this record keeps the earlier design. [ADR 0005](0005-muse-spark-launcher-only-contributor-tier.md) changes three parts of this decision: Meta's settings exist only in the session the launcher starts, the default model is the contributor tier from the third session on, and there is no sandbox.*
 
 **The change.** Muse Spark now does its kernel work as a coding agent of its own: a Claude Code session whose model is `muse-spark-1.3`, served by Meta's Anthropic-compatible API ([Meta's coding-agents guide](https://dev.meta.ai/docs/coding-agents)). surucuonur starts it with [tools/muse-agent/start.sh](../../tools/muse-agent/start.sh). It works from [muse-agent-brief.md](../muse-agent-brief.md): it reads the findings, chooses its targets, writes kernels, runs the grader itself and commits each attempt. No Claude-written loop stands between it and the task.
 

@@ -23,6 +23,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "micro"))
 import breakdown as bd  # noqa: E402  sets the vLLM environment before importing it
+import gpu_lock  # noqa: E402
 import mlx.core as mx  # noqa: E402
 import repeat_fixes as rf  # noqa: E402
 from check_candidate import load  # noqa: E402
@@ -109,6 +110,7 @@ def main():
     ap.add_argument("--claude-fixed", type=Path, help="Claude's labelled version")
     ap.add_argument("--tokens", type=int, default=256, help="output tokens per run")
     args = ap.parse_args()
+    gpu_lock.hold(f"time_candidates.py {args.engine} {args.slot} {args.muse}")
     args.out.mkdir(parents=True, exist_ok=True)
     log = args.out / f"muse-{args.engine}.jsonl"
     attempts = {"muse": args.muse}

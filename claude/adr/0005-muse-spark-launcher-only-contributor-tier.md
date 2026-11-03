@@ -1,10 +1,12 @@
 ---
-status: accepted
+status: superseded by 0006
 ---
 
 # Muse Spark runs only through its launcher, on the contributor tier, without a sandbox
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
+*[ADR 0006](0006-muse-spark-in-muse-code.md) moves Muse Spark to Muse Code on 2026-11-02. The launcher-only start, the contributor tier and the lack of a sandbox carry over; the Claude Code settings described here are retired.*
 
 **The change.** Three parts of [ADR 0004](0004-muse-spark-as-claude-code-agent.md) change; the rest stands.
 

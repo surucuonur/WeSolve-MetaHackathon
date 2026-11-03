@@ -1,0 +1,58 @@
+---
+status: accepted
+---
+
+# Muse Spark works in Muse Code, Meta's own coding agent, with helper agents and no attempt limit
+
+*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
+
+**The change.** From 2026-11-02, Muse Spark does its kernel work in **Muse Code** ([Meta's docs](https://dev.meta.ai/docs/muse-code)), not in a Claude Code session pointed at Meta. This replaces [ADR 0004](0004-muse-spark-as-claude-code-agent.md) and [ADR 0005](0005-muse-spark-launcher-only-contributor-tier.md) wherever they describe the harness.
+- surucuonur starts it with [tools/muse-agent/start.sh](../../tools/muse-agent/start.sh), still the only way in.
+- Every round follows the skill [.agents/skills/muse-round/SKILL.md](../../.agents/skills/muse-round/SKILL.md). Claude wrote the skill, and it is committed in the repository so anyone can read it. In each round:
+  1. Muse's helper agents investigate the run evidence and the code, each with the surrounding system in view.
+  2. Muse writes a diagnosis and a strategy.
+  3. Helpers draft and review kernels, and the lead grades and commits them.
+
+## Why
+
+- **Only Meta's tools on the Muse side.** The hackathon scores "Use of Meta AI tooling", and its FAQ names Muse Code.
+- **Claude Code's own prompt stops going to Meta.** With Claude Code as the harness, Anthropic's system prompt and tool definitions went to Meta with every request. On the contributor tier, Meta may train on them, which sits uncomfortably with Anthropic's terms (ADR 0004).
+- **Helper agents.** surucuonur wants the investigation and the kernel work spread over several agents. Muse Code has native subagents: up to 8 at once by default, the lead included. Its scripted workflows are missing from the Apple Silicon build.
+
+## What changes in the brief
+
+The [brief](../muse-agent-brief.md) stays fixed as committed, and so do its task, slots, tools, files, grader and the pass criteria G1 and G2. Three things change:
+
+1. **The harness.** The brief's "You are a Claude Code session" and "the co-author trailer your settings add" now read: a Muse Code session that writes the trailer itself. Muse Code has no setting that adds it, so the skill gives the exact commit command, and `commit-msg` refuses a `muse-agent` commit without it.
+2. **No attempt limit and no stop rule.** In surucuonur's words: "if we limit the model, it should be limitless inside the muse code, it should stop with muse codes stopping conditions."
+   - Muse works until it judges a slot done, or until Muse Code stops. No step cap is set, and surucuonur can interrupt at any time.
+   - **What keeps it honest:** every graded attempt is committed, in order. The summary gives the number of graded attempts per slot, so readers see how many tries the best result came from.
+3. **Drafts and a diagnosis.** Helpers write candidate kernels in `muse-spark/drafts/`. These are never graded on their own and are committed with the attempt they fed. `muse-spark/diagnosis.md` names the root cause per slot before any kernel is written.
+
+## How the work stays apart
+
+- **Starting over.** The `muse-agent` branch from the Claude Code harness was deleted on surucuonur's decision: one strategy commit and one ungraded attempt, "didnt start properly and didnt do much work". The new `muse-agent` starts from the tag `muse-code-era`, so every Muse result comes from Muse Code.
+- **Place.**
+  - Its own worktree, `../Hackathon-muse`, on `muse-agent`; writes only in `muse-spark/`, enforced by `pre-commit`.
+  - The launcher trusts the worktree for each run, which loads the project skill and allows helpers.
+  - It switches off Muse Code's default loading of personal skills and rules from outside the repository (`~/.claude/skills`, `~/.agents/skills`, `~/.claude/CLAUDE.md`), with `-c context.foreign_personal_skills=false` and `-c context.foreign_personal_rules=false`. Without that, surucuonur's Claude skills would load into Muse's session.
+- **Key.** `MODEL_API_KEY` from `legal-agent-workshop/agent/.env` goes only to the `muse` process, as `META_API_KEY`, and is never stored.
+- **Seeing Claude's newest work.** `muse-agent` can't take merges. After a round, its branch is merged into main with `--no-ff` and Claude commits its results as `claude/findings/muse-round-<N>.md`. The next launch then fast-forwards `muse-agent` to main, which creates no commit and rewrites nothing, so the next round reads those results.
+- **One GPU job at a time.** The grader takes an exclusive lock ([bench/grader/gpu_lock.py](../../bench/grader/gpu_lock.py)), so a second run, from any agent or from Claude, stops with a message instead of distorting the timings. Only the lead grades.
+- **Evidence.** Muse Code logs every model call, tool run and edit for the lead and each helper, and `muse export` writes a session as JSON. [tools/export_transcript.py](../../tools/export_transcript.py) saves them in `muse-spark/transcripts/`, refusing any that contain a key, and the audit checks that a Meta model wrote every turn.
+- **Unchanged:** the authorship, the trailers, the hooks, the audit, and Claude's independent re-grading and G3 after each merge.
+
+## Consequences
+
+- **The model:** `muse-spark-1.3-contributor`, as in ADR 0005. Meta may train on everything sent: the brief, the skill, the findings and every file Muse reads, all written by Claude or by us. Claude Code's own prompt is no longer among them. surucuonur accepted this for the lower price.
+- **No sandbox.** Muse Code's sandbox keeps `.git` read-only, and a worktree commits into the main checkout's `.git`, so the launcher passes `--disable-sandbox`. Tool approvals stay on.
+  - **Remaining risk:** an approved shell command can reach what the account can, and the key is in the session's environment. Every commit and exported transcript is scanned for it.
+- **No fallback.** If Muse Code can't run the round, the fix is in the Muse Code setup. surucuonur ruled out returning to the Claude Code harness.
+- **Superset's notification hooks** in surucuonur's Muse Code settings still run. They report session status to the Superset app and add nothing to the model's context.
+
+## Considered options
+
+- **Keep the Claude Code harness (ADR 0004/0005).** It already worked, but Anthropic's prompt goes to Meta, and the Muse side isn't Meta's tooling.
+- **Keep the old branch as an archive,** renamed and pushed. Rejected: its work was too slight to keep beside a fresh start.
+- **Keep the brief's 5 attempts per slot and its stop rule.** Rejected by surucuonur; the full commit history and the attempt counts replace the limit as the safeguard.
+- **Let helpers grade too.** The GPU times one run at a time, so parallel grading adds coordination and no speed.

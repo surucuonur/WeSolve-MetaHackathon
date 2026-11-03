@@ -300,6 +300,9 @@ def main():
         raise SystemExit("usage: slots.py capture")
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "micro"))
     import breakdown as bd
+    import gpu_lock
+
+    gpu_lock.hold("slots.py capture")
     from mlx_lm.utils import load_model
 
     model, _ = load_model(Path(__file__).resolve().parents[2] / bd.MODEL)

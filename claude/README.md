@@ -11,3 +11,4 @@ Everything in this folder was written by Claude Code (Claude Opus 5.5), directed
 | [benchmark/](benchmark/) | The baseline benchmark: findings, every measurement, the method |
 | [findings/](findings/) | Where a decode step's time goes, and the fixes it suggests |
 | [muse-agent-brief.md](muse-agent-brief.md) | The task, rules and pass criteria given to the Muse Spark agent, committed and tagged `agent-era` before its session |
+| [../.agents/skills/muse-round/SKILL.md](../.agents/skills/muse-round/SKILL.md) | The round skill Muse Spark follows in Muse Code: investigate with helper agents, diagnose, build and grade kernels ([ADR 0006](adr/0006-muse-spark-in-muse-code.md)) |

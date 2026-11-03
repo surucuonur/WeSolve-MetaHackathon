@@ -20,6 +20,7 @@ import mlx.core as mx
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import gpu_lock  # noqa: E402
 import slots  # noqa: E402
 
 ROWS = (1, 8, 32)
@@ -169,6 +170,7 @@ def main():
     ap.add_argument("--out", type=Path, help="also write the verdict here")
     args = ap.parse_args()
     attempt, slot = args.attempt, args.slot
+    gpu_lock.hold(f"check_candidate.py {attempt} {slot}")
     result = {"slot": slot, "g1": False, "g2": False, "beats_compiled": False}
     try:
         fns = load(attempt, slot)
