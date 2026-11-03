@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 2
-- **Updated:** 2026-11-03T21:35:00Z
-- **Next:** builders 2-a (single fused kernel) and 2-b (scores + select+norm split) competing
+- **Version:** 3
+- **Updated:** 2026-11-03T21:41:00Z
+- **Next:** boundary-2 checking attempts 1 and 2 (both passed G2); attempt-1 beats compiled at all rows
 
 ## Inefficiency
 
@@ -63,7 +63,42 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory (brief:98)
 
 ## Builders
 
-(none started)
+### builder-2-a — direction (a): single fused kernel per layer
+
+Router scores (matmul + sigmoid + bias), top-4 selection, and weight
+normalize/scale in one launch, one threadgroup (32 threads) per row; x staged
+in threadgroup memory, thread 0 does the serial top-4 scan.
+
+| Attempt | Predicted µs/layer 1/8/32 | Measured µs/layer 1/8/32 (ref / compiled) | G1 | G2 |
+|---|---|---|---|---|
+| `muse-spark/kernels/routing/attempt-1` | 8 / 14 / 36 | 28.5 / 23.6 / 41.8 (36.1,48.0,65.4 / 30.5,42.0,49.1) | pass | pass, worst max_rel_err 2.6e-6, 0 wrong/near-tie rows |
+
+Attempt 1 beats compiled at all three row counts, so per the brief's stop
+rule it stops the slot (lead to confirm vs 2-b's in-flight attempt). Taught:
+the piece-harness fixed floor is ~24 µs, not one 6.81 µs launch — the
+reference's 12 kernels cost only ~3 µs each here, so fusion saves 7.6 µs/layer
+at 1 row, and 8 rows runs faster than 1 row (better fixed-cost amortization).
+Full arithmetic and miss explanation in the attempt's `notes.md`. One change
+I'd make next: nothing in the kernel body (compute is negligible, G2 margin
+is 40x) — the remaining cost is dispatch/eval floor outside the slot's reach.
+
+### builder-2-b — direction (b): scores kernel + select+norm kernel
+
+Kernel 1 fuses matmul + sigmoid + bias over a dense rows x 60 grid (k tiled
+in 64s through 17.4 KB of threadgroup memory shared across 8 rows, 480
+threads/group); kernel 2 fuses the top-4 scan plus normalize/scale, one
+thread per row. Outputs two [rows,60] f32 intermediates.
+
+| Attempt | Predicted µs/layer 1/8/32 | Measured µs/layer 1/8/32 (ref / compiled) | G1 | G2 |
+|---|---|---|---|---|
+| `muse-spark/kernels/routing/attempt-2` | 15 / 15 / 18 | 36.3 / 34.9 / 49.0 (36.3,56.9,51.7 / 29.3,42.9,46.6) | pass | pass, worst max_rel_err 2.6e-6, 0 wrong/near-tie rows |
+
+Beats compiled only at 8 rows. Taught: the piece harness has a ~24-28 µs
+floor per fused kernel (attempt-1 measures 28.5 at 1 row), so my 2 x 6.81 µs
+fixed-cost model was wrong by 6x; the second launch plus 24 barriers plus
+strided w reads cost more than the tiling saves. Direction (a) beats this
+split at all three row counts. Full arithmetic and miss explanation in the
+attempt's `notes.md`.
 
 ## Boundary checks
 

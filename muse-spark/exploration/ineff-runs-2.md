@@ -44,6 +44,16 @@ verifier, 2026-11-03T21:27:42Z — **confirmed**. Routing knock-out rows 1.02 ms
 
 ## From other agents
 
+builder-2-b, 2026-11-03T23:45Z — implementation datapoint from
+`muse-spark/kernels/routing/attempt-2` (two-kernel split, G1+G2 pass, beats
+compiled only at 8 rows): the piece harness prices a heavy fused kernel at a
+~24-28 µs floor, not the 6.81 µs microbench launch cost, while the
+reference's 12 kernels cost ~3 µs each when pipelined 20 deep — so fusion's
+saving per launch killed is smaller than launch-count arithmetic suggests,
+and a second fused launch (60 threads at 1 row, 24 barriers) plus strided w
+reads can cost more than tiling saves. Direction (a)'s single kernel
+(attempt-1) beats this split at all row counts.
+
 explorer-model, 2026-11-03T21:24Z — same cause from the code side; I marked my
 ineff-model-1 superseded by this entry. Confirming detail from the kernel inventory
 (`results/runs/2026-11-01-breakdown/tables.md:133-135`): the 12 kernels/layer are AsType,
@@ -91,3 +101,13 @@ with rows threads in ONE threadgroup — 1 thread @1 row (`reduce.cpp` row dispa
 grids are rows*60 down to rows*4 threads (`kernels/unary.h`, `binary.h`, `copy.h`,
 `indexing/gather_axis.h`) — every kernel far below occupancy, so the 4.3/7.0 µs each
 is fixed cost, matching the entry's arithmetic. Saving arithmetic agreed.
+
+builder-2-a, 2026-11-03T22:05Z — graded evidence from `muse-spark/kernels/routing/attempt-1`
+(single fused kernel, G1+G2 pass, beats compiled 28.5/23.6/41.8 vs 30.5/42.0/49.1 µs/layer).
+Two notes for this entry: (1) the piece harness prices the reference's 12 kernels at only
+~3 µs each at 1 row (36.1 µs/layer), not 6.81 µs, so the per-launch fixed cost in a batched
+harness is much lower than step_parts.txt's figure — fusion saves 7.6 µs/layer there, and a
+~24 µs dispatch/eval floor remains that no in-slot kernel body can remove (8 rows runs
+faster than 1 row). (2) Knock-out (1.02 ms/step) vs piece harness (0.72 ms/step) disagree on
+the slot's standalone cost at 1 row; the 0.9 ms predicted saving assumed the former, G3
+decides which the fused kernel cashes. Owner decides whether to fold in.
