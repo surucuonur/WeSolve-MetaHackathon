@@ -98,4 +98,8 @@ _Avoid_: unique experts, expert coverage
 Meta's smallest on-device mixture-of-experts model (about 1.3B parameters in total, about 272M used per token), studied here in its SFT (full-precision) and QAT (int4) variants.
 
 **Muse Spark**:
-Meta's hosted model, used in this project only to explain profiles and source code, never as the model under study.
+Meta's hosted model. In this project it chooses which pieces of the decode step to replace and writes their kernels, working in its own Muse Spark session; it is never the model under study.
+
+**Muse Spark session**:
+A coding-agent session in which Muse Spark writes every turn, kept apart from Claude's work by its own branch, folder and settings.
+_Avoid_: guardrail (for the session itself), Meta mode

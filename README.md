@@ -30,7 +30,7 @@ Next: Muse Spark, working as a coding agent of its own, picks a bottleneck from 
 ## How Meta's models are used
 
 - **MobileMoE-S** (open weights) is the model under study, served by vLLM through vllm-metal. The baseline serves the int4 `facebook/MobileMoE-S-QAT` ([why](claude/adr/0002-int4-qat-baseline.md)); the bfloat16 `facebook/MobileMoE-S-SFT` is used to check the port.
-- **Muse Spark** (`muse-spark-1.3`, Meta Model API) works as a coding agent: a Claude Code session powered by Meta's API, started with `tools/muse-agent/start.sh`.
+- **Muse Spark** (`muse-spark-1.3`, then `muse-spark-1.3-contributor`; Meta Model API) works as a coding agent: a Claude Code session powered by Meta's API, started only with `tools/muse-agent/start.sh`.
   - It reads the findings, chooses which bottleneck to attack, writes fused GPU kernels, and runs the grader on them itself.
   - Its work goes to `muse-spark/` on the branch `muse-agent`, with the transcript of its session. Its task and rules were committed and tagged `agent-era` before it started ([brief](claude/muse-agent-brief.md)).
 
@@ -42,7 +42,7 @@ Every commit is made by **surucuonur**. The co-author on each commit shows whose
 |---|---|---|
 | **surucuonur** | Direction, decisions, running the machine, starting the Muse Spark session | every commit |
 | **Claude Code** (Claude Opus 5.5) | Benchmark, grader and provenance code, measurements, write-ups | `bench/`, `claude/`, `tools/`, this README. Commits co-authored by `claude`. |
-| **Muse Spark** (`muse-spark-1.3`), as a coding agent | Its choice of target, its kernels, its session transcript | `muse-spark/`, on the branch `muse-agent`. Commits co-authored by "Muse Spark". |
+| **Muse Spark** (`muse-spark-1.3`, then `muse-spark-1.3-contributor`), as a coding agent | Its choice of target, its kernels, its session transcript | `muse-spark/`, on the branch `muse-agent`. Commits co-authored by "Muse Spark". |
 | **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, Meta's model weights | `third_party/` at pinned commits, plus the installed wheels |
 
 Git hooks refuse commits that mix the two, and `tools/provenance_check.py` audits the whole history. [PROVENANCE.md](PROVENANCE.md) gives the details and the commands to check them.

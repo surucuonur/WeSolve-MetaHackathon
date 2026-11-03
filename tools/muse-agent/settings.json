@@ -8,7 +8,6 @@
   "permissions": {
     "allow": [
       "Edit(./muse-spark/**)",
-      "Write(./muse-spark/**)",
       "Bash(.venv/bin/python bench/grader/check_candidate.py *)",
       "Bash(.venv/bin/python -c *)",
       "Bash(git status *)",
@@ -22,6 +21,7 @@
       "Read(./.env.*)",
       "Read(//Users/onur/Desktop/Github/Hackathon/.env)",
       "Read(//Users/onur/Desktop/Github/Hackathon/.env.*)",
+      "Read(~/.claude-muse/**)",
       "Edit(./bench/**)",
       "Edit(./claude/**)",
       "Edit(./results/**)",
@@ -46,9 +46,5 @@
     ],
     "blockReadsOutsideWorkingDirectories": true,
     "blockWritesOutsideWorkingDirectories": true
-  },
-  "sandbox": {
-    "enabled": true,
-    "failIfUnavailable": true
   }
 }

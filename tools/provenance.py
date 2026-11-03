@@ -1,16 +1,13 @@
 """Shared rules for keeping Muse Spark's work apart from Claude's (PROVENANCE.md).
 
 Used by the git hooks in tools/githooks/, tools/provenance_check.py and
-tools/export_transcript.py. Run directly, it prints the secret fingerprints
-the Muse Spark launcher hands to the hooks:
-
-  .venv/bin/python tools/provenance.py secret-hashes
+tools/export_transcript.py.
 """
 
-import hashlib
+import json
+import os
 import re
 import subprocess
-import sys
 from pathlib import Path
 
 MUSE_BRANCH = "muse-agent"
@@ -21,6 +18,8 @@ MUSE_COAUTHOR = (
     "Co-Authored-By: Muse Spark (Meta Model API) <muse-spark@meta-model-api.invalid>"
 )
 SECRET_NAMES = ("MODEL_API_KEY", "HUGGINGFACE_API_KEY")
+# The key in the Muse Spark config folder's settings.json (ADR 0005).
+MUSE_SECRET_NAMES = ("ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY")
 COAUTHOR = re.compile(r"^co-authored-by:\s*(.+)$", re.I | re.M)
 
 
@@ -63,52 +62,36 @@ def main_checkout():
     return common.parent
 
 
+def muse_config_dir():
+    """The Muse Spark session's Claude Code config folder (tools/muse-agent/start.sh)."""
+    return Path(os.environ.get("MUSE_CONFIG_DIR") or "~/.claude-muse").expanduser()
+
+
 def secrets():
-    """The secret values from the main checkout's .env, or [] if it can't be read.
+    """The API key values from the main checkout's .env and from the env block of
+    the Muse Spark config folder's settings.json; [] where neither can be read.
 
     The values are only compared, never printed.
     """
+    values = []
     try:
         text = (main_checkout() / ".env").read_text()
     except OSError:
-        return []
-    values = []
+        text = ""
     for line in text.splitlines():
         name, sep, value = line.partition("=")
         if sep and name.strip().removeprefix("export ").strip() in SECRET_NAMES:
-            value = value.strip().strip("'\"")
-            if len(value) >= 12:
-                values.append(value)
-    return values
+            values.append(value.strip().strip("'\""))
+    try:
+        data = json.loads((muse_config_dir() / "settings.json").read_text())
+    except (OSError, ValueError):
+        data = {}
+    env = data.get("env") if isinstance(data, dict) else None
+    if isinstance(env, dict):
+        values += [str(env[n]) for n in MUSE_SECRET_NAMES if n in env]
+    return list(dict.fromkeys(v for v in values if len(v) >= 12))
 
 
-def secret_hashes():
-    return [(len(v), hashlib.sha256(v.encode()).hexdigest()) for v in secrets()]
-
-
-def parse_hashes(text):
-    out = []
-    for item in filter(None, (text or "").split(",")):
-        n, _, h = item.partition(":")
-        out.append((int(n), h))
-    return out
-
-
-def contains_secret(data, values=(), hashes=()):
-    """Whether *data* (bytes) contains a secret, by value or by length:sha256."""
-    if any(v.encode() in data for v in values):
-        return True
-    for n, h in hashes:
-        # A key is one run of token characters, so only windows inside such runs.
-        for m in re.finditer(rb"[A-Za-z0-9_\-.:+/=]{%d,}" % n, data):
-            run = m.group()
-            for i in range(len(run) - n + 1):
-                if hashlib.sha256(run[i : i + n]).hexdigest() == h:
-                    return True
-    return False
-
-
-if __name__ == "__main__":
-    if sys.argv[1:] != ["secret-hashes"]:
-        raise SystemExit("usage: provenance.py secret-hashes")
-    print(",".join(f"{n}:{h}" for n, h in secret_hashes()))
+def contains_secret(data, values):
+    """Whether *data* (bytes) contains any of the secret *values*."""
+    return any(v.encode() in data for v in values)

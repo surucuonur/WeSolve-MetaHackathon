@@ -9,7 +9,8 @@ muse-agent when it exists):
   every other commit that isn't a merge of muse-agent leaves muse-spark/ alone;
 - every transcript in muse-spark/transcripts/ was written by Meta models only
   (no claude-* model in any assistant turn);
-- no tracked file contains an API key value from .env (when .env is present).
+- no tracked file contains an API key value from .env or the Muse Spark config
+  folder's settings (when either is present).
 
 Prints a table and exits non-zero on any violation. The git hooks enforce the
 same rules at commit time; this catches anything committed around them.
@@ -82,7 +83,7 @@ def check_transcripts(problems):
 def check_secrets(problems):
     values = pv.secrets()
     if not values:
-        return "skipped (no .env here)"
+        return "skipped (no API keys found)"
     for path in pv.git("ls-files", "-z").split("\0"):
         if path and Path(path).is_file() and not Path(path).is_symlink():
             if pv.contains_secret(Path(path).read_bytes(), values):

@@ -3,12 +3,11 @@
 
 On muse-agent: every staged path must be under muse-spark/, and no merges.
 Anywhere else: no staged path under muse-spark/, except when merging muse-agent.
-Everywhere: no staged file may contain MODEL_API_KEY's or HUGGINGFACE_API_KEY's
-value, read from the main checkout's .env (or, where the sandbox hides .env,
-compared by the fingerprints in MUSE_SECRET_HASHES).
+Everywhere: no staged file may contain an API key value: MODEL_API_KEY or
+HUGGINGFACE_API_KEY from the main checkout's .env, or the key in the Muse Spark
+config folder's settings.json.
 """
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -48,14 +47,13 @@ def main():
         )
 
     values = pv.secrets()
-    hashes = pv.parse_hashes(os.environ.get("MUSE_SECRET_HASHES"))
-    if not values and not hashes:
-        print("pre-commit: warning: no secrets to check against (.env unreadable)", file=sys.stderr)
+    if not values:
+        print("pre-commit: warning: no API keys found to check against", file=sys.stderr)
         return
     added = pv.git("diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z").split("\0")
     for path in filter(None, added):
         data = subprocess.run(["git", "show", f":{path}"], capture_output=True).stdout
-        if pv.contains_secret(data, values, hashes):
+        if pv.contains_secret(data, values):
             sys.exit(f"pre-commit: {path} contains an API key value; unstage it")
 
 
