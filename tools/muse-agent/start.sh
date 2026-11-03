@@ -3,7 +3,11 @@
 # kept apart from Claude's work (PROVENANCE.md, claude/adr/0004-muse-spark-as-claude-code-agent.md,
 # claude/adr/0005-muse-spark-launcher-only-contributor-tier.md).
 #
-#   tools/muse-agent/start.sh [claude args]   # run from anywhere; you start it, not Claude
+#   tools/muse-agent/start.sh [claude flags]   # run from anywhere; you start it, not Claude
+#
+# The session's first prompt is fixed here (PROMPT): "Read
+# claude/muse-agent-brief.md and do the task." Extra flags go to claude
+# before it, e.g. --resume <session id>.
 #
 # This script is the only way to start one: Meta's settings exist only in the
 # session it launches. It
@@ -30,6 +34,7 @@ MODEL="${MUSE_MODEL:-muse-spark-1.3-contributor}"
 CONFIG="${MUSE_CONFIG_DIR:-$HOME/.claude-muse}"
 ENV_FILE="$MAIN/legal-agent-workshop/agent/.env"  # also scanned by tools/provenance.py
 PY="$MAIN/.venv/bin/python"
+PROMPT="Read claude/muse-agent-brief.md and do the task."
 
 KEY="$("$PY" -c 'import sys; from dotenv import dotenv_values; sys.stdout.write(dotenv_values(sys.argv[1]).get("MODEL_API_KEY") or "")' "$ENV_FILE")"
 [ -n "$KEY" ] || { echo "MODEL_API_KEY is not set in $ENV_FILE" >&2; exit 1; }
@@ -68,5 +73,5 @@ unset KEY
 
 cd "$WT"
 echo "Muse Spark session: model $MODEL, worktree $WT, config $CONFIG"
-echo "First prompt: Read claude/muse-agent-brief.md and do the task."
-exec claude --settings "$MAIN/tools/muse-agent/settings.json" "$@"
+echo "First prompt: $PROMPT"
+exec claude --settings "$MAIN/tools/muse-agent/settings.json" "$@" "$PROMPT"
