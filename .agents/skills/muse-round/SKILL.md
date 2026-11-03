@@ -1,19 +1,42 @@
 ---
 name: muse-round
-description: Run one Muse Spark round on the MobileMoE-S decode kernels. Helper agents investigate the run evidence and the code, then Muse diagnoses the root causes and writes and grades fused Metal kernels.
+description: Run one Muse Spark round on the MobileMoE-S decode kernels as a swarm. Explorers map the code and measurements into a shared analysis; then competing builders write and grade fused Metal kernels for the top inefficiencies. Both phases are tracked in shared documents.
 ---
 
-# One Muse Spark round: investigate, diagnose, build
+# One Muse Spark round: a swarm explores, then builds
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. Committed on main and tagged `muse-code-era` before the first Muse Code session; each later version is committed before the round that uses it. [Who made what](../../../PROVENANCE.md).*
 
-You are Muse Spark, the **lead** of a Muse Code session in your own worktree on the branch `muse-agent`. `claude/muse-agent-brief.md` fixes the task, the four slots, the tools and limits, your files, the grader command and the pass criteria (G1, G2). [ADR 0006](../../../claude/adr/0006-muse-spark-in-muse-code.md) changes the brief in three ways:
+You are Muse Spark, the **lead** of a Muse Code session in your own worktree on the branch `muse-agent`. `claude/muse-agent-brief.md` fixes the task, the four slots, the tools and limits, the grader command and the pass criteria (G1, G2). Two ADRs change it in four ways:
 
-1. **Harness.** You are a Muse Code session, not a Claude Code one. Muse Code adds no trailer, so you write the trailer on every commit yourself (see *Commits*).
-2. **No attempt limit and no stop rule.** You decide when a slot is done. Every graded attempt is committed, so the history shows every try.
-3. **More files.** `muse-spark/diagnosis.md` and the drafts folder `muse-spark/drafts/` join the files the brief lists.
+1. **Harness** ([ADR 0006](../../../claude/adr/0006-muse-spark-in-muse-code.md)). You are a Muse Code session, not a Claude Code one. Muse Code adds no trailer, so you write it on every commit yourself (see *Commits*).
+2. **No attempt limit and no stop rule** (ADR 0006). You decide when a slot is done. Every graded attempt is committed, so the history shows every try.
+3. **A swarm** ([ADR 0007](../../../claude/adr/0007-muse-spark-swarm.md)). Helpers explore and build; you coordinate and commit.
+4. **Files** (ADR 0007). `muse-spark/exploration/` and `muse-spark/implementation/` hold the round's shared documents, and they replace `strategy.md`. Kernels and `summary.md` stay where the brief puts them.
 
 The rest of the brief stands. The goal is unchanged: kernels that pass G1 and G2 and beat the compiled reference at 1, 8 and 32 rows, faster because they remove a cause you can name.
+
+## The swarm
+
+| Role | Name | Task | Card |
+|---|---|---|---|
+| **Lead** (you) | | Start the helpers, keep the two READMEs, settle clashes, commit | this file |
+| **Explorer** | `explorer-<territory>` | Map one territory into entries, and find where it loses time | [explorer.md](explorer.md) |
+| **Verifier** | `verifier` | Check every inefficiency against its sources | [verifier.md](verifier.md) |
+| **Builder** | `builder-<n>-<letter>` | Write and grade one solution for one hypothesis: one attempt | [builder.md](builder.md) |
+| **Boundary agent** | `boundary-<n>` | Write what a hypothesis's solution must keep identical, and check passing attempts against it | [boundary.md](boundary.md) |
+
+You don't explore, build or grade yourself. Start each helper with a prompt of this shape:
+
+> You are `<name>`, a `<role>` in this round's swarm. Read `.agents/skills/muse-round/<card>` and `.agents/skills/muse-round/tracking.md`, then: `<task>`.
+
+[tracking.md](tracking.md) describes the shared documents (the two phase folders, their READMEs, entries and logs) and the rules every agent keeps. Read it before starting anyone. Up to 12 agents run at once, you included.
+
+**A checkpoint** is what you do each time a helper returns, and whenever the log shows something to settle:
+1. **Read the log.** Read the phase log since your last checkpoint.
+2. **Settle clashes.** When two entries describe one cause, keep the fuller one and set the other's status to `superseded by <entry>`. When two helpers work on one item, redirect one of them (`subagent_send_message`). Log what you decided.
+3. **Refresh the tracker.** Update the phase README's tracker table.
+4. **Commit** the phase folder, plus any attempt that came back (see *Commits*).
 
 ## The round
 
@@ -21,107 +44,105 @@ The rest of the brief stands. The goal is unchanged: kernels that pass G1 and G2
 
 - Run `git log --oneline main -1`, then `git log --oneline --grep '^Muse Spark:' muse-code-era..HEAD`, which lists your earlier commits.
 - **Round number:** `claude/findings/muse-round-<N>.md` holds Claude's measurement of round N, run after merging your branch. This round is one more than the highest N. With no such file, it is round 1.
-- From round 2 on, read the newest of those files first. It has the G3 results of your attempts, and it is the first evidence for this round.
+- From round 2 on, read the newest of those files first. It has the G3 results of your attempts, and it is the first evidence for this round. The phase folders already exist:
+  - explorers add a `## Round N` section to their entries rather than starting over;
+  - you start explorers only for the territories the G3 results reopen;
+  - the logs carry on.
 - Read the brief.
 
 Done when you can name the round number, your committed attempts per slot, and the latest G3 results, if any.
 
-### 1. Investigate (explore)
+### 1. Exploration
 
-Start the **helpers**, one per **lens**, and run them in parallel. They are read-only: they read and report, and change no files. Give each one its lens, the *System-aware checklist* below, and the source rule: every claim cites a file and line, a table (path and row), a grader verdict (commit), or arithmetic shown in full. The lenses:
+1. **Set up the folder.** Write `muse-spark/exploration/README.md` with a heading, the tracker (one row per territory) and an empty `log.md`.
+2. **Start the explorers and the verifier,** all at once, with these starting territories:
 
-1. **Run evidence:** `claude/findings/` (all of it), the `tables.md` files under `results/runs/`, and the GPU counter tables. For each slot at 1, 8 and 32 rows: time, kernels, bytes measured against the fewest bytes needed, and achieved bandwidth.
-2. **Model code path:** `MoE.__call__` in `third_party/mlx-lm/mlx_lm/models/mobilemoe.py`, through `switch_layers.py`, down to each MLX op it calls.
-3. **MLX kernels:** the Metal kernels those ops launch, in `.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/`. `quantized.h` holds the `affine_gather_*` kernels behind `gather_qmm`. How many times each weight byte is read, threadgroup sizes, and occupancy.
-4. **System context:**
-   - how the decode step reaches the MoE block, and what runs just before and after each slot;
-   - what your replacement must keep identical: outputs, dtypes, rounding points, which reorderings are allowed;
-   - the grader's slot interface: `bench/grader/slots.py` and `check_candidate.py`.
+   | Territory | Covers |
+   |---|---|
+   | `model` | `third_party/mlx-lm/mlx_lm/models/mobilemoe.py`: the decoder layer, `MoE.__call__` and everything around the slots |
+   | `switch-layers` | `third_party/mlx-lm/mlx_lm/models/switch_layers.py`: the routed experts' path, `gather_qmm`, the sort from 16 rows |
+   | `quantized-kernels` | `quantized.h` and `quantized_utils.h` in `.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/`: the `affine_gather_*` kernels behind `gather_qmm` |
+   | `other-kernels` | the other Metal kernels in the same folder that the routing and combine slots launch: sort, softmax, reductions, elementwise, copies |
+   | `vllm-metal` | `third_party/vllm-metal/vllm_metal/`: how the engine runs a decode step around the model |
+   | `grader` | `bench/grader/`: the slot interface, what G1, G2 and the piece timing measure, and so the boundary every solution keeps |
+   | `findings` | `claude/findings/` and `results/runs/2026-11-01-breakdown/` |
+   | `runs` | `results/runs/2026-11-02-gpu-counters/`, `2026-10-29-baseline/` and `2026-10-30-micro/` |
 
-Each lens ends with a **report** that covers every piece of code it inspected with the checklist, and lists every file it read.
+3. **Refocus as costs show up.** When an entry shows that one file holds most of a territory's cost, split it off as a territory of its own, with its own explorer. Merge or close a territory that turns out to hold nothing, and add one when an inefficiency points somewhere no one covers. Log each change and update the tracker.
+4. **Checkpoint** each time a helper returns.
 
-When the reports are in, start a **verifier** helper. It takes each claim the diagnosis will rest on, checks it against its cited source, and marks it confirmed, wrong, or without a source.
+**Done** when every territory entry is `done`, the verifier has returned, and every inefficiency is `confirmed`, `refuted` or `superseded`.
 
-### 2. Diagnose
+### 2. The analysis
 
-From the verified reports, write `muse-spark/diagnosis.md`. For each slot it gives:
-- what it costs at 1, 8 and 32 rows;
-- whether it is overhead-bound, bandwidth-bound or compute-bound, in the terms of `claude/GLOSSARY.md`;
-- the arithmetic behind that call: kernels × the fixed cost per kernel, against bytes ÷ peak bandwidth;
-- the **root cause**: what the code does, where (file and lines), and what it costs per step in kernels or bytes. "The experts are slow" is a symptom, not a cause.
+Write the final `muse-spark/exploration/README.md`. It is the round's report on the code, for this round's builders and for future improvements:
 
-Mark Claude's findings as Claude's and your own reading and arithmetic as yours. List the causes outside the four slots as **recommendations** with their evidence; they're for surucuonur's team. End with every file read and what each one gave.
+- **Tracker:** the final table.
+- **Context:** the decode step, the MoE block and its slots, and what the measurements say about where the time goes.
+- **Territory map:** how the territories feed each other. For each territory: what it receives, what it passes on, and its measured cost.
+- **Inefficiencies, ranked:**
+  - the confirmed ones inside the slots, ranked by predicted saving as a share of the decode step, averaged over 1, 8 and 32 rows;
+  - each with its cost, kind and entry;
+  - Claude's findings marked as Claude's, and the swarm's own reading marked as yours.
+- **Recommendations:** the confirmed inefficiencies outside the slots, with their evidence. They're for surucuonur's team.
+- **Refuted claims,** in one line each, so no one chases them again.
+- **Files read:** links to each territory entry's list.
 
 From round 2 on, add a `## Round N` section: what the G3 results confirm, contradict or reveal.
 
-Commit `diagnosis.md`. Done when every slot has a named root cause with its cost and sources, and every claim the verifier checked is either confirmed or gone.
+Commit it. **Done** when every ranked item links a confirmed entry and every number in the README has its source.
 
-### 3. Strategy
+### 3. Implementation
 
-Write or revise `muse-spark/strategy.md` in the brief's format, with the targets JSON. For each design, give per layer at 1, 8 and 32 rows:
-- the kernels it launches;
-- the bytes it reads, counting how many times each weight byte is read;
-- the threads in flight, against what the GPU holds;
-- the time this predicts;
-- which root cause it removes.
+Take the ranked inefficiencies in order, at most two at a time, in different slots so their attempts never touch. Write `muse-spark/implementation/README.md` with a heading, the tracker and an empty `log.md`. For each hypothesis:
 
-Commit it.
+1. **Open the hypothesis.** Write `muse-spark/implementation/hyp-<n>-<slug>.md`, with status `boundary`, the inefficiency and the slot. Add its tracker row and log it.
+2. **Draw its boundary.** Start `boundary-<n>` to write the boundary, and wait for it.
+3. **Compete.**
+   - Set the status to `building`.
+   - Start 2 or 3 builders, `builder-<n>-a`, `-b` and `-c`. Give each a different direction drawn from the analysis: for example, fusing kernels, reading each weight byte once, or a different threadgroup shape.
+4. **Collect.** Each time a builder returns:
+   - checkpoint, committing its attempt folder with the hypothesis entry, the README and the log;
+   - if the attempt passed G2, start `boundary-<n>` to check it.
+5. **Harden.**
+   - Pick the best attempt: it passes G1, G2 and its boundary check, and it is the fastest against the compiled reference across the three row counts.
+   - Set the status to `hardening`, and start a builder for that attempt's next single change.
+   - Repeat while the attempt still has a cause you can name and remove.
+6. **Close.**
+   - **`ready`:** the best attempt passes G1, G2 and its boundary check, and beats the compiled reference at 1, 8 and 32 rows, and you can name no further change worth making. Write the **Decision**: the attempt, why it is best, and what G3 should show.
+   - **`dropped`:** say why.
 
-### 4. Attempts (exploit)
+Then open the next-ranked inefficiency. **Done** when no confirmed inefficiency is left that you judge will pay. Write why in the implementation README.
 
-For each target slot, in order, repeat:
+### 4. Finish
 
-1. **Draft.** Two drafting helpers each write a different design into `muse-spark/drafts/<slot-folder>/<draft-name>/`, using the brief's attempt layout plus a `notes.md` with the design and the cause it targets. Each drafter writes only in its own draft folder.
-2. **Review.** A reviewing helper checks each draft:
-   - against the brief's spec format and the GPU limits;
-   - against the slot's shapes, dtypes and rounding points at 1, 8 and 32 rows;
-   - against the *System context* report;
-   - against the diagnosis.
-   
-   It reports the defects it finds and its predicted time.
-3. **Choose and grade.** Pick the draft, or a combination of drafts, most likely to remove the cause, and write it as `muse-spark/kernels/<slot-folder>/attempt-<N>/`, numbering on from your last attempt. Before grading, its `notes.md` says what changed since the last attempt, which cause it addresses, and your predicted time per layer at 1, 8 and 32 rows. Run the brief's grader command on it and wait for it to finish.
-4. **Record.** Add the verdict to `notes.md`: G1; G2 with the worst case; your timings next to the original's and the compiled reference's. Commit the attempt with the drafts behind it.
-5. **Learn.** When the attempt fails, or its time misses your prediction by more than 20%, send helpers to find out why, and write the answer in `notes.md` before the next attempt. The gap usually points to the next cause.
+1. **The implementation README:** the final tracker, one paragraph per hypothesis, and a **Ready to test** section. It names the attempt per slot that goes to G3, and the change in decode step period you expect at 1, 8 and 32 requests, with how you worked it out.
+2. **The exploration README:** add *What building taught*, the analysis corrected by what the attempts showed.
+3. **`muse-spark/summary.md`:** add a `## Round N` section with:
+   - the final attempt per slot;
+   - the number of graded attempts per slot, this round and in total;
+   - the expected G3 change;
+   - what you'd try next;
+   - your recommendations outside the slots.
+4. **Commit,** then reply with this round's commits and the words "Round N finished".
 
-Make one main change per attempt, so the grader shows what helped. Write the simplest kernel that removes the cause. Keep going while there is a cause you can name and still remove. Move on, or end the round, when you judge further attempts won't pay, and say why in the summary.
+## Your own rules
 
-### 5. Finish
-
-Add a `## Round N` section to `muse-spark/summary.md` with:
-- your final attempt per slot;
-- the number of graded attempts per slot, this round and in total;
-- the change in decode step period you expect G3 to show at 1, 8 and 32 requests, and how you worked it out;
-- what you'd try next;
-- your recommendations outside the slots.
-
-Commit it, then reply with this round's commits and the words "Round N finished".
-
-## System-aware checklist
-
-Every lens and every review fills this in for each piece of code it inspects, so that no piece is judged without its neighbours:
-
-- **Callers:** who calls it, and with what shapes at 1, 8 and 32 rows.
-- **Callees:** what it calls, down to the Metal kernel it launches.
-- **Data:** each input and output with shape, dtype and layout. Where it is produced, and where it is consumed next.
-- **Neighbours:** what runs just before and after it in the decode step, and what a replacement must keep identical.
-- **Cost:** the kernels it launches, the bytes it reads and writes (weight bytes counted per read), and its measured time with the table the time comes from.
-- **Invariants:** what correctness depends on: the G2 tolerances, the tie rule for the 4th and 5th expert, the bfloat16 rounding points.
-
-## How the session works
-
-- **One GPU job at a time, run by the lead.** The grader is the only GPU job and the lead its only user; helpers work in parallel on reading, drafting and reviewing. The grader holds a lock, and a second run started while one is going stops with a message. Overlapping runs would distort the timings.
-- **G3 and vLLM belong to surucuonur's team**, who run them after merging your branch.
-- **Your writes go to `muse-spark/`.** Everything else in the worktree is read-only to you, and a commit outside `muse-spark/` is refused.
-- **Credentials stay unread:** `.env` files, `~/.config/muse/` and any key store.
-- **Your kernels are your own.** The API-stage kernels in the history before the tag `agent-era` are from an earlier, removed stage (PROVENANCE.md) and stay unread.
-- **Every number has a source:** a table, a grader verdict, or arithmetic you show.
+- **Writes:**
+  - you write the two READMEs, the hypothesis entries' status blocks and decisions, and `summary.md`;
+  - every helper writes only what its card names;
+  - all of it stays in `muse-spark/`, and a commit outside it is refused.
+- **G3 and vLLM belong to surucuonur's team,** who run them after merging your branch.
+- **The rules every agent keeps** are in tracking.md.
 
 ## Commits
 
-Commit only on `muse-agent`, with explicit paths, a subject starting `Muse Spark:`, and this exact trailer as the last line:
+You are the only agent that commits. Commit only on `muse-agent`.
+- **What to add:** the phase folders and the attempt folders that came back. An attempt another builder is still writing waits for its own commit. An entry that is mid-edit is committed as it stands, and finished in a later commit.
+- **The message:** start the subject with `Muse Spark:`, and end with this exact trailer.
 
 ```bash
-git add muse-spark/<paths>
+git add muse-spark/exploration muse-spark/implementation muse-spark/kernels/<slot-folder>/attempt-<N>
 git commit -m "Muse Spark: <what this commit holds>" \
   -m "Co-Authored-By: Muse Spark (Meta Model API) <muse-spark@meta-model-api.invalid>"
 ```

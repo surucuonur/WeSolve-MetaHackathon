@@ -115,29 +115,52 @@ One replaceable piece of the mixture-of-experts block (routing, combine, or the 
 _Avoid_: target (that is a slot Muse Spark has chosen), module
 
 **Round**:
-One Muse Spark session working through the round skill, followed by Claude's independent measurement of what it produced.
+One Muse Spark session in which a swarm explores and then builds, followed by Claude's independent measurement of what it produced.
 _Avoid_: iteration, cycle
 
+**Swarm**:
+All the agents of one round, the lead and its helpers, working toward one goal through shared documents that each of them reads and adds to.
+_Avoid_: team, crew
+
 **Lead agent**:
-The one agent in a Muse Spark session that grades kernels and commits; it starts the helpers and decides what they work on.
+The one agent of a swarm that starts the helpers, keeps the shared documents current, settles clashes and commits; it neither explores nor grades.
 _Avoid_: orchestrator, main agent
 
 **Helper agent**:
-An agent the lead starts for one bounded task (investigating one lens, drafting a design, reviewing a draft, verifying claims), which reports back and never grades or commits.
-_Avoid_: swarm, worker, subagent (when the role matters, not the mechanism)
+An agent the lead starts: an explorer, the verifier, a builder or a boundary agent. It reports back and never commits.
+_Avoid_: worker, subagent (when the role matters, not the mechanism)
 
 **Reminder agent**:
 One of Muse Code's own background agents, which watch the lead's progress and may nudge it, for example to check a claim before it says it is done; Muse Spark writes their turns too, but they take no part in the work.
 _Avoid_: helper (that is one the lead starts)
 
-**Diagnosis**:
-Muse Spark's written account of why each slot is slow: its cost, the kind of limit it hits, and the root cause in the code, every claim with a source.
-_Avoid_: analysis, findings (those are Claude's)
+**Exploration phase**:
+The first part of a round, in which explorers map the code and the measurements and find where the decode step loses time.
 
-**Draft**:
-A candidate kernel a helper writes for the lead to choose from; never graded on its own.
-_Avoid_: attempt, candidate
+**Implementation phase**:
+The second part of a round, in which builders write and grade solutions to the confirmed inefficiencies.
+_Avoid_: hypothesis phase
+
+**Territory**:
+The part of the code or the measurements that one explorer covers: a module, a single important file, or a measurement document.
+_Avoid_: area, lens
+
+**Analysis**:
+The swarm's shared account of the code, written during exploration: the context, how the territories feed each other, and the ranked inefficiencies, each with its cost and sources.
+_Avoid_: diagnosis, findings (those are Claude's)
+
+**Inefficiency**:
+One cause of lost time in the decode step: where it is in the code, what it costs, and what removing it should save. It is confirmed or refuted against its sources before anyone builds on it.
+_Avoid_: issue, bottleneck (that is the single largest cause)
+
+**Hypothesis**:
+A proposed solution to one inefficiency: the slot it replaces, the boundary it keeps and the saving it predicts, tested by competing attempts.
+_Avoid_: strategy, plan
+
+**Boundary**:
+What a solution must keep identical so that the steps before and after its slot work exactly as before: the slot's inputs and outputs, their dtypes, and the rounding points.
+_Avoid_: interface (unqualified), contract
 
 **Attempt**:
-A kernel the lead has graded and committed; attempts for a slot are numbered in order and have no limit.
-_Avoid_: try, submission
+A solution a builder has graded and the lead has committed; attempts for a slot are numbered in order and have no limit.
+_Avoid_: try, submission, draft

@@ -19,7 +19,8 @@
 #   round's merge), so the session sees Claude's newest findings and grader;
 # - runs MUSE_MODEL (default muse-spark-1.3-contributor);
 # - trusts the worktree for this run, which loads its skill and lets the lead
-#   start helper agents;
+#   start helper agents, and lets 12 agents run at once (default 8), enough
+#   for the round's swarm of explorers, a verifier and the lead;
 # - gives muse a home folder of its own, MUSE_HOME (default ~/.muse-spark), so
 #   it finds none of the personal skills and rules under the real home
 #   (~/.agents/skills, ~/.claude/skills, ~/.claude/CLAUDE.md), which it would
@@ -88,4 +89,4 @@ export HOME="$MUSE_HOME"
 # Muse Code would look for its config, data and other agents' folders here first.
 unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME CLAUDE_CONFIG_DIR CODEX_HOME
 exec muse ${SUB:+"$SUB"} --model "$MODEL" --workspace "$WT" --trust-workspace --disable-sandbox \
-  "$@" "$PROMPT"
+  -c agents.execution_capacity=12 "$@" "$PROMPT"

@@ -25,13 +25,18 @@ A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by
 
 [claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs.
 
-Next: Muse Spark, working in Muse Code, Meta's own coding agent, diagnoses the bottlenecks from these findings with helper agents and writes GPU kernels against them. An independent grader checks them ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)).
+Next: Muse Spark, working in Muse Code, Meta's own coding agent, works as a swarm of agents. They analyse the code and these findings together, then write GPU kernels against the inefficiencies they confirm. An independent grader checks them ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md), [ADR 0007](claude/adr/0007-muse-spark-swarm.md)).
 
 ## How Meta's models are used
 
 - **MobileMoE-S** (open weights) is the model under study, served by vLLM through vllm-metal. The baseline serves the int4 `facebook/MobileMoE-S-QAT` ([why](claude/adr/0002-int4-qat-baseline.md)); the bfloat16 `facebook/MobileMoE-S-SFT` is used to check the port.
 - **Muse Spark** (`muse-spark-1.3-contributor`; Meta Model API) works in **Muse Code**, Meta's own coding agent, started only with `tools/muse-agent/start.sh`.
-  - Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md). Muse's helper agents investigate the findings and the code; it writes a diagnosis, chooses which bottleneck to attack, writes fused GPU kernels, and runs the grader on them itself.
+  - Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md). In it, Muse Spark works as a swarm:
+    - explorers, one per part of the code or the measurements, write a shared analysis;
+    - competing builders write fused GPU kernels for the top inefficiencies and run the grader on them;
+    - the lead coordinates and commits.
+    
+    Both phases are tracked live in shared documents in `muse-spark/exploration/` and `muse-spark/implementation/`.
   - Its work goes to `muse-spark/` on the branch `muse-agent`, with the transcripts of its sessions. Its task was committed and tagged `agent-era` ([brief](claude/muse-agent-brief.md)); the move to Muse Code and the skill were committed and tagged `muse-code-era` before its first Muse Code session.
 
 ## Who made what
@@ -42,7 +47,7 @@ Every commit is made by **surucuonur**. The co-author on each commit shows whose
 |---|---|---|
 | **surucuonur** | Direction, decisions, running the machine, starting the Muse Spark sessions | every commit |
 | **Claude Code** (Claude Opus 5.5) | Benchmark, grader and provenance code, measurements, write-ups, Muse Spark's brief and round skill | `bench/`, `claude/`, `tools/`, `.agents/skills/`, this README. Commits co-authored by `claude`. |
-| **Muse Spark** (`muse-spark-1.3-contributor`), in Muse Code | Its diagnosis, choice of target, kernels, and session transcripts | `muse-spark/`, on the branch `muse-agent`. Commits co-authored by "Muse Spark". |
+| **Muse Spark** (`muse-spark-1.3-contributor`), in Muse Code | Its analysis, hypotheses, kernels, phase logs and session transcripts | `muse-spark/`, on the branch `muse-agent`. Commits co-authored by "Muse Spark". |
 | **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, Meta's model weights | `third_party/` at pinned commits, plus the installed wheels |
 
 Git hooks refuse commits that mix the two, and `tools/provenance_check.py` audits the whole history. [PROVENANCE.md](PROVENANCE.md) gives the details and the commands to check them.
@@ -56,7 +61,7 @@ claude/GLOSSARY.md    shared vocabulary
 claude/adr/           decisions and why
 claude/benchmark/     baseline benchmark write-up: findings, every measurement, method
 claude/findings/      where a decode step's time goes, and the fixes it suggests
-muse-spark/           Muse Spark's work: its diagnosis, strategy, kernels and session transcripts (branch muse-agent)
+muse-spark/           Muse Spark's work: its analysis, hypotheses, kernels and session transcripts (branch muse-agent)
 .agents/skills/       the round skill Muse Spark follows in Muse Code (written by Claude)
 third_party/          pinned submodules: vllm-metal and mlx-lm (forks, where changes go), vLLM v0.32.0 (read-only)
 bench/                benchmark sweep, roofline calculation, port correctness check

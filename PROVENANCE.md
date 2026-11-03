@@ -10,7 +10,7 @@ The hackathon rules require judges to tell what was built during the event, and 
 |---|---|---|---|
 | **surucuonur** (the entrant) | Direction and every decision; ran the machine; started the Muse Spark sessions; reviewed the results | every commit | Author and committer of every commit |
 | **Claude Code** (Claude Opus 5.5, Anthropic) | The benchmark, grader and provenance code, the measurements, every write-up, and Muse Spark's brief and round skill | `bench/`, `claude/`, `tools/`, `.agents/skills/`, `README.md`, this page, and the Markdown in `results/` | Commits co-authored by `Claude Opus 5.5 <noreply@anthropic.com>`, which GitHub shows as the `claude` account; a byline under each document's title |
-| **Muse Spark** (`muse-spark-1.3-contributor`; Meta Model API), working in Muse Code, Meta's own coding agent | Its diagnosis, choice of targets, kernels, drafts and notes, and the transcripts of its sessions, helper agents included | `muse-spark/`, committed on the branch `muse-agent` and merged with `--no-ff` | Commits co-authored by `Muse Spark (Meta Model API)`, subjects starting "Muse Spark:"; the transcript records the model behind every model call |
+| **Muse Spark** (`muse-spark-1.3-contributor`; Meta Model API), working in Muse Code, Meta's own coding agent | Its analysis of the code, hypotheses, kernels and notes, the logs of both phases, and the transcripts of its sessions, every agent of the swarm included | `muse-spark/`, committed on the branch `muse-agent` and merged with `--no-ff` | Commits co-authored by `Muse Spark (Meta Model API)`, subjects starting "Muse Spark:"; the transcript records the model behind every model call |
 | **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, and Meta's MobileMoE-S weights | `third_party/` (pinned submodules) and the installed wheels; the weights are downloaded, not committed | Their own authors and licences |
 
 ## How the work is kept apart
@@ -28,7 +28,13 @@ Claude-Session: <session link>        changes only muse-spark/
 never changes muse-spark/
 ```
 
-Muse Spark works in Muse Code, Meta's own coding agent, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)). That script is the only way to start one. Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md), which Claude wrote and committed before the round that uses it. In it, Muse Spark's lead agent starts helper agents to investigate and draft, and grades and commits the results itself. Six layers keep its work and Claude's from mixing:
+Muse Spark works in Muse Code, Meta's own coding agent, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)). That script is the only way to start one. Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md), which Claude wrote and committed before the round that uses it. In it, Muse Spark works as a swarm ([ADR 0007](claude/adr/0007-muse-spark-swarm.md)):
+- explorers map the code and the measurements into a shared analysis;
+- builders write and grade competing kernels;
+- the lead coordinates, and only the lead commits;
+- both phases are tracked in shared documents in `muse-spark/`.
+
+Six layers keep its work and Claude's from mixing:
 
 1. **Place.** Muse Spark has its own git worktree on `muse-agent` and writes only in `muse-spark/`. Its worktree has no `.env`. The launcher gives `muse` a home folder of its own, `~/.muse-spark`, so Muse Code finds none of surucuonur's personal skills and rules, Claude's included, and keeps its settings and session logs there. The API key goes only to the `muse` process.
 2. **Identity.** Every Muse Spark commit carries the Muse Spark co-author, written by Muse Spark as the skill shows. The `.invalid` address is reserved and belongs to no one (RFC 2606); Muse Spark has no GitHub account, so we neither claim nor invent one.

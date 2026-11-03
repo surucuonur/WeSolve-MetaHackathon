@@ -6,6 +6,8 @@ status: accepted
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
 
+*[ADR 0007](0007-muse-spark-swarm.md) replaces this record's round design on 2026-11-03, before round 1: a swarm of explorers and builders instead of short-lived helpers. That covers the helpers, the drafts, `diagnosis.md`, `strategy.md` and grading by the lead alone. Muse Code, the launcher, the isolation and the lack of an attempt limit stand.*
+
 **The change.** From 2026-11-02, Muse Spark does its kernel work in **Muse Code** ([Meta's docs](https://dev.meta.ai/docs/muse-code)), not in a Claude Code session pointed at Meta. This replaces [ADR 0004](0004-muse-spark-as-claude-code-agent.md) and [ADR 0005](0005-muse-spark-launcher-only-contributor-tier.md) wherever they describe the harness.
 - surucuonur starts it with [tools/muse-agent/start.sh](../../tools/muse-agent/start.sh), still the only way in.
 - Every round follows the skill [.agents/skills/muse-round/SKILL.md](../../.agents/skills/muse-round/SKILL.md). Claude wrote the skill, and it is committed in the repository so anyone can read it. In each round:
