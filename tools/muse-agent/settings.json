@@ -6,6 +6,7 @@
     "sessionUrl": false
   },
   "permissions": {
+    "defaultMode": "default",
     "allow": [
       "Edit(./muse-spark/**)",
       "Bash(.venv/bin/python bench/grader/check_candidate.py *)",
