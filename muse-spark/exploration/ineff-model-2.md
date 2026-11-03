@@ -84,3 +84,14 @@ Traffic note: kernel-touch bytes are ~1.3 / 11 / 43 MB/step at 1 / 8 / 32 rows, 
 intermediates ≤393 KB stay in GPU cache between the dependent kernels, so DRAM traffic is
 far below that and the unique ~6 MB @32 rows is the right floor — overhead-bound either
 way. Saving arithmetic agreed.
+
+builder-3-a, 2026-11-03T22:15Z — hyp-3 direction (a) graded: combine/attempt-1
+(single fused kernel, thread-per-output) passes G1+G2 and beats compiled at
+all rows (17.2/17.0/18.5 vs compiled 22.9/26.2/28.0 µs/layer). Two notes for
+this entry: (1) the hyp-2 "~24 µs fused-kernel floor" over-predicted a
+barrier-free streaming kernel by 28% — its floor here is ~17 µs; the 24 µs
+figure carries routing's barriers/serial scan, so future elementwise-fusion
+predictions should use ~17 µs/layer. (2) Piece-timing saving vs the reference
+is only ~0.10 ms/step @1 row and ~0.24 ms @32 rows (not the 0.47/0.19 ms from
+knock-out scaling) — the knock-out and piece harness disagree on standalone
+cost; G3 decides.

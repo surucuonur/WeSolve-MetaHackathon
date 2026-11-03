@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 2
-- **Updated:** 2026-11-03T21:35:00Z
-- **Next:** builders 1-a (full fused grouped kernel), 1-b (fusion keeping per-pair reads), 1-c (two-kernel split) competing
+- **Version:** 3
+- **Updated:** 2026-11-03T22:05:00Z
+- **Next:** attempt-2 (1-b) graded: G2 bit-exact, beats compiled everywhere but regresses vs eager at 1 row; boundary-1 to check it; 1-a and 1-c still building (sent them 1-b's numerics finding)
 
 ## Inefficiency
 
@@ -87,7 +87,25 @@ What it can't see (checked by hand later — boundary.md *check an attempt*):
 
 ## Builders
 
-(none started)
+### builder-1-b — direction (b): fusion first, keeping per-pair reads
+
+One threadgroup per (row, expert-slot) pair; gate/up share one K-loop over an
+on-chip x row; gate/up/hidden in threadgroup memory (3840 B); weights read
+once per pair, no batching, no sort. Numerics replicate the reference
+bitwise: qvm strided-lane accumulation + `simd_sum` per 32-output block, and
+silu computed ENTIRELY in bf16 (round after exp/add/recip/sub/mul/mul —
+found by CPU search over all 64 rounding placements, only full-bf16 matches).
+
+- attempt-2 (`muse-spark/kernels/experts/attempt-2`, v3): predicted 30 / 185 /
+  470 µs per layer at 1/8/32 rows; measured 107.3 / 188.4 / 647.6 (original
+  99.8 / 218.7 / 768.6; compiled 135.0 / 216.9 / 761.7). G1 pass; G2 pass
+  with max_ulp 0.0 at all rows (bit-exact); beats_compiled true at all rows.
+- Taught: (1) down outputs near cancellation amplify hidden 1-ULP flips, so
+  gate/up/hidden must match bitwise — any summation order will NOT do;
+  (2) MLX's compiled swiglu rounds every op to bf16 (all other builders must
+  replicate this); (3) rows-1 is occupancy-bound (512 threads, 20 GB/s
+  effective), not streaming — fusion alone regresses 7.5% vs eager there;
+  (4) no cross-pair cache reuse at 32 rows (full 70.8 MB/layer @ ~109 GB/s).
 
 ## Boundary checks
 

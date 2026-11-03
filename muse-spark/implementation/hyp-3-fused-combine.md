@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 2
-- **Updated:** 2026-11-03T21:55:00Z
-- **Next:** builders 3-a (single kernel, thread-per-output grid) and 3-b (single kernel, threadgroup-per-row with staged weights) competing
+- **Version:** 3
+- **Updated:** 2026-11-03T22:05:00Z
+- **Next:** attempts 1+2 graded (both G2 pass, both beat compiled everywhere); boundary-3 to check both; then pick best (1 vs 2 both on ~17µs floor)
 
 ## Inefficiency
 
@@ -63,7 +63,32 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory (brief:98)
 
 ## Builders
 
-(none started)
+### builder-3-a — direction (a): single kernel, thread-per-output grid
+
+- **attempt-1** (`muse-spark/kernels/combine/attempt-1`): one thread per
+  output element, grid rows×768, threadgroup 256; each thread weights 4 bf16
+  values in fp32, rounds once, adds shared. Predicted 24 / 24 / 25, measured
+  **17.2 / 17.0 / 18.5** µs per layer at 1/8/32 rows (compiled 22.9 / 26.2 /
+  28.0). G1 pass, G2 pass (0 bad, max ULP 0.0/2.0/1.0). Beats compiled at all
+  three row counts — stops the slot per the brief rule. Taught: the hyp-2
+  ~24 µs "floor" was routing-specific (barriers + serial scan); a barrier-free
+  streaming kernel's floor is ~17 µs (see notes.md).
+
+### builder-3-b — direction (b): single kernel, threadgroup-per-row with staged weights/shared
+
+- **attempt-2** (`muse-spark/kernels/combine/attempt-2`): one threadgroup
+  (192 threads) per row; weights + shared staged to ~3.1 KB threadgroup
+  memory with vectorized u64 loads, y streamed with vectorized u64 loads,
+  fp32 weight+sum (j = 0..3), `bfloat(acc)` + single-rounding bf16 add.
+  Predicted 21 / 19 / 20, measured **17.9 / 16.1 / 18.1** µs per layer at
+  1/8/32 rows vs compiled 20.9 / 23.0 / 27.9 (reference 24.8 / 24.0 /
+  43.3). G1 pass, G2 pass (0 bad, max ULP 0.0 / 2.0 / 1.0, worst case the
+  8-row 2-ULP touch — identical margins to attempt-1). Beats compiled at
+  all rows. Taught: staging + one barrier cost nothing measurable vs
+  direction (a) — both sit on the ~17 µs dispatch floor; first grading
+  failed G2 on a 96-vs-192 u64/expert stride bug, fixed before the
+  verdict (see notes.md). Slot already stopped at attempt-1; this is the
+  direction-(b) datapoint, attempt-1 stays the pick.
 
 ## Boundary checks
 
