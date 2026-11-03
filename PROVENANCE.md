@@ -30,7 +30,7 @@ never changes muse-spark/
 
 Muse Spark works in Muse Code, Meta's own coding agent, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)). That script is the only way to start one. Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md), which Claude wrote and committed before the round that uses it. In it, Muse Spark's lead agent starts helper agents to investigate and draft, and grades and commits the results itself. Six layers keep its work and Claude's from mixing:
 
-1. **Place.** Muse Spark has its own git worktree on `muse-agent` and writes only in `muse-spark/`. Its worktree has no `.env`. The launcher leaves out the personal skills and rules Muse Code would otherwise load from outside the repository, Claude's included. The API key goes only to the `muse` process.
+1. **Place.** Muse Spark has its own git worktree on `muse-agent` and writes only in `muse-spark/`. Its worktree has no `.env`. The launcher gives `muse` a home folder of its own, `~/.muse-spark`, so Muse Code finds none of surucuonur's personal skills and rules, Claude's included, and keeps its settings and session logs there. The API key goes only to the `muse` process.
 2. **Identity.** Every Muse Spark commit carries the Muse Spark co-author, written by Muse Spark as the skill shows. The `.invalid` address is reserved and belongs to no one (RFC 2606); Muse Spark has no GitHub account, so we neither claim nor invent one.
 3. **Hooks.** `tools/githooks/` refuses mixed commits: Muse Spark's co-author off `muse-agent`, Claude's on it, `muse-agent` commits without Muse Spark's co-author or outside `muse-spark/`, other commits inside it (merges of `muse-agent` excepted), and any staged API key.
 4. **Audit.** `tools/provenance_check.py` re-checks the whole history against the same rules, so a commit made around the hooks is caught.
@@ -47,6 +47,16 @@ On 2026-11-02, before Meta's settings were confined to the launcher ([ADR 0005](
 - **What it saw:** those turns ran with Claude's configuration. They loaded Claude's memory notes and surucuonur's global instructions, and read this page, ADR 0004, the brief, the launcher and its settings. All of it went to Meta on the tier where Meta may train on it.
 - **What it did:** its shell commands failed, and it wrote and committed nothing. No file in this repository comes from those turns.
 - **What prevents it now:** Muse Spark runs only in Muse Code, started by `tools/muse-agent/start.sh`; no Claude Code configuration points at Meta.
+
+## Personal context in the first Muse Code smoke test (2026-11-03)
+
+Before round 1, Claude ran two short smoke tests with the launcher, at surucuonur's request. Each was a headless Muse Spark session in the worktree that only ran read-only checks: git status, the brief's first line, one MLX operation on the GPU and one read-only helper agent.
+- **What went wrong in the first** (session `01a1a2a2-76ea-7fe3-95d8-7df76e209c74`):
+  - The launcher then relied on Muse Code's settings for leaving personal skills and rules out, and they didn't work ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)).
+  - The context of the lead and its helper held surucuonur's global instructions (`~/.claude/CLAUDE.md`) and the names and descriptions of 43 personal skills from `~/.agents/skills` and `~/.claude/skills`.
+  - All of it went to Meta on the tier where Meta may train on it.
+- **What it did:** the read-only checks; it wrote and committed nothing.
+- **What prevents it now:** the launcher gives `muse` its own home folder. In the second smoke test (session `01a1a2a7-d562-76c3-a410-07629daf9bbc`), the lead and the helper saw only Muse Code's 25 bundled skills, its bundled plugin's skill and `muse-round`, and no rules file.
 
 ## What existed before the event
 

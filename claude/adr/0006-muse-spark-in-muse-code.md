@@ -35,7 +35,7 @@ The [brief](../muse-agent-brief.md) stays fixed as committed, and so do its task
 - **Place.**
   - Its own worktree, `../Hackathon-muse`, on `muse-agent`; writes only in `muse-spark/`, enforced by `pre-commit`.
   - The launcher trusts the worktree for each run, which loads the project skill and allows helpers.
-  - It switches off Muse Code's default loading of personal skills and rules from outside the repository (`~/.claude/skills`, `~/.agents/skills`, `~/.claude/CLAUDE.md`), with `-c context.foreign_personal_skills=false` and `-c context.foreign_personal_rules=false`. Without that, surucuonur's Claude skills would load into Muse's session.
+  - It gives `muse` a home folder of its own, `~/.muse-spark`, which holds its settings and session logs. Muse Code looks for personal skills and rules under the home folder (`~/.agents/skills`, `~/.claude/skills`, `~/.claude/CLAUDE.md`) and loads them by default; in its own home it finds none, so the model sees only Muse Code's bundled skills and the project's skill.
 - **Key.** `MODEL_API_KEY` from `legal-agent-workshop/agent/.env` goes only to the `muse` process, as `META_API_KEY`, and is never stored.
 - **Seeing Claude's newest work.** `muse-agent` can't take merges. After a round, its branch is merged into main with `--no-ff` and Claude commits its results as `claude/findings/muse-round-<N>.md`. The next launch then fast-forwards `muse-agent` to main, which creates no commit and rewrites nothing, so the next round reads those results.
 - **One GPU job at a time.** The grader takes an exclusive lock ([bench/grader/gpu_lock.py](../../bench/grader/gpu_lock.py)), so a second run, from any agent or from Claude, stops with a message instead of distorting the timings. Only the lead grades.
@@ -48,7 +48,8 @@ The [brief](../muse-agent-brief.md) stays fixed as committed, and so do its task
 - **No sandbox.** Muse Code's sandbox keeps `.git` read-only, and a worktree commits into the main checkout's `.git`, so the launcher passes `--disable-sandbox`. Tool approvals stay on.
   - **Remaining risk:** an approved shell command can reach what the account can, and the key is in the session's environment. Every commit and exported transcript is scanned for it.
 - **No fallback.** If Muse Code can't run the round, the fix is in the Muse Code setup. surucuonur ruled out returning to the Claude Code harness.
-- **Superset's notification hooks** in surucuonur's Muse Code settings still run. They report session status to the Superset app and add nothing to the model's context.
+- **Superset's notification hooks,** set in surucuonur's own Muse Code settings, don't run in Muse Spark's sessions, which use their own home and settings.
+- **The first smoke test leaked personal context.** It ran with Muse Code's settings for leaving personal skills and rules out, which turned out not to work. surucuonur's global instructions and the names and descriptions of 43 personal skills went to Meta. See [PROVENANCE.md](../../PROVENANCE.md).
 
 ## Considered options
 
@@ -56,3 +57,7 @@ The [brief](../muse-agent-brief.md) stays fixed as committed, and so do its task
 - **Keep the old branch as an archive,** renamed and pushed. Rejected: its work was too slight to keep beside a fresh start.
 - **Keep the brief's 5 attempts per slot and its stop rule.** Rejected by surucuonur; the full commit history and the attempt counts replace the limit as the safeguard.
 - **Let helpers grade too.** The GPU times one run at a time, so parallel grading adds coordination and no speed.
+- **Muse Code's own settings for personal skills and rules,** `context.foreign_personal_skills` and `context.foreign_personal_rules`. Briefly adopted, then replaced after the first smoke test on 2026-11-03.
+  - Muse Code 1.4.14 accepts them with `-c`, but personal skills and rules still load.
+  - They name only other agents' folders. `~/.agents/skills` counts as Muse Code's own and would load anyway.
+  - The flag `--no-foreign-personal-context` does drop `~/.claude`, but only for headless runs, and it also leaves `~/.agents/skills`.
