@@ -19,3 +19,5 @@
 2026-11-03T21:40:13Z | lead | checkpoint v3: routing attempts 1+2 collected (both G2 pass, attempt-1 beats compiled at all rows); boundary-2 to check both
 2026-11-03T21:41:28Z | boundary-2 | checked routing attempts 1+2 vs boundary: both pass (att-1: 3.3KB tg, 1 group/row all counts; att-2: 17.0KB tg, whole-rows partial groups all counts; no unwritten reads, races, or input assumptions)
 2026-11-03T21:46:09Z | lead | checkpoint v4: hyp-2 ready with routing/attempt-1 (both boundary checks pass, no hardening — single minimal launch, residual is dispatch floor); hyp-3 opened in boundary
+2026-11-03T21:47:42Z | boundary-3 | wrote hyp-3-fused-combine Boundary: combine IO table, MoE neighbours + checklist, rounding points, tie/positional pairing, G1/G2 vs unseen rows, 1024-thread/32KB limits
+2026-11-03T21:51:53Z | lead | checkpoint v5: hyp-3 boundary drawn, building with 2 builders (thread-per-output vs threadgroup-per-row)
