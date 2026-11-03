@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 3
-- **Updated:** 2026-11-03T22:05:00Z
-- **Next:** attempt-2 (1-b) graded: G2 bit-exact, beats compiled everywhere but regresses vs eager at 1 row; boundary-1 to check it; 1-a and 1-c still building (sent them 1-b's numerics finding)
+- **Version:** 4
+- **Updated:** 2026-11-03T22:15:00Z
+- **Next:** attempt-2 boundary pass; attempt-3 (1-c) graded G2 pass but beats_compiled false (loses at 1+8 rows, wins 15% at 32); boundary-1 to check attempt-3; 1-a still building
 
 ## Inefficiency
 
@@ -107,9 +107,62 @@ found by CPU search over all 64 rounding placements, only full-bf16 matches).
   effective), not streaming — fusion alone regresses 7.5% vs eager there;
   (4) no cross-pair cache reuse at 32 rows (full 70.8 MB/layer @ ~109 GB/s).
 
+### builder-1-c — direction (c): TWO-kernel split with grouped same-expert reads
+
+Kernel 1 fuses gate+up+silu-mul, kernel 2 the down product; one threadgroup
+per expert (60 groups) finds its pairs by scanning `inds` and streams each
+weight tile once per 2-pair chunk (~34 MB/layer at 32 rows vs 71 MB
+per-pair). Final form (v7): 192/384 threads, 2 outputs per thread (an even
+pair shares one weight word + one scale/bias), branchless padded chunks,
+K unrolled x2 with even/odd accumulators. Tmem ~16.1 KB per kernel by hand.
+Numerics: MLX's stable bfloat Sigmoid bit-exact
+(`y=1/(1+precise::exp(abs(x)))`, `(x<0)?y:1-y`, per-op bf16 rounds — read
+from libmlx.dylib, verified on CPU against all 2.5M captured outputs).
+
+- attempt-3 (`muse-spark/kernels/experts/attempt-3`, v7): predicted 25 / 85 /
+  210 µs per layer at 1/8/32 rows; measured 68.1 / 238.4 / 654.1 (original
+  70.0 / 214.7 / 769.8; compiled 64.9 / 213.1 / 764.0). G1 pass; G2 pass
+  with max_ulp 1.0 at all rows; beats_compiled false (wins 32 rows ~15%,
+  misses 1 row by 5% / 8 rows by 12%).
+- Taught: (1) dynamic-index accumulator arrays spill to stack (~10x slow);
+  unroll with scalars; (2) per-iteration guards + 8x loop bloat eat all
+  tile-sharing gains — chunk-2 padded branchless wins because pairs/expert
+  is always ~1-2.4; (3) tiled load→barrier→compute halves DRAM duty cycle
+  (~55 GB/s achieved vs 150 ideal); (4) at 8 rows grouping's DRAM edge
+  barely outweighs padding waste — hardening should hybridize with
+  attempt-2's per-pair win (188 µs at 8 rows).
+
 ## Boundary checks
 
-(none yet)
+- **attempt-2 — pass** (boundary-1): one fused per-pair kernel, G2 bit-exact. Checked
+  `muse-spark/kernels/experts/attempt-2/block-0.metal` (B0), `block-1.metal` (B1),
+  `spec.json` against the five unseen-boundary items; no defect found.
+  - Other row counts: grid `rows*512` threads ÷ 128 = `rows*4` groups, one per
+    (row, slot) pair for any rows 1–32 (spec.json). `pair` in [0,rows*4)
+    (B0:7); `r = pair>>2` in [0,rows) (B0:11); `inds[pair]` of rows*4 (B0:12),
+    `x[r*768+i]` of rows*768 (B0:20), `y[pair*768+b*32+j]` of rows*4*768
+    (B0:70) all in range; no hardcoded row count, no sort threshold.
+  - Unwritten threadgroup reads: none. `tg_x` fully written by the strided loop
+    (B0:19-21) before the barrier (B0:22) and any `qvm_block` read (B1:21);
+    `tg_gate`/`tg_up` get all 12 blocks exactly once (`b = 4v+simd`, v in 0..2,
+    B0:29-47) before the barrier (B0:48) and silu reads (B0:54,60); `tg_h` fully
+    written (B0:53-61) before the barrier (B0:62) and down reads.
+  - Threadgroup memory: 768+384·3 = 1920 bf16 = 3840 B (B0:14-17), ~12% of the
+    32 KB limit; 128 threads/group ≤ 1024 (spec.json). Far from both limits.
+  - Thread timing: all cross-thread sharing guarded by barriers (B0:22,48,62);
+    each `tg_gate`/`tg_up` block and each `y` element written exactly once
+    (down `b = 4v+simd`, v in 0..5, covers 0..23 once, B0:65-73); pairs in
+    separate groups write disjoint `y` slices; no atomics. `simd_sum` (B1:39)
+    runs under uniform control flow (K = 768/384 both divisible by 32).
+  - Captured-input assumptions: none. `e = inds[pair]` used directly (B0:12) —
+    any order, duplicates fine; `e` in [0,60) is the shared boundary invariant,
+    and index maxima fit exactly (gate/up W 36863 < 36864, S/B 9215 < 9216;
+    down W 36863, S/B 9215; B1:22-30). No value early-exits. Residual, not a
+    defect: the bf16 silu lowering (B0:53-61) matches by 64-placement search
+    plus bit-exact G2 over all layers, so an unseen gate value flipping hidden
+    by 1 ULP (amplifiable by down near-cancellation) can't be ruled out in
+    principle — but no input class is assumed away. Cosmetic only: the B0:6
+    header comment still says "fp32" though v3 computes silu in bf16.
 
 ## Decision
 

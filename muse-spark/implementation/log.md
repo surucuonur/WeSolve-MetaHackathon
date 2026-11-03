@@ -35,3 +35,9 @@
 2026-11-03T21:55:51Z | builder-1-b | graded experts/attempt-2 v3: G1 pass, G2 pass max_ulp 0.0, beats_compiled true; 107.3/188.4/647.6 us/layer at 1/8/32 (orig 99.8/218.7/768.6); regresses 7.5% vs eager at 1 row; done
 2026-11-03T21:57:06Z | builder-1-a | graded attempt-1 v3: G1/G2 pass bit-exact, 1236.0/5060.2/10979.8 vs compiled 70.3/215.9/764.2 (4x better, still 14x off) - L1-load-bound diagnosis, rewriting as v4 (load fan-out, split phases)
 2026-11-03T21:57:41Z | lead | checkpoint v6: experts attempt-2 + combine attempts 1+2 collected (all G2 pass, all beat compiled); boundary-1/3 to check; 1-b numerics finding sent to 1-a/1-c
+2026-11-03T21:58:58Z | boundary-1 | checked experts/attempt-2 vs boundary: pass (rows*4 groups valid all 1-32 rows, no unwritten tg reads, 3840B tg, barriers+exact-once writes, no input assumptions; stale fp32 comment B0:6 cosmetic)
+2026-11-03T22:00:00Z | builder-1-a | graded attempt-1 v5: G1/G2 pass bit-exact, 256.7/1148.7/2430.9 (same as v4: not occupancy-bound) - prime suspect acc-array scratch spilling, trying forced unroll as v6
+2026-11-03T22:00:30Z | builder-1-c | graded attempt-3 v7 FINAL: G1 pass, G2 pass (max ULP 1.0), 68/238/654us vs compiled 65/213/764 (beats at 32 rows only); removed probe-f64 scratch
+2026-11-03T22:00:30Z | builder-1-c | done: verdict + miss analysis in attempt-3/notes.md, section in hyp-1, note on ineff-quantized-kernels-1; next change for hardening: hybridize attempt-2 (8-row) with attempt-3 grouping (32-row)
+2026-11-03T22:02:00Z | builder-1-a | graded attempt-1 v6: G1/G2 pass bit-exact, 248.5/1148.9/2435.1 (same as v5: not spilling, issue-bound) - found it: 36-75pct dummy work for <4-pair groups; adding exact itb-skip as v7
+2026-11-03T22:03:39Z | lead | checkpoint v7: experts attempt-3 collected (G2 pass, beats_compiled false); attempt-2 boundary pass; boundary-1 to check attempt-3
