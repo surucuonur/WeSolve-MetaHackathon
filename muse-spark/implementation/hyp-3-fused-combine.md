@@ -1,10 +1,10 @@
 # Hypothesis 3: fused combine kernel
 
 - **Owner:** lead
-- **Status:** building
-- **Version:** 3
-- **Updated:** 2026-11-03T22:05:00Z
-- **Next:** attempts 1+2 graded (both G2 pass, both beat compiled everywhere); boundary-3 to check both; then pick best (1 vs 2 both on ~17µs floor)
+- **Status:** ready
+- **Version:** 4
+- **Updated:** 2026-11-03T22:35:00Z
+- **Next:** none — attempt-1 goes to G3
 
 ## Inefficiency
 
@@ -92,10 +92,82 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory (brief:98)
 
 ## Boundary checks
 
-(none yet)
+*checked by boundary-3, 2026-11-03T22:11Z. Verdict: both attempts **pass** —
+no defects. The 8-row 2.0-ULP touch is compiler FMA contraction, identified
+and validated below; it saturates at 2.0 ULP on realistic inputs.*
+
+### attempt-1 (`muse-spark/kernels/combine/attempt-1`) — pass
+
+- **Row counts 1–32:** grid is `rows*768` threads, threadgroup 256
+  (`spec.json:1`); `rows*768/256 = 3*rows` groups exactly for every integer
+  row count, and `row = idx/768, d = idx - row*768` (`block-0.metal:12-14`)
+  is exact for all `idx`. No row-dependent branches or constants. Max index
+  `31*3072+767+2304 = 98303 < 32*3072` (`block-0.metal:17-23`); 256 threads
+  ≤ 1024.
+- **Threadgroup memory:** none used — no unwritten reads possible, 0 B of
+  32 KB.
+- **Thread timing:** threads are fully independent (no threadgroup memory,
+  no atomics, disjoint outputs) — the result is deterministic.
+- **Input assumptions:** none. Weights are used as arbitrary f32 with no
+  range/sum/nonneg assumption (`block-0.metal:20-23`); `weights[r,j]` pairs
+  with `y[r,j,:]` strictly positionally; both bf16 rounding points are kept
+  (`bfloat(acc)` then the bf16 `+ shared`, `block-0.metal:25`).
+
+### attempt-2 (`muse-spark/kernels/combine/attempt-2`) — pass
+
+- **Row counts 1–32:** grid `rows*192`, threadgroup 192 (`spec.json:1`) is
+  exactly `rows` groups for every row count; `row = threadgroup id`
+  (`block-0.metal:14`), each thread owns outputs `tid*4..tid*4+3`. All
+  loops/bounds are row-independent constants. 192 threads ≤ 1024.
+- **Unwritten reads:** none. `wsh[0..3]` is written by `tid < 4` and
+  `shsh[0..767]` by all 192 threads (disjoint `tid*4` quads) before the
+  single barrier (`block-0.metal:20-35`); all reads (`block-0.metal:37-40,62-65`)
+  come after it. The barrier is unconditional and reached by every thread
+  (the `tid<4` branch holds only a write).
+- **Near the limit:** `4*4 + 768*4 = 3088 B`, 9.4% of 32 KB.
+- **Thread timing:** all sharing is barrier-guarded disjoint writes plus
+  read-only broadcast — deterministic.
+- **Input assumptions:** none. Weights arbitrary f32, positional pairing
+  (expert-`j` u64 block with `wj`, `block-0.metal:52-58`), both rounding
+  points kept (`block-0.metal:62-65`); `bfloat(shsh[…])` is exact because
+  `shsh` holds exact bf16 values, so the add is identical to attempt-1's.
+  u64 loads are aligned and exact: shared row base `row*1536 B`, y row base
+  `row*6144 B` (both 8-B aligned for all rows), sizes exactly 192/768 u64 —
+  no overread (`block-0.metal:27-28,47,53`). Bit-exactness of the staging
+  is corroborated by the identical G2 fingerprints (0.0/2.0/1.0) of both
+  attempts: any staging error would move the touch.
+
+### The 2.0-ULP touch (both attempts): FMA contraction, not a defect
+
+CPU emulation (pure numpy, no GPU/model; bf16 RNE validated 0/20006 vs an
+exact rational oracle) of candidate-vs-reference on all 629,760 captured
+elements:
+
+- The reference is the pure mul-then-add chain: MLX v0.32.4
+  `col_reduce_small` computes `op(new, totals) = new + totals`
+  (`reduce_col.h`), and with the (32,4,1) strided-small dispatch
+  (`reduce.cpp`, `threadgroup_y = min(8, …, 4) = 4`) each element lands on
+  its own thread, so the reference association is the linear chain —
+  bit-identical to an uncontracted candidate (IEEE add commutes).
+- The Metal compiler FP-contracts the candidate's mul+add chain into FMA:
+  the FMA-chain evaluation reproduces the grader fingerprint **exactly**,
+  (0.0, 2.0, 1.0) at 1/8/32 rows, in two contraction shapes; all 120 pure
+  mul association trees give ≤1.0 on rows8 with zero fingerprint matches —
+  ruling out sum order as the source.
+- Realistic risk: 0 bad elements in 20M triplet-resampled captured elements
+  (true y/weights/shared joint distribution) for the FMA evaluations and
+  trees alike; max exactly 2.0. Exceedance needs adversarially constructed
+  cancellation (`shared ≈ −acc` to <2%): max 8.0 there, a construction
+  absent from real data. The brief's G2 note (brief:184) budgets exactly
+  this class of difference, and the remaining gates (captured-only G2,
+  greedy-token end-to-end, G3 timing) are insensitive to it.
+
+Optional, not required: if the team wants nonzero margin at rows8, qualify
+the accumulator `precise` (inhibits FMA contraction) and re-grade; both
+attempts pass the gates as they stand.
 
 ## Decision
 
-(open)
+Best: `muse-spark/kernels/combine/attempt-1` (builder-3-a, thread-per-output). Why: beats compiled at all three row counts by the wider relative margin (17.2 / 17.0 / 18.5 vs 22.9 / 26.2 / 28.0: −25 / −35 / −34%, against attempt-2's −14 / −30 / −35%); simpler (no threadgroup memory, fully independent threads); builder-3-b concedes it stays the pick. Both pass G1, G2 and boundary checks. No hardening round: both kernels sit on the ~17 µs/layer dispatch floor, flat across row counts with traffic ≤1.4 µs — no speed change worth making. The 8-row 2.0-ULP touch is FMA contraction, proven max exactly 2.0 on realistic inputs with zero exceedances (only adversarial `shared ≈ −acc` cancellation exceeds it); boundary-3's optional `precise`-accumulator margin-buy is noted for a later round, not worth a re-grade now. G3 should show: a faster step at all three concurrencies. Knock-out basis predicts −0.47 / −0.30 / −0.19 ms/step; the piece timing shows −0.10 / −0.10 / −0.24 ms/step ((22.4−17.2), (22.1−17.0), (30.7−18.5) µs/layer × 20 layers); the truth is between and G3 decides.
 
 ## From other agents

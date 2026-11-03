@@ -44,3 +44,9 @@
 2026-11-03T22:05:02Z | boundary-1 | checked experts/attempt-3 vs boundary: pass (rows-independent 60-group grid valid all 1-32 rows, no unwritten tg reads, 16516B tg per kernel, uniform barriers + exact-once writes, no input assumptions; non-bitwise fp32 order is boundary-allowed residual)
 2026-11-03T22:06:56Z | builder-1-a | graded attempt-1 v7: G1/G2 pass bit-exact, 81.6/416.2/1573.8 (matches prediction) - key insight: 16-multiple o0 alignment makes runs/pairs fully static; rewriting inner loops as v8 (predict ~35/170/600)
 2026-11-03T22:08:58Z | lead | checkpoint v8: experts attempt-3 boundary pass; waiting on builder-1-a and boundary-3
+2026-11-03T22:09:17Z | builder-1-a | graded attempt-1 v8: G1/G2 pass bit-exact, 86.8/462.3/1766.6 clean rerun (10pct SLOWER than v7 despite fewer ops: compiler was already folding) - definitive test: hand-unrolled scalar accs as v9
+2026-11-03T22:11:35Z | boundary-3 | checked combine/attempt-1 vs boundary: pass (exact grids all 1-32 rows, no tmem, independent threads, no input assumptions)
+2026-11-03T22:11:35Z | boundary-3 | checked combine/attempt-2 vs boundary: pass (rows groups all 1-32 rows, no unwritten tg reads, 3088B tg, guarded barrier, aligned exact u64 loads, no input assumptions)
+2026-11-03T22:11:35Z | boundary-3 | 2.0-ULP touch is FMA contraction not sum order: FMA chain reproduces grader 0.0/2.0/1.0 exactly, 120 pure trees ruled out; 0 bad in 20M resampled triplets, max 2.0; adversarial cancel reaches 8.0; both attempts pass
+2026-11-03T22:13:56Z | builder-1-a | graded attempt-1 v9: G1/G2 pass bit-exact, 87.4/461.1/1787.4 (same as v8: not spilling) - pivoting: att-3 proves even/odd-split+tmem-tiles passes G2 at 654us; rewriting as v10 (att-3 numerics verbatim, fused single-kernel, my direction)
+2026-11-03T22:14:45Z | lead | checkpoint v9: hyp-3 ready with combine/attempt-1 (both boundary pass, ULP touch proven FMA-safe, no hardening — dispatch floor)
