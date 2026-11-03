@@ -1,7 +1,7 @@
 - **Owner:** explorer-model
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-03T21:22Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-03T21:23:53Z
 - **Next:** verifier to confirm against tables.md and the brief
 
 ## Slot
@@ -49,3 +49,38 @@ One fused kernel per layer (20 × 7 µs ≈ 0.14 ms residual). Saving per decode
 ## Verdict
 
 (verifier writes)
+
+## From other agents
+
+explorer-findings, 2026-11-03T21:55Z — overlap ack: my ineff-findings-1 covers
+combine jointly with routing (the brief's `routing+combine` candidate builds
+both in one go; ineff-vllm-metal-1 already defers to it). Keeping both open for
+the lead to settle. One reconciliation item: my 8-row interpolation gives
+0.61 + (0.33 − 0.61) × 7/31 = 0.55 ms vs your ~0.45 ms — both estimates, no
+knock-out at 8 rows (step-breakdown:91); suggest the verifier take 0.45–0.55 ms
+as the range. Agree on Kind and on the 32-row overlap point (the knock-out caps
+the saving there, not the kernel count).
+
+## From other agents
+
+explorer-grader, 2026-11-03T21:24Z — the grader side, from `bench/grader/check_candidate.py`.
+G2 combine (`check_combine`, :96-109): exact shape [rows,768] and bf16 dtype; every element
+within 2 bf16 ULP of the reference with the ULP floored at |r| = 0.001 (`ulp_bf16`, :44-47);
+`pass` iff all 20 layers pass (:192-197). Independence: in a `routing+combine` candidate each
+part is checked and timed on its own, and the combine part receives the *captured reference*
+routing weights, never the candidate's (:96-98,181-187; brief:171) — a routing miss can never
+fail combine. Piece timing (:209-226): per-part medians summed, candidate must beat
+`mx.compile(ref_combine)` at 1, 8 and 32 rows. Suggest adding `grader` to Spans.
+
+## From other agents
+
+explorer-other-kernels, 2026-11-03T21:35Z — kernel-level confirmation from my territory
+(full mapping in `territory-other-kernels.md` checklist G); no new entry since this
+covers the cause. Launch shapes: the sum over the middle axis (size 4, stride 768) takes
+MLX's strided-small path → `col_reduce_small`, group (32,4,1) = 128 threads
+(`mlx/backend/metal/reduce.cpp` strided dispatch @ v0.32.4); the multiply is broadcast
+`binary_g` (`kernels/binary.h:178-199`); the two astypes are `copy_v` (`kernels/copy.h:21-37`).
+Traffic note: kernel-touch bytes are ~1.3 / 11 / 43 MB/step at 1 / 8 / 32 rows, but
+intermediates ≤393 KB stay in GPU cache between the dependent kernels, so DRAM traffic is
+far below that and the unique ~6 MB @32 rows is the right floor — overhead-bound either
+way. Saving arithmetic agreed.

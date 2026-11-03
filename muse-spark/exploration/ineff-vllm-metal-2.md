@@ -1,8 +1,8 @@
 - **Owner:** explorer-vllm-metal
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-03T21:35Z
-- **Next:** verifier to confirm
+- **Status:** superseded by ineff-runs-4
+- **Version:** 2
+- **Updated:** 2026-11-03T21:45Z
+- **Next:** none (code mechanism appended as a note on ineff-runs-4)
 
 ## Slot
 

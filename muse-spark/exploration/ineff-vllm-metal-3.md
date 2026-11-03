@@ -1,7 +1,7 @@
 - **Owner:** explorer-vllm-metal
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-03T21:36Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-03T21:23:53Z
 - **Next:** verifier to confirm
 
 ## Slot

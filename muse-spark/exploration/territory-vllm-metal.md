@@ -1,8 +1,8 @@
 - **Owner:** explorer-vllm-metal
-- **Status:** exploring
-- **Version:** 1
-- **Updated:** 2026-11-03T21:30Z
-- **Next:** post inefficiency entries, then answer notes
+- **Status:** done
+- **Version:** 2
+- **Updated:** 2026-11-03T21:46Z
+- **Next:** none (checklist sourced; ineff-1/2 superseded into findings-1/runs-4, ineff-3/4 open)
 
 ## What it does
 
@@ -168,10 +168,12 @@ projection, and sampling (native greedy argmax or a torch-CPU bridge).
 
 ## Inefficiencies
 
-- `ineff-vllm-metal-1` (open): MobileMoE MoE block excluded from compiled-MLP
-  dispatch — routing+combine run fully eager.
-- `ineff-vllm-metal-2` (open): GQA decode kernel lacks the 12/4/64/16 layout —
-  per-token kernel reads each KV head 3×.
+- `ineff-vllm-metal-1` (superseded by `ineff-findings-1`): MobileMoE MoE
+  block excluded from compiled-MLP dispatch — same routing+combine cause;
+  engine mechanism appended there as a note.
+- `ineff-vllm-metal-2` (superseded by `ineff-runs-4`): GQA decode kernel lacks
+  the 12/4/64/16 layout — same KV re-read cause; code mechanism + admission
+  caveat appended there as a note.
 - `ineff-vllm-metal-3` (open): 60 q/k/v `[0]` gathers (+60 contiguous copies
   from 2 rows) per step.
 - `ineff-vllm-metal-4` (open): ~2 ms of engine CPU per 1-row step while the

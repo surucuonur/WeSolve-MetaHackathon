@@ -1,10 +1,10 @@
 # Territory: findings
 
 - **Owner:** explorer-findings
-- **Status:** exploring
-- **Version:** 2
-- **Updated:** 2026-11-03T21:30Z
-- **Next:** post inefficiency entries ineff-findings-1..3
+- **Status:** done
+- **Version:** 4
+- **Updated:** 2026-11-03T22:05Z
+- **Next:** done — lead to settle overlaps; verifier to reconcile saving bases (findings-2 vs qkern-1) and the runs-3 premise
 
 ## What it does
 
@@ -272,15 +272,40 @@ while reading 908 MB against the 443 MB they need.
 - **Yields to `quantized-kernels` on MLX kernel internals:** pieces F-G cite
   `quantized.cpp` split-K and `gather_qmm` selection rules from the findings; the
   code-level confirmation is that territory's.
+- **Adaptation (2026-11-03T21:55Z):** `runs` and `model` posted first and cover
+  the same routing/expert causes (ineff-runs-1/2/3, ineff-model-2); kept my
+  entries open because (a) ineff-vllm-metal-1 points at ineff-findings-1,
+  (b) findings-1 maps the joint `routing+combine` slot, (c) findings-2 covers
+  kernel efficiency beyond runs-1's bytes floor. Appended notes on ineff-runs-1
+  (scope split, Kind vs glossary, 8-row scaling), ineff-runs-2 (overlap,
+  68 MB question), ineff-model-2 (overlap, 8-row range), ineff-runs-3 (premise
+  correction: micro A/B sorted flag selects the KERNEL, pairs ordered in both
+  arms — `moe_parts.py:149-163`), and territory-runs (edge pointer). Lead to
+  settle; the runs-3 correction is the one builders must not miss.
+- **Adaptation 2 (2026-11-03T22:05Z):** `quantized-kernels` and `switch-layers`
+  posted. ineff-quantized-kernels-1 is the in-kernel mechanism behind
+  ineff-findings-2's measured cost (complementary; saving bases 8.6 vs 3.67 ms
+  @32 need verifier reconciliation — note appended, incl. the micro-rhs-fired
+  point against the locality reading of the A/B gap).
+  ineff-quantized-kernels-2 and ineff-switch-layers-2 both cover launch fusion
+  (0.2-0.4 ms; lead to merge) — their finer inventory corrected my findings-2
+  @1-row figure 660 → 400 µs (Aranges are off-chain). ineff-switch-layers-1
+  (sort glue 0.7 ms @32) is consistent with piece F.
 
 ## Inefficiencies
 
-- `ineff-findings-1`: routing+combine bookkeeping dominates the 1-row step —
-  to be posted.
-- `ineff-findings-2`: routed experts read per (token, expert) pair and run slowly
-  at 32 rows — to be posted.
-- `ineff-findings-3`: split-K partial-result traffic from 14 rows up — to be
-  posted.
+- `ineff-findings-1` (open, v2): routing+combine bookkeeping dominates the
+  1-row step — 1.63 ms of 4.75 ms @1 row, saving ≈1420/1500/1800 µs @1/8/32
+  rows by fusion to 1 kernel/layer/slot. Overlaps ineff-runs-2 + ineff-model-2
+  (kept: joint `routing+combine` slot rationale; notes appended on both);
+  ineff-vllm-metal-1 superseded by it (engine note folded in).
+- `ineff-findings-2` (open, v2): routed experts read per pair and run slowly —
+  14.67 ms of 28.19 ms @32 rows, saving 3670 µs @32 (25% grouped basis; upper
+  5280), ≈660 @1 (fusion), ≈1300 @8 (rough). Complements ineff-runs-1
+  (excess-bytes floor 2.3 ms); note appended there.
+- `ineff-findings-3` (open, v1): split-K partial-result traffic from 14 rows —
+  173 MB written/step @32 rows, rough upper-bound saving ≈2400 µs @32, 0 @1/8.
+  No overlap found. Outside the slots.
 
 ## Files read
 
@@ -311,6 +336,11 @@ while reading 908 MB against the 443 MB they need.
   match pieces C-D.
 - `claude/GLOSSARY.md` (all): overhead-/bandwidth-/compute-bound, kernel,
   occupancy, knock-out and other terms used in the entries.
+- `bench/micro/moe_parts.py:149-163,190` (read for the runs-3 check): the A/B
+  `sorted` flag selects per-pair vs grouped kernel on identically ordered pairs.
+- Others' entries (read for adaptation): ineff-runs-1/2/3, ineff-model-2,
+  ineff-vllm-metal-1/2/3/4, ineff-quantized-kernels-1/2, ineff-switch-layers-1/2,
+  territory-runs (tail), exploration README v2.
 
 ## From other agents
 

@@ -117,4 +117,10 @@ This territory is the measurements, not the code: the three run folders that say
 
 ## From other agents
 
-(none yet)
+explorer-findings, 2026-11-03T21:55Z — edge finding on the micro A/B table
+(`moe_parts.txt:6-17`): the sorted=False/True arms differ in the
+`sorted_indices` FLAG on identically expert-ordered pairs
+(`moe_parts.py:155-163,190`), i.e. per-pair vs grouped kernel, not pair order —
+details in my notes on ineff-runs-1 and ineff-runs-3. Otherwise no contradiction
+found between the findings documents' quotes of the 2026-11-02 counters and the
+runs tables as far as I checked (908/443 MB, write totals).

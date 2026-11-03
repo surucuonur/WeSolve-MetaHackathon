@@ -1,10 +1,10 @@
 # Inefficiency: routing+combine bookkeeping dominates the 1-row step
 
 - **Owner:** explorer-findings
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-03T21:35Z
-- **Next:** verifier to check the arithmetic against tables.md
+- **Status:** superseded by ineff-runs-2 and ineff-model-2
+- **Version:** 3
+- **Updated:** 2026-11-03T21:27:27Z
+- **Next:** settled by lead: joint routing+combine view; per-slot entries carry the causes to hypotheses
 
 ## Slot
 
@@ -46,7 +46,9 @@ reads no weights. The cost is 340 fixed kernel costs plus their CPU encode.
 ## Spans
 
 `findings` (measured costs), `model` (MoE block code), `quantized-kernels` (the
-router product kernel).
+router product kernel). Overlaps ineff-runs-2 (routing) and ineff-model-2
+(combine); kept as one entry because the brief's `routing+combine` candidate
+builds both jointly — lead to settle (notes appended on both).
 
 ## Predicted saving
 
@@ -67,6 +69,33 @@ build+encode), so an existence proof, not a prediction. Caveats: knock-out
 savings include CPU encode, which fusion also cuts (favourable); but a faster
 version gains less than the full saving (step-breakdown Limits).
 
+Folded from explorer-vllm-metal's note (ineff-vllm-metal-1, now superseded by
+this entry): extending vllm-metal's `CompiledMLPBlocks` dispatch to MobileMoE is
+an alternative fix for this same time — it currently never wraps (gate default
+off, `_target_policies` lists only Qwen3Next/Qwen3.5, `MAX_COMPILED_TOKENS = 4`;
+`compiled_mlp.py:49,115-131`) — but it is roughly G3's compiled-reference
+baseline, so a slot kernel must beat it, not add to it. Their glue-only 1-row
+figure (≈1.0 ms) agrees with the ≈1.42 ms full-fusion figure within the
+matmul+casts that stay.
+
 ## Verdict
 
 (not yet written — the verifier writes this)
+
+## From other agents
+
+explorer-vllm-metal, 2026-11-03T21:45Z — same cause from the engine side; I
+marked my ineff-vllm-metal-1 superseded by this entry. Engine facts for the
+fix direction: vllm-metal already has a whole-block `mx.compile` dispatch,
+`CompiledMLPBlocks` (`third_party/vllm-metal/vllm_metal/compiled_mlp.py`),
+installed after load (`v1/model_lifecycle.py:228-239`), but (a) it is gated
+by `VLLM_METAL_COMPILED_MLP`, default off (`envs.py:121`); (b)
+`_target_policies` lists only Qwen3Next/Qwen3.5 block types
+(`compiled_mlp.py:115-131`), so MobileMoE-S's MoE block is never wrapped even
+with the flag on; (c) `MAX_COMPILED_TOKENS = 4` (`compiled_mlp.py:49`) routes
+8/32-row steps eager anyway. So extending the engine's compile dispatch to
+MobileMoE is an alternative fix for this same time — but note it is roughly
+G3's compiled-reference baseline, and any fused routing/combine slot kernel
+subsumes it. My 1-row saving arithmetic for the glue alone (≈1.0 ms/step:
+routing ≈0.65 + combine ≈0.37) agrees with yours (≈1.42 ms for full fusion
+to 1 kernel/layer) within the matmul+Casts that stay.

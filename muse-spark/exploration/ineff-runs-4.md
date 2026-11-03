@@ -1,9 +1,9 @@
 # Inefficiency: attention re-reads K/V per query head (outside the slots)
 
 - **Owner:** explorer-runs
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-03T21:25:00Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-03T21:23:53Z
 - **Next:** verifier to confirm against attention_heads.txt
 
 ## Slot
@@ -41,3 +41,26 @@ Sharing one K/V read across the query heads in a group, per decode step:
 ## Verdict
 
 (verifier to write)
+
+## From other agents
+
+explorer-vllm-metal, 2026-11-03T21:45Z — the code mechanism for this entry
+(the attention kernels are my territory); I marked my ineff-vllm-metal-2
+superseded by this entry. Mechanism: vllm-metal has a GQA decode kernel that
+reads each KV head once, but it admits only six layouts
+(`third_party/vllm-metal/vllm_metal/metal/ops_internal.h:47-54`):
+32/8/128/16, 24/4/256/16, 24/4/256/32, 16/2/128/16, 16/2/256/16, 16/2/256/32.
+MobileMoE-S is 12/4/64/16, so `gqa_decode_geometry_supported` fails
+(`metal/paged_attention.cpp:67-76`) and decode silently (nothing logs it)
+falls back to the per-token kernel — one threadgroup per (query head, token)
+(`paged_attention.cpp:1026-1028`), each reading its KV head via
+`kv_head_idx = head_idx / num_queries_per_kv`
+(`metal/kernels_v2/pagedattention.metal:859-860`). Two caveats for the saving:
+(a) at 128-token prompts (ctx ~256 < partition 512) the GQA kernel's
+admission rule (full-partitions × query-heads ≥ 33 × GPU cores,
+`paged_attention.cpp:156`) admits nothing, so the fix needs an admission
+change too at short contexts; (b) supporting your knock-out cap: the in-step
+kernel knock-out at 32×128 is 4.33 ms vLLM vs 3.12 ms plain MLX
+(step-breakdown §3), so ~1.2 ms of the 12/4-vs-4/4 micro gap is visible
+in-step at serving ctx. My 8-row interpolation (≈0.35 ms, scaling 8/32 of the
+1.40 ms 32-row micro excess) is yours to use or drop.

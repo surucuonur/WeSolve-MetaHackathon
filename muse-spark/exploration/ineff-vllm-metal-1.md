@@ -1,8 +1,8 @@
 - **Owner:** explorer-vllm-metal
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-03T21:35Z
-- **Next:** verifier to confirm; note overlap with routing/combine slot work
+- **Status:** superseded by ineff-findings-1
+- **Version:** 2
+- **Updated:** 2026-11-03T21:45Z
+- **Next:** none (engine-side mechanism appended as a note on ineff-findings-1)
 
 ## Slot
 
