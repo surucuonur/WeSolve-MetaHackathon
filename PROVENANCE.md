@@ -10,7 +10,7 @@ The hackathon rules require judges to tell what was built during the event, and 
 |---|---|---|---|
 | **surucuonur** (the entrant) | Direction and every decision; ran the machine; started the Muse Spark sessions; reviewed the results | every commit | Author and committer of every commit |
 | **Claude Code** (Claude Opus 5.5, Anthropic) | The benchmark, grader and provenance code, the measurements, every write-up, and Muse Spark's brief and round skill | `bench/`, `claude/`, `tools/`, `.agents/skills/`, `README.md`, this page, and the Markdown in `results/` | Commits co-authored by `Claude Opus 5.5 <noreply@anthropic.com>`, which GitHub shows as the `claude` account; a byline under each document's title |
-| **Muse Spark** (`muse-spark-1.3-contributor`; Meta Model API), working in Muse Code, Meta's own coding agent | Its diagnosis, choice of targets, kernels, drafts and notes, and the transcripts of its sessions, helper agents included | `muse-spark/`, committed on the branch `muse-agent` and merged with `--no-ff` | Commits co-authored by `Muse Spark (Meta Model API)`, subjects starting "Muse Spark:"; the transcript records the model behind every turn |
+| **Muse Spark** (`muse-spark-1.3-contributor`; Meta Model API), working in Muse Code, Meta's own coding agent | Its diagnosis, choice of targets, kernels, drafts and notes, and the transcripts of its sessions, helper agents included | `muse-spark/`, committed on the branch `muse-agent` and merged with `--no-ff` | Commits co-authored by `Muse Spark (Meta Model API)`, subjects starting "Muse Spark:"; the transcript records the model behind every model call |
 | **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, and Meta's MobileMoE-S weights | `third_party/` (pinned submodules) and the installed wheels; the weights are downloaded, not committed | Their own authors and licences |
 
 ## How the work is kept apart
@@ -34,7 +34,11 @@ Muse Spark works in Muse Code, Meta's own coding agent, which surucuonur starts 
 2. **Identity.** Every Muse Spark commit carries the Muse Spark co-author, written by Muse Spark as the skill shows. The `.invalid` address is reserved and belongs to no one (RFC 2606); Muse Spark has no GitHub account, so we neither claim nor invent one.
 3. **Hooks.** `tools/githooks/` refuses mixed commits: Muse Spark's co-author off `muse-agent`, Claude's on it, `muse-agent` commits without Muse Spark's co-author or outside `muse-spark/`, other commits inside it (merges of `muse-agent` excepted), and any staged API key.
 4. **Audit.** `tools/provenance_check.py` re-checks the whole history against the same rules, so a commit made around the hooks is caught.
-5. **Evidence.** Muse Code logs every model call, tool run and edit of the lead and its helpers. `tools/export_transcript.py` saves each session in `muse-spark/transcripts/`, refusing one that contains a key, and the audit checks that a Meta model made every call.
+5. **Evidence.** Muse Code logs every model call, tool run and edit of the lead, its helpers and Muse Code's own reminder agents. `tools/export_transcript.py` saves each session in `muse-spark/transcripts/`.
+   - **What it keeps:** every agent's conversation, how each tool call was approved, and the model of every model call.
+   - **What it drops:** Muse Code's own instructions.
+   - It refuses a session that contains a key.
+   - The audit checks that a Meta model made every call.
 6. **Independent grading.** The grader (`bench/grader/`) is Claude's; Muse Spark may run it but not change it, and it runs one GPU job at a time. Its results in the write-up come from re-running it, and G3, on the main checkout after the merge.
 
 **The removed API stage.** Before the agent session, Muse Spark was called through a Claude-written API pipeline: 2 calls, a strategy and one routing+combine kernel. That stage was removed so all of Muse Spark's results come from one method. Its commits remain in the history: `d14c4a3` (the brief), `48cb61f` and `8c0a9b0` (Muse Spark's answers), `6c0a0ba` and `2c71eb4` (their logs). The audit lists them under "before".

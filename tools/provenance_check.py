@@ -7,8 +7,8 @@ muse-agent when it exists):
 - no commit names both Muse Spark and Claude as co-authors;
 - from the tag agent-era on: Muse Spark commits change only muse-spark/, and
   every other commit that isn't a merge of muse-agent leaves muse-spark/ alone;
-- every transcript in muse-spark/transcripts/ was written by Meta models only
-  (no claude-* model in any assistant turn);
+- every model call in muse-spark/transcripts/, the lead's, every helper's and
+  every reminder agent's, was made by a Meta model (muse-*);
 - no tracked file contains an API key value from the main checkout's .env files
   (when present).
 
@@ -69,14 +69,18 @@ def is_muse_merge(commit, agent_tips):
 def check_transcripts(problems):
     models = Counter()
     for path in sorted(Path("muse-spark/transcripts").glob("*.jsonl")):
+        calls = 0
         for n, line in enumerate(path.read_text().splitlines(), 1):
-            entry = json.loads(line)
-            if entry.get("type") != "assistant":
+            row = json.loads(line)
+            if row.get("event") != "model_completed":
                 continue
-            model = (entry.get("message") or {}).get("model") or ""
+            calls += 1
+            model = row.get("model") or ""
             models[model] += 1
-            if model.startswith("claude") or not model:
-                problems.append(f"{path}:{n}: assistant turn by model {model!r}")
+            if not pv.is_meta_model(model):
+                problems.append(f"{path}:{n}: model call by {model!r}, not a Meta model")
+        if not calls:
+            problems.append(f"{path}: no model calls recorded")
     return models
 
 
@@ -135,7 +139,7 @@ def main():
     print(f"{'era':<10} {'co-author':<8} {'type':<7} count")
     for (era_label, kind, typ), n in sorted(rows.items()):
         print(f"{era_label:<10} {kind:<8} {typ:<7} {n}")
-    print(f"transcript turns by model: {dict(models) or 'none yet'}")
+    print(f"transcript model calls by model: {dict(models) or 'none yet'}")
     print(f"secret scan: {secrets}")
     print("\n".join(problems) if problems else "OK: no mixed authorship found")
     sys.exit(1 if problems else 0)

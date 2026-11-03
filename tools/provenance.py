@@ -41,6 +41,11 @@ def is_claude(name):
     return "claude" in low or "anthropic.com" in low
 
 
+def is_meta_model(model):
+    """Whether a model id names one of Meta's Muse models, such as muse-spark-1.3."""
+    return model.startswith("muse-")
+
+
 def kind(message):
     """'muse', 'claude', 'both' or 'human', from a commit message's co-authors."""
     names = coauthors(message)
@@ -61,9 +66,14 @@ def main_checkout():
     return common.parent
 
 
-def muse_config_dir():
-    """The Muse Spark session's Claude Code config folder (tools/muse-agent/start.sh)."""
-    return Path(os.environ.get("MUSE_CONFIG_DIR") or "~/.claude-muse").expanduser()
+def muse_sessions_dir():
+    """Where Muse Code keeps the Muse Spark sessions' logs.
+
+    tools/muse-agent/start.sh runs muse with HOME set to MUSE_HOME, so every
+    session under this folder is a Muse Spark session.
+    """
+    home = Path(os.environ.get("MUSE_HOME") or "~/.muse-spark").expanduser()
+    return home / ".local/share/muse/sessions"
 
 
 def secrets():

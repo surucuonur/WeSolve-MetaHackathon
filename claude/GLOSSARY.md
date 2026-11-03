@@ -126,6 +126,10 @@ _Avoid_: orchestrator, main agent
 An agent the lead starts for one bounded task (investigating one lens, drafting a design, reviewing a draft, verifying claims), which reports back and never grades or commits.
 _Avoid_: swarm, worker, subagent (when the role matters, not the mechanism)
 
+**Reminder agent**:
+One of Muse Code's own background agents, which watch the lead's progress and may nudge it, for example to check a claim before it says it is done; Muse Spark writes their turns too, but they take no part in the work.
+_Avoid_: helper (that is one the lead starts)
+
 **Diagnosis**:
 Muse Spark's written account of why each slot is slow: its cost, the kind of limit it hits, and the root cause in the code, every claim with a source.
 _Avoid_: analysis, findings (those are Claude's)

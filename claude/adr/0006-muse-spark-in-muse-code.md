@@ -39,7 +39,11 @@ The [brief](../muse-agent-brief.md) stays fixed as committed, and so do its task
 - **Key.** `MODEL_API_KEY` from `legal-agent-workshop/agent/.env` goes only to the `muse` process, as `META_API_KEY`, and is never stored.
 - **Seeing Claude's newest work.** `muse-agent` can't take merges. After a round, its branch is merged into main with `--no-ff` and Claude commits its results as `claude/findings/muse-round-<N>.md`. The next launch then fast-forwards `muse-agent` to main, which creates no commit and rewrites nothing, so the next round reads those results.
 - **One GPU job at a time.** The grader takes an exclusive lock ([bench/grader/gpu_lock.py](../../bench/grader/gpu_lock.py)), so a second run, from any agent or from Claude, stops with a message instead of distorting the timings. Only the lead grades.
-- **Evidence.** Muse Code logs every model call, tool run and edit for the lead and each helper, and `muse export` writes a session as JSON. [tools/export_transcript.py](../../tools/export_transcript.py) saves them in `muse-spark/transcripts/`, refusing any that contain a key, and the audit checks that a Meta model wrote every turn.
+- **Evidence.** Muse Code logs every model call, tool run and edit for the lead, each helper and its own reminder agents, one log per agent, and `muse export` writes a log as JSON. [tools/export_transcript.py](../../tools/export_transcript.py) joins a session's logs into one transcript in `muse-spark/transcripts/`.
+  - **What it keeps:** messages, tool calls and results, approvals, and the model of each call.
+  - **What it drops:** Muse Code's own instructions.
+  - It refuses a session that contains a key.
+  - The audit checks that a Meta model (`muse-*`) made every model call.
 - **Unchanged:** the authorship, the trailers, the hooks, the audit, and Claude's independent re-grading and G3 after each merge.
 
 ## Consequences
