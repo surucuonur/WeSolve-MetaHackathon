@@ -1,6 +1,6 @@
 # Exploration: round 1 — analysis
 
-**Version:** v5 · 2026-11-03T21:30:39Z · skill version 3
+**Version:** v6 · 2026-11-03T23:06:00Z · skill version 3
 
 ## Tracker
 
@@ -71,8 +71,19 @@ Confirmed inefficiencies outside the slots, for surucuonur's team. No slot cover
 
 Each territory entry lists what it read and what each file gave: [territory-model.md](territory-model.md), [territory-switch-layers.md](territory-switch-layers.md), [territory-quantized-kernels.md](territory-quantized-kernels.md), [territory-other-kernels.md](territory-other-kernels.md), [territory-vllm-metal.md](territory-vllm-metal.md), [territory-grader.md](territory-grader.md), [territory-findings.md](territory-findings.md), [territory-runs.md](territory-runs.md).
 
+## What building taught
+
+The analysis corrected by what the attempts showed (see `../implementation/README.md`):
+
+1. **Fusion beats grouping in the experts slot.** The ranking put the grouped-read ideal first ([ineff-quantized-kernels-1.md](ineff-quantized-kernels-1.md), 8.6 ms at 32 rows), but the grouped designs lost: attempt-1 (full fused grouped, 15 versions) and attempt-3 (grouped two-kernel) beat compiled only at 32 rows, while attempt-2/4's per-pair fusion won at 1+8 rows and tied at 32. Grouping overhead (pair scan, chunking, barriers, phantom work; duty-cycle ceiling ~55 GB/s vs the 150 ideal) eats the byte savings in the piece harness. The realizable prize came from launch fusion + occupancy + memory-level parallelism, not from reading each expert once.
+2. **The piece harness prices kernels differently from in-step knock-outs.** A fused kernel costs a ~24 µs/layer floor with barriers/serial tails (routing) and ~17 µs/layer streaming elementwise (combine) — not 6.81 µs per launch; the reference's 12 routing kernels cost ~3 µs each when pipelined 20 deep. Future predictions must use harness floors; G3 decides the in-step truth.
+3. **Experts G2 numerics key** (for the next round's builders): MLX's compiled swiglu computes entirely in bf16 — replicate per-op rounding or fail G2 at ~7%; gate/up/hidden must match bitwise (qvm strided-lane + `simd_sum` order) because down outputs near cancellation amplify 1-ULP flips; the stable bfloat sigmoid is replicable bit-exactly. Start from attempt-4's inner loop.
+4. **1-row piece baselines shift between runs** (experts eager 64–100, compiled 62–135 µs/layer across runs on the same machine) — cross-run absolute comparisons are unreliable; within-run vs-compiled is the valid comparison, and G3's spread check matters most at 1 row. The 8/32-row baselines are stable.
+5. **Combine's 2-ULP touch is safe**: it is FMA contraction, max exactly 2.0 on realistic inputs with zero exceedances over 20M resampled elements; only adversarial `shared ≈ −acc` cancellation exceeds it. The G2-margin worry was theoretical.
+
 ## Versions
 
+- v6 · 2026-11-03T23:06:00Z · What building taught (fusion beats grouping, harness floors, G2 numerics key, 1-row baseline shift) · changed: none (README only)
 - v5 · 2026-11-03T21:30:39Z · final analysis: context, territory map, 7 ranked inefficiencies, 4 recommendations, 1 refuted claim · changed: none (README only)
 - v4 · 2026-11-03T21:30:00Z · verifier done: 11 confirmed, runs-3 refuted · changed: ineff-runs-1 v3, ineff-runs-2 v3, ineff-runs-3 v3, ineff-runs-4 v3, ineff-model-2 v3, ineff-findings-2 v4, ineff-findings-3 v3, ineff-switch-layers-1 v2, ineff-switch-layers-2 v2, ineff-quantized-kernels-1 v3, ineff-vllm-metal-3 v3, ineff-vllm-metal-4 v3
 - v3 · 2026-11-03T21:27:27Z · all explorers done; findings-1 superseded by runs-2+model-2; 8 premature confirmations sent to verifier · changed: territory-switch-layers v2, territory-quantized-kernels v3, territory-other-kernels v2, territory-vllm-metal v2, territory-grader v2, territory-findings v4, ineff-findings-1 v3, ineff-findings-2 v3, ineff-quantized-kernels-1 v2

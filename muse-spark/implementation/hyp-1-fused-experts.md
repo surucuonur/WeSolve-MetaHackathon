@@ -1,10 +1,10 @@
 # Hypothesis 1: fused grouped experts kernel
 
 - **Owner:** lead
-- **Status:** hardening
-- **Version:** 7
-- **Updated:** 2026-11-03T22:55:00Z
-- **Next:** attempt-4 (1-d) new best: bit-exact, beats eager+compiled everywhere; boundary-1 to check it, then close ready (no further change named)
+- **Status:** ready
+- **Version:** 8
+- **Updated:** 2026-11-03T23:05:00Z
+- **Next:** none — attempt-4 goes to G3
 
 ## Inefficiency
 
@@ -299,9 +299,45 @@ lanes + `simd_sum`, full-bf16 silu) untouched; tmem still 3840 B.
     G2-proven forms (G2 max 1.0 ULP) — any fp32 summation order is
     boundary-allowed, all four bf16 rounding points are kept, 1 ULP of
     margin to the 2-ULP contract.
+- **attempt-4 — pass** (boundary-1): attempt-2 hardened to 256 threads/pair,
+  G2 bit-exact. Checked `muse-spark/kernels/experts/attempt-4/block-0.metal`
+  (B0), `block-1.metal` (B1), `spec.json` against the five unseen-boundary
+  items; no defect found. `diff` confirms B1 byte-identical to attempt-2 and
+  B0 differs only in wave structure and strided-loop steps.
+  - Other row counts: grid `rows*1024` threads ÷ 256 = `rows*4` groups, one
+    per (row, slot) pair for any rows 1–32 (spec.json). `pair` in [0,rows*4)
+    (B0:6); `r = pair>>2` in [0,rows) (B0:10); `inds[pair]` (B0:11),
+    `x[r*768+i]` with i < 768 (B0:18-19), `y[pair*768+b*32+j]` with b*32+j <
+    768 (B0:73) all in range; no hardcoded row count, no sort threshold.
+  - Unwritten threadgroup reads: none. `tg_x` fully written exactly once by
+    the strided loop (768 = 3×256, B0:18-20) before the barrier (B0:21) and
+    any `qvm_block` read (B1:21); `tg_gate`/`tg_up` get all 12 blocks exactly
+    once (wave 0: simds 0..7 → b 0..7; wave 1: simds 0..3 → b 8..11 under
+    the guard, B0:28-30,40-42) before the barrier (B0:51) and silu reads
+    (B0:57,63); `tg_h` fully written (tids 0..255 cover 0..255, tids 0..127
+    cover 256..383, B0:56-64) before the barrier (B0:65) and down reads.
+    Idle simds in gate/up wave 2 (b ≥ 12) write nothing and their stale `p`
+    is never stored — the guard covers the store (B0:30-37,42-49).
+  - Threadgroup memory: 768+384·3 = 1920 bf16 = 3840 B (B0:13-16), ~12% of
+    the 32 KB limit; 256 threads/group ≤ 1024 (spec.json). Far from both
+    limits.
+  - Thread timing: all barriers in uniform control flow (B0:21,51,65); each
+    `tg_gate`/`tg_up` block and each `y` element written exactly once (down
+    `b = 8v+simd` covers 0..23 once, B0:68-70); pairs in separate groups
+    write disjoint `y` slices; no atomics. `simd_sum` (B1:39) stays uniform:
+    the `b < 12` guard depends only on (`v`, `simd`), so it is uniform
+    within each simdgroup — participating simdgroups reduce uniformly and
+    idle ones skip wholly (K = 768/384 both divisible by 32, as before).
+  - Captured-input assumptions: none. `e = inds[pair]` used directly (B0:11)
+    — any order, duplicates fine; `e` in [0,60) is the shared boundary
+    invariant, and index maxima are attempt-2's exactly (B1 byte-identical).
+    No value early-exits. Same residual as attempt-2, not a defect: the bf16
+    silu lowering (B0:56-64) matches by 64-placement search plus bit-exact G2
+    over all layers. The stale "fp32" header comment from attempt-2 is fixed
+    (B0:1-5 rewritten).
 
 ## Decision
 
-(open)
+Best: `muse-spark/kernels/experts/attempt-4` (builder-1-d: attempt-2 hardened to 256 threads/pair). Why: passes G1, G2 bit-exact (max_ulp 0.0 at all rows) and its boundary check; beats BOTH eager and compiled at all three row counts (50.0 / 157.8 / 515.4 vs eager 64.3 / 218.6 / 765.7 vs compiled 65.3 / 217.4 / 760.2 µs/layer); fastest of the four attempts at every row count. Attempt-2 is second (beats compiled everywhere, but regressed 7.5% vs eager at 1 row before the occupancy fix). The grouped designs lost: attempt-1 (full fused grouped, 15 versions) and attempt-3 (grouped 2-kernel) win only at 32 rows — grouping's byte savings don't convert in the piece harness (duty-cycle ceiling ~55 GB/s vs the 150 ideal; scan/chunk/barrier overhead exceeds the traffic saved). Fusion without grouping captured the harness prize. No further hardening: builder-1-d names no further single change (512 threads/group is a ≤10% gamble against real regression risk); the only remaining direction is cross-pair grouping, a different change class that three directions showed loses in-harness. G3 should show: a faster step at all three concurrencies. Piece basis predicts −0.29 / −1.22 / −5.01 ms/step ((64.3−50.0), (218.6−157.8), (765.7−515.4) µs/layer × 20 layers); the knock-out bases span −0.40/−1.30/−3.67 ms (measured grouped) to −0.5/−2.5/−8.6 ms (ideal streaming). Caveat: 1-row harness baselines shift between runs (64.3/65.3 here vs 99.8/135.0 in attempt-2's run), so the 1-row margin needs G3's spread check; 8/32-row baselines are stable across runs.
 
 ## From other agents

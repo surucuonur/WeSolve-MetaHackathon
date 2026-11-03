@@ -64,3 +64,5 @@
 2026-11-03T22:30:06Z | builder-1-d | graded experts/attempt-4: G1 pass, G2 pass max_ulp 0.0, beats_compiled true; 50.0/157.8/515.4 us/layer at 1/8/32 (orig 64.3/218.6/765.7, comp 65.3/217.4/760.2); 1-row regression fixed (2.1x vs attempt-2)
 2026-11-03T22:30:06Z | builder-1-d | done: verdict + miss analysis in attempt-4/notes.md and hyp-1 section; no further single change recommended (512-thread follow-up gambles <=10% vs regression risk)
 2026-11-03T22:30:40Z | lead | checkpoint v11: experts attempt-4 collected (bit-exact, beats eager+compiled everywhere); attempt-1 boundary pass; boundary-1 to check attempt-4
+2026-11-03T22:31:29Z | boundary-1 | checked experts/attempt-4 vs boundary: pass (rows*4 groups valid all 1-32 rows, no unwritten tg reads, 3840B tg, simd-uniform b<12 guard keeps simd_sum uniform + exact-once writes, no input assumptions; stale fp32 comment fixed)
+2026-11-03T22:32:35Z | lead | finish: implementation v12 final, exploration v6 (What building taught), summary.md Round 1
