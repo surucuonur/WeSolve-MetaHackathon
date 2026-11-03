@@ -1,10 +1,10 @@
 # Hypothesis 2: fused routing kernel
 
 - **Owner:** lead
-- **Status:** building
-- **Version:** 3
-- **Updated:** 2026-11-03T21:41:00Z
-- **Next:** boundary-2 checking attempts 1 and 2 (both passed G2); attempt-1 beats compiled at all rows
+- **Status:** ready
+- **Version:** 4
+- **Updated:** 2026-11-03T21:52:00Z
+- **Next:** none — attempt-1 goes to G3
 
 ## Inefficiency
 
@@ -102,10 +102,26 @@ attempt's `notes.md`.
 
 ## Boundary checks
 
-(none yet)
+*checked by boundary-2, 2026-11-03T21:47Z — both attempts against the five grader-blind spots*
+
+### attempt-1 (single fused kernel) — pass
+
+- **Other row counts (1..32):** grid `rows*32`, threadgroup 32 → exactly one full threadgroup per row at every count; no partial groups, no bounds assumptions. Pass.
+- **Unwritten threadgroup reads:** `xsh` fully written (32 threads × 24 = 768, `block-0.metal:18-21`); `scores[0..59]` fully written (tids 0..31 write `e=tid`, tids 0..27 write `e=tid+32`, `:25-36`) and barrier-separated (`:37`) before thread 0 reads. Pass.
+- **Threadgroup memory:** 768×4 + 60×4 = 3,312 B (~3.2 KB of 32 KB); 32 threads ≤ 1,024. Pass.
+- **Thread timing:** one writer per `scores[e]`, barrier-separated phases, thread 0 alone writes outputs (`:39-78`). Deterministic. Pass.
+- **Captured-input assumptions:** none. Sigmoid overflow collapses to 0/1 exactly as the reference `mx.sigmoid`; no range assumption on `x` beyond bf16; strictly-greater insertion (earliest index wins ties) with exact ties G2-exempt; all biased scores finite so all 4 slots fill with distinct indices; denom sums in `inds` order like the reference (`slots.py:44-48`); `inds`↔`weights` pairing preserved. Pass.
+
+### attempt-2 (two-kernel split) — pass
+
+- **Other row counts (1..32):** kernel 1 grid `rows*60`, threadgroup 480. `rows*60 mod 480 = (rows mod 8)*60`, always whole rows, so partial groups (including grid < group at rows < 8) always cover whole local rows; group bases are multiples of 480 = multiples of 60, so the `(lr, e)` ↔ `(r, e)` mapping in `block-0.metal:10-14` stays consistent in full and partial groups. Kernel 2 is one independent thread per row (`block-1.metal:5`). Pass.
+- **Unwritten threadgroup reads:** partial groups always hold ≥ 60 threads, so `lr==0` covers all 60 experts staging `w_tile`; every occupied local row has its `e==0` stager for `x_tile`; both barrier-separated (`block-0.metal:32,36`). Pass.
+- **Threadgroup memory:** 60·64·4 + 8·64·4 = 17,408 B (~17.0 KB of 32 KB); 480 threads ≤ 1,024. Over half the limit but clear of it; `slots.build` checks only the thread cap (`slots.py:275`), hardware accepts the rest. Pass.
+- **Thread timing:** disjoint tile writes per `(lr, e)`, barrier-separated phases; kernel-2 threads share nothing. Deterministic. Pass.
+- **Captured-input assumptions:** none beyond attempt-1's (same sigmoid form, same strictly-greater tie rule, denom in `inds` order, pairing preserved); the two `[rows,60]` intermediates scale trivially with rows. Pass.
 
 ## Decision
 
-(open)
+Best: `muse-spark/kernels/routing/attempt-1` (builder-2-a, single fused kernel). Why: the only attempt beating `mx.compile(ref_routing)` at all three row counts (28.5 / 23.6 / 41.8 vs 30.5 / 42.0 / 49.1 µs/layer; attempt-2 wins only at 8 rows and is slower everywhere); G2 margin 40× (worst rel err 2.6e-6 vs 1e-4 limit, 0 wrong-expert rows); boundary pass with 3.3 KB of 32 KB threadgroup memory. No hardening round: the kernel is already one minimal launch per layer, and both builders' miss analyses agree the residual ~24 µs/layer is dispatch/eval floor that no kernel-body change removes — no further change worth making. G3 should show: a faster step at all three concurrencies. Knock-out basis predicts −0.9 / −1.2 / −1.4 ms/step; the piece timing shows −0.15 / −0.49 / −0.47 ms/step ((36.1−28.5), (48.0−23.6), (65.4−41.8) µs/layer × 20 layers); the truth is between and G3 decides. The 1-row margin is thinnest, so watch the repeat spread there.
 
 ## From other agents

@@ -17,3 +17,5 @@
 2026-11-03T21:38:30Z | builder-2-b | finished: miss explained (24-28us fused-kernel floor, not 6.81us/launch), section added to hyp-2, note added to ineff-runs-2
 2026-11-03T21:39:58Z | builder-1-c | graded attempt-3 v1: G1 pass, G2 fail (~7pct bad, max 11/32/68 ULP); small-|y| worst cases -> silu intermediate-rounding suspect, trying per-op bf16 rounds
 2026-11-03T21:40:13Z | lead | checkpoint v3: routing attempts 1+2 collected (both G2 pass, attempt-1 beats compiled at all rows); boundary-2 to check both
+2026-11-03T21:41:28Z | boundary-2 | checked routing attempts 1+2 vs boundary: both pass (att-1: 3.3KB tg, 1 group/row all counts; att-2: 17.0KB tg, whole-rows partial groups all counts; no unwritten reads, races, or input assumptions)
+2026-11-03T21:46:09Z | lead | checkpoint v4: hyp-2 ready with routing/attempt-1 (both boundary checks pass, no hardening — single minimal launch, residual is dispatch floor); hyp-3 opened in boundary
