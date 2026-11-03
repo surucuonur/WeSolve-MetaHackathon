@@ -41,3 +41,6 @@
 2026-11-03T22:00:30Z | builder-1-c | done: verdict + miss analysis in attempt-3/notes.md, section in hyp-1, note on ineff-quantized-kernels-1; next change for hardening: hybridize attempt-2 (8-row) with attempt-3 grouping (32-row)
 2026-11-03T22:02:00Z | builder-1-a | graded attempt-1 v6: G1/G2 pass bit-exact, 248.5/1148.9/2435.1 (same as v5: not spilling, issue-bound) - found it: 36-75pct dummy work for <4-pair groups; adding exact itb-skip as v7
 2026-11-03T22:03:39Z | lead | checkpoint v7: experts attempt-3 collected (G2 pass, beats_compiled false); attempt-2 boundary pass; boundary-1 to check attempt-3
+2026-11-03T22:05:02Z | boundary-1 | checked experts/attempt-3 vs boundary: pass (rows-independent 60-group grid valid all 1-32 rows, no unwritten tg reads, 16516B tg per kernel, uniform barriers + exact-once writes, no input assumptions; non-bitwise fp32 order is boundary-allowed residual)
+2026-11-03T22:06:56Z | builder-1-a | graded attempt-1 v7: G1/G2 pass bit-exact, 81.6/416.2/1573.8 (matches prediction) - key insight: 16-multiple o0 alignment makes runs/pairs fully static; rewriting inner loops as v8 (predict ~35/170/600)
+2026-11-03T22:08:58Z | lead | checkpoint v8: experts attempt-3 boundary pass; waiting on builder-1-a and boundary-3

@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 4
-- **Updated:** 2026-11-03T22:15:00Z
-- **Next:** attempt-2 boundary pass; attempt-3 (1-c) graded G2 pass but beats_compiled false (loses at 1+8 rows, wins 15% at 32); boundary-1 to check attempt-3; 1-a still building
+- **Version:** 5
+- **Updated:** 2026-11-03T22:25:00Z
+- **Next:** attempts 2+3 both boundary pass; 1-a (full fused grouped kernel) still building — last to report before hardening pick
 
 ## Inefficiency
 
@@ -163,6 +163,46 @@ from libmlx.dylib, verified on CPU against all 2.5M captured outputs).
     by 1 ULP (amplifiable by down near-cancellation) can't be ruled out in
     principle — but no input class is assumed away. Cosmetic only: the B0:6
     header comment still says "fp32" though v3 computes silu in bf16.
+- **attempt-3 — pass** (boundary-1): two-kernel grouped split, G2 max 1.0 ULP.
+  Checked `muse-spark/kernels/experts/attempt-3/block-0.metal` (K1, gate/up/act),
+  `block-1.metal` (K2, down), `spec.json` against the five unseen-boundary
+  items; no defect found.
+  - Other row counts: grid is rows-independent (60 groups, one per expert;
+    spec.json). `P = rows*4 <= 128` (K1:16-17, K2:8-9); `match_`/`plist` hold
+    128 (K1:19-20, K2:11-12), and `o < P` writers always exist (192/384
+    threads). `plist` build reads only `t < P` (K1:36, K2:25); chunk reads
+    `plist[c0(+1)]` guarded by `n` (K1:55-56, K2:44-45); any `Pe` 0..P works,
+    empty experts skip the loop, odd tails pad with pair 0 and skip the store
+    (K1:136, K2:95). All DRAM indices fit exactly at every rows 1–32: gate/up
+    W < 2,211,840 and S/B < 552,960 (K1:67,76), down W < 2,211,840 and S/B <
+    552,960 (K2:54,61), `x` row `t>>2 < rows` (K1:87), `hidden` `t*384+o0+1`
+    (K1:127-146), `y` `t*768+o0+1` (K2:93-98); threadgroup tile maxima also
+    exact (K1 gW 1535<1536, gS 383<384, xT 63<64; K2 dW 3071<3072, dS
+    767<768). No hardcoded row count, no sort threshold.
+  - Unwritten threadgroup reads: none. `match_` entries read only for `t < P`,
+    all written (K1:30-31, K2:19-20); `plist`/`nP` written before the barrier
+    (K1:34-44, K2:23-33) and read after; every tile fully written each
+    `(chunk, i0)` iteration (K1:63-88 cover 1536/384/64 exactly once;
+    K2:50-71 cover 3072/768/64) before the compute barrier (K1:89, K2:72),
+    with the end-of-tile barrier (K1:120, K2:91) guarding the next overwrite.
+  - Threadgroup memory: K1 = 512+512+6144+6144+4·768+128+4 = 16,516 B;
+    K2 = 512+512+12288+2·1536+128+4 = 16,516 B (matches notes.md ~16.1 KB);
+    both ~52% of the 32 KB limit with clear margin. 192/384 threads per
+    group ≤ 1024 (spec.json). Far from both limits.
+  - Thread timing: every barrier is in uniform control flow (`Pe`, `n`, `c0`,
+    `i0` uniform; `o`-guarded writes sit outside barriers); each (pair,
+    output) of `hidden` and `y` written exactly once (each pair `t` belongs
+    to exactly one expert's list since `inds[t]` is single-valued; each `o`
+    owns a disjoint output pair); the two kernels sequence through DRAM
+    `hidden`; no atomics, no `simd_` ops.
+  - Captured-input assumptions: none. `inds` used directly in any order
+    (K1:31, K2:20); duplicates within a row still land in distinct positional
+    outputs; any pairs-per-expert 0..P; no value early-exits or thresholds.
+    Residual, not a defect: gate/up/down use an even/odd split-K fp32
+    summation order that is not bit-exact (G2 max 1.0 ULP), but any fp32
+    summation order is boundary-allowed, and all four bf16 rounding points
+    plus MLX's stable bf16 sigmoid lowering are kept — 1 ULP of margin to
+    the 2-ULP contract over all captured layers/rows.
 
 ## Decision
 

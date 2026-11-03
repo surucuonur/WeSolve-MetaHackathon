@@ -1,6 +1,6 @@
 # Implementation: round 1
 
-**Version:** v7 · 2026-11-03T22:15:00Z · skill version 3
+**Version:** v8 · 2026-11-03T22:25:00Z · skill version 3
 
 ## Tracker
 
@@ -12,6 +12,7 @@
 
 ## Versions
 
+- v8 · 2026-11-03T22:25:00Z · experts attempt-3 boundary pass · changed: hyp-1-fused-experts v5
 - v7 · 2026-11-03T22:15:00Z · experts attempt-3 graded (G2 pass, beats_compiled false), attempt-2 boundary pass · changed: hyp-1-fused-experts v4
 - v6 · 2026-11-03T22:05:00Z · experts attempt-2 and combine attempts 1+2 graded (all G2 pass, all beat compiled); boundary checks started · changed: hyp-1-fused-experts v3, hyp-3-fused-combine v3
 - v5 · 2026-11-03T21:55:00Z · hyp-3 boundary drawn, 2 combine builders started · changed: hyp-3-fused-combine v2
