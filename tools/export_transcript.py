@@ -82,7 +82,7 @@ def main():
 
     values = pv.secrets()
     if not values:
-        raise SystemExit("can't check for API keys: none found in .env or the Muse Spark folder")
+        raise SystemExit("can't check for API keys: none found in the .env files")
     converted = [convert(src, values) for src in files]  # all checked before any is written
     args.out.mkdir(parents=True, exist_ok=True)
     for text, summary in converted:

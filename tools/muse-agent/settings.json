@@ -21,7 +21,7 @@
       "Read(./.env.*)",
       "Read(//Users/onur/Desktop/Github/Hackathon/.env)",
       "Read(//Users/onur/Desktop/Github/Hackathon/.env.*)",
-      "Read(~/.claude-muse/**)",
+      "Read(//Users/onur/Desktop/Github/Hackathon/legal-agent-workshop/**)",
       "Edit(./bench/**)",
       "Edit(./claude/**)",
       "Edit(./results/**)",

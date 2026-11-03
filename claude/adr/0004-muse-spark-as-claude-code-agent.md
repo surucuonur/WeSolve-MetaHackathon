@@ -6,7 +6,7 @@ status: accepted
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
 
-*[ADR 0005](0005-meta-settings-in-muse-folder-contributor-tier.md) changes three parts of this decision: Meta's settings live in the Muse Spark folder, the model is the contributor tier from the third session on, and there is no sandbox.*
+*[ADR 0005](0005-muse-spark-launcher-only-contributor-tier.md) changes three parts of this decision: Meta's settings exist only in the session the launcher starts, the default model is the contributor tier from the third session on, and there is no sandbox.*
 
 **The change.** Muse Spark now does its kernel work as a coding agent of its own: a Claude Code session whose model is `muse-spark-1.3`, served by Meta's Anthropic-compatible API ([Meta's coding-agents guide](https://dev.meta.ai/docs/coding-agents)). surucuonur starts it with [tools/muse-agent/start.sh](../../tools/muse-agent/start.sh). It works from [muse-agent-brief.md](../muse-agent-brief.md): it reads the findings, chooses its targets, writes kernels, runs the grader itself and commits each attempt. No Claude-written loop stands between it and the task.
 
@@ -42,13 +42,13 @@ This replaces [ADR 0003](0003-muse-spark-writes-kernels.md)'s API pipeline:
   - Muse Spark's whole engineering process: its choices, attempts, grader verdicts and commits;
   - on GitHub, the commits co-authored by "Muse Spark";
   - the transcript, which shows a Meta model wrote every turn.
-- **The model and its price.** The default model is the standard tier, `muse-spark-1.3`: $1.25 per million input tokens and $4.25 per million output tokens. From the third session on, the contributor tier ([ADR 0005](0005-meta-settings-in-muse-folder-contributor-tier.md)).
+- **The model and its price.** The default model is the standard tier, `muse-spark-1.3`: $1.25 per million input tokens and $4.25 per million output tokens. From the third session on, the contributor tier ([ADR 0005](0005-muse-spark-launcher-only-contributor-tier.md)).
   - On the contributor tier, Meta may train on everything sent. That would include Claude Code's own system prompt and tools, which sits uncomfortably with Anthropic's terms against using its services to train AI models.
-  - The model is set in the Muse Spark folder's settings ([ADR 0005](0005-meta-settings-in-muse-folder-contributor-tier.md)); the choice shows in the transcript.
+  - `MUSE_MODEL` can change the model; the choice shows in the transcript.
   - Claude Code may show $0 spend for a third-party model, so the real cost is on Meta's dashboard.
 - **Anthropic doesn't support it.** Its docs say it "doesn't support routing Claude Code to non-Claude models", though no clause forbids it. Meta documents this setup.
 - **Remaining risk.** An agent with a shell can reach what the user's account can.
-  - The read and write blocks outside the worktree and the deny rules narrow that. (The sandbox first used here was removed: [ADR 0005](0005-meta-settings-in-muse-folder-contributor-tier.md).)
+  - The read and write blocks outside the worktree and the deny rules narrow that. (The sandbox first used here was removed: [ADR 0005](0005-muse-spark-launcher-only-contributor-tier.md).)
   - The hooks and the audit stop anything from being *committed* wrongly, but they can't undo what the agent sees.
   - The API key is in the session's environment, because Claude Code needs it. Every commit and transcript is scanned for it.
 

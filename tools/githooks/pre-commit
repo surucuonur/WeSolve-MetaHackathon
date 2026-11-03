@@ -3,9 +3,8 @@
 
 On muse-agent: every staged path must be under muse-spark/, and no merges.
 Anywhere else: no staged path under muse-spark/, except when merging muse-agent.
-Everywhere: no staged file may contain an API key value: MODEL_API_KEY or
-HUGGINGFACE_API_KEY from the main checkout's .env, or the key in the Muse Spark
-config folder's settings.json.
+Everywhere: no staged file may contain MODEL_API_KEY's or HUGGINGFACE_API_KEY's
+value, read from the main checkout's .env and legal-agent-workshop/agent/.env.
 """
 
 import subprocess

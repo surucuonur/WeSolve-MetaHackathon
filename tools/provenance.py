@@ -4,7 +4,6 @@ Used by the git hooks in tools/githooks/, tools/provenance_check.py and
 tools/export_transcript.py.
 """
 
-import json
 import os
 import re
 import subprocess
@@ -18,8 +17,8 @@ MUSE_COAUTHOR = (
     "Co-Authored-By: Muse Spark (Meta Model API) <muse-spark@meta-model-api.invalid>"
 )
 SECRET_NAMES = ("MODEL_API_KEY", "HUGGINGFACE_API_KEY")
-# The key in the Muse Spark config folder's settings.json (ADR 0005).
-MUSE_SECRET_NAMES = ("ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY")
+# In the main checkout; the second holds the key tools/muse-agent/start.sh uses.
+ENV_FILES = (".env", "legal-agent-workshop/agent/.env")
 COAUTHOR = re.compile(r"^co-authored-by:\s*(.+)$", re.I | re.M)
 
 
@@ -68,27 +67,20 @@ def muse_config_dir():
 
 
 def secrets():
-    """The API key values from the main checkout's .env and from the env block of
-    the Muse Spark config folder's settings.json; [] where neither can be read.
+    """The API key values from the main checkout's ENV_FILES, or [] if none can be read.
 
     The values are only compared, never printed.
     """
     values = []
-    try:
-        text = (main_checkout() / ".env").read_text()
-    except OSError:
-        text = ""
-    for line in text.splitlines():
-        name, sep, value = line.partition("=")
-        if sep and name.strip().removeprefix("export ").strip() in SECRET_NAMES:
-            values.append(value.strip().strip("'\""))
-    try:
-        data = json.loads((muse_config_dir() / "settings.json").read_text())
-    except (OSError, ValueError):
-        data = {}
-    env = data.get("env") if isinstance(data, dict) else None
-    if isinstance(env, dict):
-        values += [str(env[n]) for n in MUSE_SECRET_NAMES if n in env]
+    for env_file in ENV_FILES:
+        try:
+            text = (main_checkout() / env_file).read_text()
+        except OSError:
+            continue
+        for line in text.splitlines():
+            name, sep, value = line.partition("=")
+            if sep and name.strip().removeprefix("export ").strip() in SECRET_NAMES:
+                values.append(value.strip().strip("'\""))
     return list(dict.fromkeys(v for v in values if len(v) >= 12))
 
 

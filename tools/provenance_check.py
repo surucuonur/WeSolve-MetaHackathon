@@ -9,8 +9,8 @@ muse-agent when it exists):
   every other commit that isn't a merge of muse-agent leaves muse-spark/ alone;
 - every transcript in muse-spark/transcripts/ was written by Meta models only
   (no claude-* model in any assistant turn);
-- no tracked file contains an API key value from .env or the Muse Spark config
-  folder's settings (when either is present).
+- no tracked file contains an API key value from the main checkout's .env files
+  (when present).
 
 Prints a table and exits non-zero on any violation. The git hooks enforce the
 same rules at commit time; this catches anything committed around them.

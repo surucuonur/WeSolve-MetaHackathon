@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # Start a Muse Spark session: a Claude Code session powered by Meta's Muse Spark,
 # kept apart from Claude's work (PROVENANCE.md, claude/adr/0004-muse-spark-as-claude-code-agent.md,
-# claude/adr/0005-meta-settings-in-muse-folder-contributor-tier.md).
+# claude/adr/0005-muse-spark-launcher-only-contributor-tier.md).
 #
 #   tools/muse-agent/start.sh [claude args]   # run from anywhere; you start it, not Claude
 #
-# This script is the only way to start one. It
-# - checks that the session's own Claude Code config folder (MUSE_CONFIG_DIR,
-#   ~/.claude-muse) points at Meta: its settings.json must set
-#   env.ANTHROPIC_BASE_URL to https://api.meta.ai and env.ANTHROPIC_MODEL to a
-#   muse-spark model. surucuonur writes those settings, with the API key; this
-#   script reads only those two fields;
+# This script is the only way to start one: Meta's settings exist only in the
+# session it launches. It
+# - takes the API key (MODEL_API_KEY) from legal-agent-workshop/agent/.env and
+#   never prints it;
 # - works in its own git worktree on branch muse-agent, created from the tag
 #   agent-era (the commit that registers claude/muse-agent-brief.md);
-# - uses that config folder, so it sees none of Claude's history, memory or settings;
-# - sets every model alias to the folder's model (dev.meta.ai/docs/coding-agents);
+# - uses its own Claude Code config folder (MUSE_CONFIG_DIR, ~/.claude-muse),
+#   so it sees none of Claude's history, memory or settings;
+# - talks to Meta's Anthropic-compatible API (dev.meta.ai/docs/coding-agents),
+#   with every model alias set to MUSE_MODEL (default muse-spark-1.3-contributor);
 # - runs with tools/muse-agent/settings.json: Muse Spark co-author on commits,
 #   writes only in muse-spark/, no .env, no push.
 #
@@ -26,30 +26,13 @@ set -euo pipefail
 
 MAIN="$(cd "$(dirname "$0")/../.." && pwd)"
 WT="${MUSE_WORKTREE:-$(dirname "$MAIN")/Hackathon-muse}"
+MODEL="${MUSE_MODEL:-muse-spark-1.3-contributor}"
 CONFIG="${MUSE_CONFIG_DIR:-$HOME/.claude-muse}"
+ENV_FILE="$MAIN/legal-agent-workshop/agent/.env"  # also scanned by tools/provenance.py
 PY="$MAIN/.venv/bin/python"
 
-MODEL="$("$PY" - "$CONFIG/settings.json" <<'EOF'
-import json
-import sys
-
-path = sys.argv[1]
-try:
-    data = json.load(open(path))
-except (OSError, ValueError) as e:
-    sys.exit(f"can't read {path} ({e.__class__.__name__})")
-env = data.get("env") if isinstance(data, dict) else None
-env = env if isinstance(env, dict) else {}
-url = str(env.get("ANTHROPIC_BASE_URL", "")).rstrip("/")
-model = str(env.get("ANTHROPIC_MODEL", ""))
-if url != "https://api.meta.ai" or not model.startswith("muse-spark"):
-    sys.exit(
-        f"{path} must set env.ANTHROPIC_BASE_URL to https://api.meta.ai "
-        "and env.ANTHROPIC_MODEL to a muse-spark model"
-    )
-print(model)
-EOF
-)"
+KEY="$("$PY" -c 'import sys; from dotenv import dotenv_values; sys.stdout.write(dotenv_values(sys.argv[1]).get("MODEL_API_KEY") or "")' "$ENV_FILE")"
+[ -n "$KEY" ] || { echo "MODEL_API_KEY is not set in $ENV_FILE" >&2; exit 1; }
 
 cd "$MAIN"
 git rev-parse -q --verify refs/tags/agent-era >/dev/null \
@@ -70,8 +53,10 @@ ln -sfn "$MAIN/models" "$WT/models"
 [ "$(git -C "$WT" branch --show-current)" = "muse-agent" ] \
   || { echo "$WT is not on branch muse-agent" >&2; exit 1; }
 
-# Only the folder's settings supply the API; no other key reaches the session.
-unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL
+unset ANTHROPIC_API_KEY
+export ANTHROPIC_BASE_URL="https://api.meta.ai"
+export ANTHROPIC_AUTH_TOKEN="$KEY"
+export ANTHROPIC_MODEL="$MODEL"
 export ANTHROPIC_DEFAULT_OPUS_MODEL="$MODEL"
 export ANTHROPIC_DEFAULT_SONNET_MODEL="$MODEL"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="$MODEL"
@@ -79,7 +64,7 @@ export CLAUDE_CODE_SUBAGENT_MODEL="$MODEL"
 export CLAUDE_CODE_AUTO_MODE_MODEL="$MODEL"
 export ENABLE_TOOL_SEARCH="true"
 export CLAUDE_CONFIG_DIR="$CONFIG"
-export MUSE_CONFIG_DIR="$CONFIG"
+unset KEY
 
 cd "$WT"
 echo "Muse Spark session: model $MODEL, worktree $WT, config $CONFIG"

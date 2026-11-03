@@ -28,9 +28,9 @@ Claude-Session: <session link>        changes only muse-spark/
 never changes muse-spark/
 ```
 
-Muse Spark works in a separate Claude Code session powered by Meta's API, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0004](claude/adr/0004-muse-spark-as-claude-code-agent.md), [ADR 0005](claude/adr/0005-meta-settings-in-muse-folder-contributor-tier.md)). That script is the only way to start one. Six layers keep its work and Claude's from mixing:
+Muse Spark works in a separate Claude Code session powered by Meta's API, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0004](claude/adr/0004-muse-spark-as-claude-code-agent.md), [ADR 0005](claude/adr/0005-muse-spark-launcher-only-contributor-tier.md)). That script is the only way to start one. Six layers keep its work and Claude's from mixing:
 
-1. **Place.** Muse Spark has its own git worktree on `muse-agent`, writes only in `muse-spark/`, and runs with its own Claude Code configuration folder. It sees none of Claude's history, memory or settings, and its worktree has no `.env`. Meta's API settings live only in that folder, so only a session started with it runs on Muse Spark.
+1. **Place.** Muse Spark has its own git worktree on `muse-agent`, writes only in `muse-spark/`, and runs with its own Claude Code configuration folder. It sees none of Claude's history, memory or settings, and its worktree has no `.env`. Meta's API settings exist only in the session `tools/muse-agent/start.sh` launches, so no other Claude Code session runs on Muse Spark.
 2. **Identity.** Its settings (`tools/muse-agent/settings.json`) put the Muse Spark co-author on its commits instead of Claude Code's default, which would credit the `claude` account. The `.invalid` address is reserved and belongs to no one (RFC 2606); Muse Spark has no GitHub account, so we neither claim nor invent one.
 3. **Hooks.** `tools/githooks/` refuses mixed commits: Muse Spark's co-author off `muse-agent`, Claude's on it, `muse-agent` commits outside `muse-spark/`, other commits inside it (merges of `muse-agent` excepted), and any staged API key.
 4. **Audit.** `tools/provenance_check.py` re-checks the whole history against the same rules, so a commit made around the hooks is caught.
@@ -41,10 +41,10 @@ Muse Spark works in a separate Claude Code session powered by Meta's API, which 
 
 ## A Muse Spark model in Claude's session (2026-11-02)
 
-On 2026-11-02, before Meta's settings moved into the Muse Spark folder ([ADR 0005](claude/adr/0005-meta-settings-in-muse-folder-contributor-tier.md)), a switch that points Claude Code at Meta put Claude's own session in the main checkout on `muse-spark-1.3-contributor` for several turns.
+On 2026-11-02, before Meta's settings were confined to the launcher ([ADR 0005](claude/adr/0005-muse-spark-launcher-only-contributor-tier.md)), a switch that points Claude Code at Meta put Claude's own session in the main checkout on `muse-spark-1.3-contributor` for several turns.
 - **What it saw:** those turns ran with Claude's configuration. They loaded Claude's memory notes and surucuonur's global instructions, and read this page, ADR 0004, the brief, the launcher and its settings. All of it went to Meta on the tier where Meta may train on it.
 - **What it did:** its shell commands failed, and it wrote and committed nothing. No file in this repository comes from those turns.
-- **What prevents it now:** Meta's settings live only in the Muse Spark folder, which only `tools/muse-agent/start.sh` uses.
+- **What prevents it now:** Meta's settings exist only in the session `tools/muse-agent/start.sh` launches; no Claude Code configuration points at Meta.
 
 ## What existed before the event
 
