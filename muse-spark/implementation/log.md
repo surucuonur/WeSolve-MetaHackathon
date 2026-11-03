@@ -50,3 +50,12 @@
 2026-11-03T22:11:35Z | boundary-3 | 2.0-ULP touch is FMA contraction not sum order: FMA chain reproduces grader 0.0/2.0/1.0 exactly, 120 pure trees ruled out; 0 bad in 20M resampled triplets, max 2.0; adversarial cancel reaches 8.0; both attempts pass
 2026-11-03T22:13:56Z | builder-1-a | graded attempt-1 v9: G1/G2 pass bit-exact, 87.4/461.1/1787.4 (same as v8: not spilling) - pivoting: att-3 proves even/odd-split+tmem-tiles passes G2 at 654us; rewriting as v10 (att-3 numerics verbatim, fused single-kernel, my direction)
 2026-11-03T22:14:45Z | lead | checkpoint v9: hyp-3 ready with combine/attempt-1 (both boundary pass, ULP touch proven FMA-safe, no hardening — dispatch floor)
+2026-11-03T22:17:09Z | builder-1-a | graded attempt-1 v10: G1/G2 pass (max_ulp 1.0, bad 0), 93.7/278.3/801.6 vs compiled 68.8/216.7/761.8 - found it: tile loads idx=o*K+k stride K words (16x/8x line waste); fixing to stride-1 as v11 (predict beats compiled everywhere)
+2026-11-03T22:18:37Z | builder-1-a | graded attempt-1 v11: G1/G2 pass (1.0), 100.8/272.1/783.4 (unchanged: not traffic-bound) - rewriting as v12 (384 threads, C=4, att-3 exact per-thread shapes both phases)
+2026-11-03T22:20:07Z | builder-1-a | graded attempt-1 v12: G1 pass after half->hh rename, G2 fail (down undercoverage bug: 384x2x2=1536 of 3072 outputs) - fixing with down output-block loop as v13
+2026-11-03T22:22:38Z | builder-1-a | graded attempt-1 v13: G1/G2 pass (1.0), 132.8/464.8/968.1 (4-pair backfired: +25pct tmem reads/MAC) - v14 = v10 gate/up + down as 192x2x2blocks (8 accs, k2-verbatim, occupancy parity)
+2026-11-03T22:24:24Z | builder-1-a | graded attempt-1 v14: G1/G2 pass (1.0), 96.9/269.4/762.4 vs compiled 139.2/218.7/761.3 (32-row tie+1us, 8-row short 23pct) - v15 = 384-thread C=4 (gu pair-split att-3-shape, down pair-group-sequential k2-verbatim)
+2026-11-03T22:27:08Z | builder-1-a | graded attempt-1 v15: G1/G2 pass (1.0), 161.0/556.8/1146.6 (384-thread C=4 backfired +50pct)
+2026-11-03T22:27:08Z | builder-1-a | wrap-up per lead note: restored best (v14) to attempt-1, confirmed by re-grade 79.3/260.3/743.7 vs compiled 62.0/214.1/761.0 (G1/G2 pass, beats only at 32 rows)
+2026-11-03T22:27:08Z | builder-1-a | done: verdict + miss-vs-prediction/attempt-2 analysis + hardening learnings in attempt-1/notes.md and hyp-1 section
+2026-11-03T22:27:49Z | lead | checkpoint v10: experts attempt-1 collected (G2 pass, beats_compiled false); hyp-1 hardening from attempt-2 (1-row occupancy); boundary-1 to check attempt-1

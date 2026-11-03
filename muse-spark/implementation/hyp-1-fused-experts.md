@@ -1,10 +1,10 @@
 # Hypothesis 1: fused grouped experts kernel
 
 - **Owner:** lead
-- **Status:** building
-- **Version:** 5
-- **Updated:** 2026-11-03T22:25:00Z
-- **Next:** attempts 2+3 both boundary pass; 1-a (full fused grouped kernel) still building — last to report before hardening pick
+- **Status:** hardening
+- **Version:** 6
+- **Updated:** 2026-11-03T22:45:00Z
+- **Next:** best is attempt-2 (only beats_compiled=true, bit-exact, boundary pass); builder-1-d hardening it with one change (1-row occupancy); boundary-1 checking attempt-1
 
 ## Inefficiency
 
@@ -131,6 +131,37 @@ from libmlx.dylib, verified on CPU against all 2.5M captured outputs).
   (~55 GB/s achieved vs 150 ideal); (4) at 8 rows grouping's DRAM edge
   barely outweighs padding waste — hardening should hybridize with
   attempt-2's per-pair win (188 µs at 8 rows).
+
+### builder-1-a — direction (a): full fused grouped kernel (ONE kernel)
+
+One threadgroup per expert (60 groups) scans `inds` for its pairs and runs
+gate/up/down + silu-mul fused with intermediates on-chip, no sort/unsort.
+v1-v9 replicated the reference bit-exactly (qvm strided lanes + `simd_sum`,
+per-op bf16 silu derived from MLX source); v10+ reused attempt-3's
+G2-proven even/odd-split + tmem-tile forms. Final (v14): 192 threads,
+chunks of 2 pairs, gate/up = attempt-3 k1 shape, down = k2 per-thread
+shape over 2 output blocks. Tmem ~17.1 KB by hand.
+
+- attempt-1 (`muse-spark/kernels/experts/attempt-1`, v14 final of v1-v15):
+  predicted 35 / 100 / 220 µs per layer at 1/8/32 rows; measured 79.3 /
+  260.3 / 743.7 (original 64.1 / 214.4 / 767.1; compiled 62.0 / 214.1 /
+  761.0). G1 pass; G2 pass with max_ulp 1.0, bad 0; beats_compiled false
+  (beats compiled only at 32 rows). Full version log + analysis in
+  `attempt-1/notes.md`.
+- Taught: (1) bit-exact qvm replication passes G2 at max_ulp 0.0 but runs
+  ~1/2.3 reference throughput — the strided-lane structure is unfixable
+  (threads/unroll/scalars/coalescing all verified neutral by grade);
+  (2) G2 does NOT need bitwise products: even/odd split + plain dequant +
+  bfloat silu passes (max 1.0), and all three builders' v1s failed
+  identically (max 11/32/68 ULP) on the five bf16 rounding points of the
+  compiled swiglu alone; (3) wider sharing backfires: C=4 (+21-50%) and
+  384 threads cost more in tmem reads/pressure than they share —
+  2-pair chunks at 192 threads are the sweet spot; (4) vs attempt-2
+  (107.3/188.4/647.6): fusion-without-grouping wins at 8/32 rows because
+  grouping's byte savings don't convert in the piece harness (cache
+  absorbs re-reads) while scan/chunk/barrier/phantom overhead is real —
+  hardening should start from attempt-2 and add grouping only on G3
+  cache-pressure evidence.
 
 ## Boundary checks
 
