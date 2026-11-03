@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** hardening
-- **Version:** 6
-- **Updated:** 2026-11-03T22:45:00Z
-- **Next:** best is attempt-2 (only beats_compiled=true, bit-exact, boundary pass); builder-1-d hardening it with one change (1-row occupancy); boundary-1 checking attempt-1
+- **Version:** 7
+- **Updated:** 2026-11-03T22:55:00Z
+- **Next:** attempt-4 (1-d) new best: bit-exact, beats eager+compiled everywhere; boundary-1 to check it, then close ready (no further change named)
 
 ## Inefficiency
 
@@ -163,6 +163,29 @@ shape over 2 output blocks. Tmem ~17.1 KB by hand.
   hardening should start from attempt-2 and add grouping only on G3
   cache-pressure evidence.
 
+### builder-1-d — hardening attempt-2: 256 threads per pair (1-row occupancy)
+
+ONE change on attempt-2 (direction b, one fused per-pair kernel): 256
+threads per threadgroup (8 simdgroups) instead of 128, so the grid is
+`rows*1024` threads = still `rows*4` groups, one per pair. `block-1.metal`
+byte-identical; gate/up 12 blocks in 2 waves of 8 (simd-uniform `b < 12`
+guard), down 24 blocks in 3 waves of 8. Per-block numerics (qvm strided
+lanes + `simd_sum`, full-bf16 silu) untouched; tmem still 3840 B.
+
+- attempt-4 (`muse-spark/kernels/experts/attempt-4`): predicted 60 / 185 /
+  650 us per layer at 1/8/32 rows; measured 50.0 / 157.8 / 515.4 (original
+  64.3 / 218.6 / 765.7; compiled 65.3 / 217.4 / 760.2, this run). G1 pass;
+  G2 pass with max_ulp 0.0 at all rows (bit-exact); beats_compiled true at
+  all rows — and beats eager original at all rows too. The 1-row regression
+  is fixed (50.0 vs attempt-2's 107.3, 2.1x).
+- Taught: 8 in-flight blocks per group (vs 4) raised memory-level
+  parallelism in every regime, not just 1-row occupancy: 32-row effective
+  bandwidth 109 -> ~137 GB/s, so attempt-2 was mildly MLP-bound even where
+  it looked streaming-bound. 32-row miss (-21%, fast side) explained in
+  `attempt-4/notes.md`. Next: no further single change recommended (see
+  below) — the only in-direction follow-up is 512 threads/group, which buys
+  <=10% against real register-pressure/idle-simd regression risk.
+
 ## Boundary checks
 
 - **attempt-2 — pass** (boundary-1): one fused per-pair kernel, G2 bit-exact. Checked
@@ -234,6 +257,48 @@ shape over 2 output blocks. Tmem ~17.1 KB by hand.
     summation order is boundary-allowed, and all four bf16 rounding points
     plus MLX's stable bf16 sigmoid lowering are kept — 1 ULP of margin to
     the 2-ULP contract over all captured layers/rows.
+- **attempt-1 — pass** (boundary-1): one fused grouped kernel (v14), G2 max 1.0
+  ULP. Checked `muse-spark/kernels/experts/attempt-1/block-0.metal` (B) and
+  `spec.json` against the five unseen-boundary items; no defect found.
+  - Other row counts: grid is rows-independent (60 groups, one per expert;
+    spec.json); `e` in [0,60) (B:28). `P = rows*4 <= 128` (B:30-31); `plist`
+    holds 128 (B:19) and the scan reads only `t < P` (B:36-37); chunk reads
+    `plist[c0(+1)]` guarded by `n` (B:49-52); any `Pe` 0..P works, empty
+    experts skip the loop, odd tails pad with `t0` and skip the `t1` store
+    (B:209). All DRAM indices fit exactly at every rows 1–32: gate/up W <
+    2,211,840 and S/B < 552,960 (B:70,79), down W < 2,211,840 and S/B <
+    552,960 (B:169,176), `x` row `t>>2 < rows` (B:90), `hbuf` < 768 (B:184),
+    `y` `t*768+d0+1` with `t < rows*4`, `d0+1 < 768` (B:207-212);
+    threadgroup compute-pointer maxima also exact (gate/up W 1535<1536,
+    S/B 383<384; down W 3071<3072, S/B 767<768; xT 63<64; B:93-122,187-204).
+    No hardcoded row count, no sort threshold.
+  - Unwritten threadgroup reads: none. `plist`/`nP` written by `o==0`
+    before the barrier (B:34-43) and read after (B:44,51-52); every tile
+    fully written each `(chunk, i0)` iteration (Wtile all 3072 exactly once
+    B:66-73 / B:165-170; Stile/Btile all 768 B:75-84 / B:172-179; xT all 64
+    B:86-91 / B:181-185) before the compute barrier (B:92, B:186), with the
+    end-of-tile barrier (B:123, B:205) guarding the next overwrite; `hbuf`
+    fully written per chunk (B:126-151) before the barrier (B:152) and down
+    reads (B:184).
+  - Threadgroup memory: 512+12288+1536+1536+128+1536+4 = 17,540 B ≈ 17.1 KB
+    (matches the entry's figure), ~55% of the 32 KB limit with clear margin.
+    192 threads per group ≤ 1024 (spec.json). Far from both limits.
+  - Thread timing: every barrier is in uniform control flow (`Pe`, `n`,
+    `c0`, `i0`, `bb` uniform; `o`-guarded writes sit outside barriers,
+    B:34,86,181); each (pair, output) of `y` written exactly once (each
+    pair `t` belongs to exactly one expert's list since `inds[t]` is
+    single-valued; phantom `t1` store skipped, B:209; each thread owns a
+    disjoint output pair; `bb` covers both halves); the chunk-end barrier
+    (B:215) guards the next chunk's tile/`hbuf` overwrite; no atomics, no
+    `simd_` ops.
+  - Captured-input assumptions: none. `inds` used directly in any order
+    (B:37); duplicates within a row are distinct `t` codes with distinct
+    positional outputs; any pairs-per-expert 0..P; no value early-exits or
+    thresholds. Residual, not a defect: gate/up/down use the same
+    even/odd split-K fp32 summation order and bfloat silu as attempt-3's
+    G2-proven forms (G2 max 1.0 ULP) — any fp32 summation order is
+    boundary-allowed, all four bf16 rounding points are kept, 1 ULP of
+    margin to the 2-ULP contract.
 
 ## Decision
 

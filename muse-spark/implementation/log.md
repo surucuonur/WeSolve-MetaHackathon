@@ -59,3 +59,8 @@
 2026-11-03T22:27:08Z | builder-1-a | wrap-up per lead note: restored best (v14) to attempt-1, confirmed by re-grade 79.3/260.3/743.7 vs compiled 62.0/214.1/761.0 (G1/G2 pass, beats only at 32 rows)
 2026-11-03T22:27:08Z | builder-1-a | done: verdict + miss-vs-prediction/attempt-2 analysis + hardening learnings in attempt-1/notes.md and hyp-1 section
 2026-11-03T22:27:49Z | lead | checkpoint v10: experts attempt-1 collected (G2 pass, beats_compiled false); hyp-1 hardening from attempt-2 (1-row occupancy); boundary-1 to check attempt-1
+2026-11-03T22:28:57Z | builder-1-d | claimed experts/attempt-4: harden attempt-2 with one change (256 threads/pair for 1-row occupancy)
+2026-11-03T22:29:06Z | boundary-1 | checked experts/attempt-1 vs boundary: pass (rows-independent 60-group grid valid all 1-32 rows, exact DRAM/tmem index maxima, no unwritten tg reads, 17540B tg, uniform barriers + exact-once writes, no input assumptions; non-bitwise fp32 order is boundary-allowed residual)
+2026-11-03T22:30:06Z | builder-1-d | graded experts/attempt-4: G1 pass, G2 pass max_ulp 0.0, beats_compiled true; 50.0/157.8/515.4 us/layer at 1/8/32 (orig 64.3/218.6/765.7, comp 65.3/217.4/760.2); 1-row regression fixed (2.1x vs attempt-2)
+2026-11-03T22:30:06Z | builder-1-d | done: verdict + miss analysis in attempt-4/notes.md and hyp-1 section; no further single change recommended (512-thread follow-up gambles <=10% vs regression risk)
+2026-11-03T22:30:40Z | lead | checkpoint v11: experts attempt-4 collected (bit-exact, beats eager+compiled everywhere); attempt-1 boundary pass; boundary-1 to check attempt-4
