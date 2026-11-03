@@ -1,7 +1,7 @@
 - **Owner:** explorer-vllm-metal
 - **Status:** confirmed
-- **Version:** 2
-- **Updated:** 2026-11-03T21:23:53Z
+- **Version:** 3
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to confirm
 
 ## Slot
@@ -55,4 +55,4 @@ vllm-metal (`attention/impls/sdpa.py` only).
 
 ## Verdict
 
-(verifier writes)
+verifier, 2026-11-03T21:27:42Z — **confirmed**. sdpa.py:722-724 exact (three `mx.contiguous(...[0]...)` lines, code read) ✓. +60 Gather (launches; `[0]` copies) and +60 Contiguous from 2 rows up, sharing memory at 1 row (step-breakdown §4 kernel table; ops mix: Contiguous 60, Gather +60 over plain's 3 — tables.md:152-154) ✓. `squeeze(0)` fix (§5 repeated-work table) ✓. repeat_fixes −0.59/−0.21/−0.08 with spreads 5.36–6.20 / 0.03 / 29.63–30.20 (§5 tables) ✓; 8-row 0.21 beats the spread, 1.5% ✓ (§5 verdicts). 32-row copies knock-out 0.24 ms (§4 GPU paragraph; tables.md contiguous row vLLM-32) ✓. 60×5 µs = 0.30 (marked estimate) ✓. On-chain reasoning (attention kernel waits for the copies — §5) ✓.

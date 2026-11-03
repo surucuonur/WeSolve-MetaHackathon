@@ -2,8 +2,8 @@
 
 - **Owner:** explorer-runs
 - **Status:** confirmed
-- **Version:** 2
-- **Updated:** 2026-11-03T21:23:53Z
+- **Version:** 3
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to confirm against attention_heads.txt
 
 ## Slot
@@ -40,7 +40,7 @@ Sharing one K/V read across the query heads in a group, per decode step:
 
 ## Verdict
 
-(verifier to write)
+verifier, 2026-11-03T21:27:42Z — **confirmed**. attention_heads.txt:10-11 (568.7 µs at 66.4 GB/s vs 247.1 at 152.8, rows 32 / ctx 1152; ratio 568.7/247.1 = 2.30 ✓) and :1-2 (26.0 vs 18.7 µs at rows 1 / ctx 256) ✓. Attention knock-outs 0.41 ms at 1 row and 3.12 ms at 32 rows (gpu-counters :23,:29) ✓. (26.0−18.7)×20 = 0.146 ≈ 0.15 ms ✓; 321.6×20 = 6.43 ≈ 6.4 ms, correctly noted as exceeding the knock-out (hotter micro ctx) and capped by it ✓. Predicted savings (0.1 / unmeasured / up to ≈2) are marked estimates inside the knock-out caps ✓. Carries the K/V re-read cause (ineff-vllm-metal-2 superseded by this entry; its GQA-fallback mechanism stands as the vLLM-side explanation).
 
 ## From other agents
 

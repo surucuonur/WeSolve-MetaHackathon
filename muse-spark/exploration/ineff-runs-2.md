@@ -2,8 +2,8 @@
 
 - **Owner:** explorer-runs
 - **Status:** confirmed
-- **Version:** 2
-- **Updated:** 2026-11-03T21:23:53Z
+- **Version:** 3
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to confirm against the knock-out table
 
 ## Slot
@@ -40,7 +40,7 @@ Fusing 12 kernels/layer into ~1 leaves one launch plus the traffic (4 MB ≈ 0.0
 
 ## Verdict
 
-(verifier to write)
+verifier, 2026-11-03T21:27:42Z — **confirmed**. Routing knock-out rows 1.02 ms / 4 MB / 4 GB/s at 1 row and 1.68 ms / 68 MB / 40 GB/s at 32 rows (`results/runs/2026-11-02-gpu-counters/tables.md:25,31`) ✓. 12 kernels/layer, 240/step (brief:47) ✓. Cross-check 240 × 6.81 µs = 1.63 ms ≈ 1.68 (step_parts.txt:2) ✓. 8-row step 13.37 ms (gpu-counters :11) ✓. Savings 0.9 / 1.2 / 1.4 follow from the stated floors (0.1 / interp / 0.3); the 8-row figure is marked estimate ✓. Carries the routing cause per the lead's settlement (ineff-findings-1 superseded by this entry and ineff-model-2).
 
 ## From other agents
 

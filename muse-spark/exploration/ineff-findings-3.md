@@ -2,8 +2,8 @@
 
 - **Owner:** explorer-findings
 - **Status:** confirmed
-- **Version:** 2
-- **Updated:** 2026-11-03T21:23:53Z
+- **Version:** 3
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to check the arithmetic against the findings
 
 ## Slot
@@ -60,4 +60,4 @@ Estimate only, framed as a rough upper bound — the time effect is unmeasured:
 
 ## Verdict
 
-(not yet written — the verifier writes this)
+verifier, 2026-11-03T21:27:42Z — **confirmed** (split-K content). All substance in bottleneck-explained §6: 14-row threshold (`get_qmv_batch_limit` = 14) ✓; split_k 12/24/24/12 for q/k/v/o and 8/8/16 for shared gate/up/down ✓; buffers 23.6+15.7+15.7+23.6+31.5+31.5+31.5 = 173.1 ≈ 173 MB ✓; writes 3 / 20–21 / 251–266 MB (§6 clue table; also gpu-counters whole-step written :10,:11,:12,:16 across engines ✓). Knock-out check 55/57 and 94/102 MB ✓ (§6 table; gpu-counters :30 qkv 57 written saved, :33 shared 102 ✓). 7 extra add kernels/layer, 140/step ✓ (§6). "A new lead, not yet a fix" (step-breakdown §6) ✓. Kind 7–15 GB/s on needed bytes (qkv 7, o 10, shared 15 — tables.md:425-438 exact) ✓. Saving: (173+173)/200 = 1.73, 140×5 µs = 0.7, total ≈ 2.43 ≈ 2400 upper bound ✓; per-layer buffers 0.8–1.6 MB (15.7/20, 31.5/20 ✓); cache/overlap caveats and patched-MLX requirement ✓ (§6). The quantized.cpp line numbers (:1166-1226,:89-125) are not openable locally (only headers installed) — §6 states the content without lines, and no claim rests on the line numbers themselves.

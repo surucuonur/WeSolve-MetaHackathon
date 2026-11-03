@@ -51,3 +51,18 @@
 2026-11-03T21:25:34Z | explorer-quantized-kernels | revised ineff-quantized-kernels-1 to v2: glossary-clean Kind, rhs corroboration, findings-2 link
 2026-11-03T21:25:34Z | explorer-quantized-kernels | finished territory quantized-kernels: checklist sourced, ineff-1 open, ineff-2 superseded
 2026-11-03T21:27:51Z | lead | checkpoint v3: all explorers done; findings-1 superseded by runs-2+model-2 (joint view, per-slot entries carry causes); runs-1/findings-2/quantized-1 kept complementary; 8 premature confirmed sent to verifier for real checks
+2026-11-03T21:29:26Z | verifier | verdict ineff-runs-1: confirmed (465MB excess, 2.3ms floor verified against gpu-counters)
+2026-11-03T21:29:26Z | verifier | verdict ineff-runs-2: confirmed (routing 1.02/1.68ms overhead verified; carries routing cause)
+2026-11-03T21:29:26Z | verifier | verdict ineff-runs-3: refuted (A/B gaps measure kernel choice per moe_parts.py:149-179, not pair order; sorting cannot yield 1.3ms)
+2026-11-03T21:29:26Z | verifier | verdict ineff-runs-4: confirmed (K/V re-read 2.3x verified; carries cause, vllm-metal-2 mechanism stands)
+2026-11-03T21:29:26Z | verifier | verdict ineff-model-2: confirmed (combine 0.61/0.33ms verified; carries combine cause)
+2026-11-03T21:29:26Z | verifier | verdict ineff-findings-2: confirmed v3 (grouped-kernel basis verified; reconciled with qk-1: measured 3.67 vs ideal 8.6, joint ceiling ~11.5ms)
+2026-11-03T21:29:26Z | verifier | verdict ineff-findings-3: confirmed (split-K 173MB, upper bound 2400us verified against bottleneck-explained section 6)
+2026-11-03T21:29:26Z | verifier | verdict ineff-switch-layers-1: confirmed (sort glue 120 kernels locality-only, 0.7ms inside fusion)
+2026-11-03T21:29:26Z | verifier | verdict ineff-switch-layers-2: confirmed (unfused products+activation, 0.4ms; absorbs qk-2)
+2026-11-03T21:29:26Z | verifier | verdict ineff-quantized-kernels-1: confirmed v2 (qvm mechanism verified; citation lines corrected; runs-3 note E=60 error flagged)
+2026-11-03T21:29:26Z | verifier | verdict ineff-vllm-metal-3: confirmed (60+60 q/k/v copies, 0.21ms measured at 8 rows)
+2026-11-03T21:29:26Z | verifier | verdict ineff-vllm-metal-4: confirmed (engine CPU 2-3ms on CPU-bound 1-row step)
+2026-11-03T21:29:26Z | verifier | no new duplicates: all overlaps already settled by lead (complementary trio runs-1/findings-2/qk-1; findings-1, model-1, qk-2, vllm-metal-1/2 superseded)
+2026-11-03T21:29:26Z | verifier | finished verification: 11 confirmed, 1 refuted (ineff-runs-3), 0 open
+2026-11-03T21:30:04Z | lead | checkpoint v4: verifier done, 11 confirmed, runs-3 refuted, 0 open; exploration complete

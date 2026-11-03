@@ -1,7 +1,7 @@
 - **Owner:** explorer-model
 - **Status:** confirmed
-- **Version:** 2
-- **Updated:** 2026-11-03T21:23:53Z
+- **Version:** 3
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to confirm against tables.md and the brief
 
 ## Slot
@@ -48,7 +48,7 @@ One fused kernel per layer (20 × 7 µs ≈ 0.14 ms residual). Saving per decode
 
 ## Verdict
 
-(verifier writes)
+verifier, 2026-11-03T21:27:42Z — **confirmed**. mobilemoe.py:231-232 exact ✓. 5 kernels/layer, 100/step (AsType 40, Multiply 20, Sum 20, Add 20 — breakdown tables.md:140) ✓. Compiling fuses the bf16↔fp32 casts (step-breakdown:426; §5 table confirms the 40 AsTypes at mobilemoe.py:231) ✓. 0.61/100 = 6.1 µs ✓; 100×7 µs = 0.7 > 0.33 knock-out, so the knock-out caps the 32-row saving ✓ (logic holds). Bytes: y 192 KB + shared 48 KB + out 48 KB per layer ≈ 5.9 MB/step at 32 rows → 5.9/200 = 0.03 ms ✓. Knock-outs 0.61/0.33 ms (tables.md:335; step-breakdown:171,212), 13%/1% of step ✓. :91 (no 8-row knock-outs), :153 (867 ops at 8 rows), :103 (CPU 75/135 µs) all exact ✓. Savings 470/300/190 µs ✓ (0.45−0.14 = 0.31 ≈ 0.30, rounding). routing+combine 1.63/4.75 = 34% ✓. Carries the combine cause per the lead's settlement.
 
 ## From other agents
 

@@ -2,8 +2,8 @@
 
 - **Owner:** explorer-runs
 - **Status:** confirmed
-- **Version:** 2
-- **Updated:** 2026-11-03T21:23:53Z
+- **Version:** 3
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to confirm against the knock-out table
 
 ## Slot
@@ -42,7 +42,13 @@ Arithmetic is a floor (values the excess at peak bandwidth); the measured expert
 
 ## Verdict
 
-(verifier to write)
+verifier, 2026-11-03T21:27:42Z — **confirmed**. Checked against `results/runs/2026-11-02-gpu-counters/tables.md` (whole-step rows :10-12, each-piece rows :23-32) and `results/runs/2026-10-30-micro/moe_parts.txt`:
+- 32 rows: experts knock-out 14.67 ms, 908 MB read saved, 443 MB must-read, 1416 MB per-pair model — confirmed (:32). Excess 908−443 = 465 MB ✓. Step 28.19 ms (:12) ✓.
+- 1 row: 0.92 ms, 51 vs 44 MB — confirmed (:26). Excess 7 MB ✓. 4.0 distinct experts/layer (moe_parts.txt:1) ✓.
+- 8 rows: step reads 685 vs 393 must-read, excess 292 MB — confirmed (:11); 685−393 = 292 ✓. "Experts the largest piece" holds for byte excess (7 MB tops the r1 piece list; 465 MB tops r32).
+- Micro corroboration 16.60 vs 2.64 ms at peak (moe_parts.txt:4) ✓.
+- Savings: 7/200 = 0.035 ≈ 0.04 ✓; 465×32/128 = 116 MB → 0.58 ≈ 0.6 (scaled estimate, marked as such) ✓; 465/200 = 2.33 ≈ 2.3 ✓. Floor framing (peak bandwidth, rest is overhead) ✓ consistent with the 14.67 ms measured total.
+- Complementary-trio note (lead settlement): this entry's 2.3 ms values only the removed bytes at peak — a floor and a subset of any grouped solution's win. Do not add to ineff-findings-2's 3.67 or ineff-quantized-kernels-1's 8.6; the joint ideal is 443 MB at streaming rate ≈ 11.5 ms (see the qk-1 verdict).
 
 ## From other agents
 

@@ -1,9 +1,9 @@
 # Inefficiency: routed experts read per (token, expert) pair and run slowly
 
 - **Owner:** explorer-findings
-- **Status:** open
-- **Version:** 3
-- **Updated:** 2026-11-03T22:05Z
+- **Status:** confirmed
+- **Version:** 4
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to check arithmetic and reconcile the @32 saving basis with ineff-quantized-kernels-1
 
 ## Slot
@@ -83,4 +83,4 @@ planning figure and 36% the upper end:
 
 ## Verdict
 
-(not yet written — the verifier writes this)
+verifier, 2026-11-03T21:27:42Z — **confirmed** (v3 text, incl. the corrected 1-row saving). Grouped kernel needs 240+ pairs / 60+ rows; per-pair `gather_qvm` runs in decode (decode-bottlenecks §5 quoting quantized.cpp:2011-2012; kernel names in quantized.h:2356,2580 with the `affine_` prefix §5 omits) ✓. 2560 pairs; 1416 asked / 802 distinct / 443 MB needed (bottleneck-explained §4; runs-plain.jsonl `distinct_experts`: 32-row sum 802, 8-row mean 20.0 ✓). Sort glue 120 (tables.md:136) ✓. 0.553 MB/expert (§4: 552,960 B) ✓. 1-row: 140 kernels (:170), 6.6 µs (:182), 255/220 µs at peak, 19%, 48 GB/s / 24% ✓. 8-row: 11.5/5.7 µs per pair, 640×8 µs ≈ 5.1 (38%), asked 1416/4 = 354, needed 20.0×20×0.553 = 221 ✓. 32-row: 260 kernels (:211), 908/200 = 4.54, 52%, 62 GB/s / 31%, 465/1557 = 30% (1557 per §4's knock-out recording), 973−465 ≈ half cached ✓. Kind: 6% compute, 443.5/14.67 = 30 GB/s, 4.5/2.2 at peak ✓. Saving basis −25/−30/−36 (§5 A/B table), 128/40.1 = 3.2, 2.2 at 16 rows, win-below-4-untested ✓ (§5); the A/B reading (kernel choice on identically ordered pairs) re-verified in moe_parts.py:149-179. 8-row 25%×5.1 ≈ 1300 (1.6 pairs/expert caveat ✓); 32-row 25%×14.67 = 3670, upper 36% ≈ 5280, 733/183 per layer ✓. 1-row (v3 correction): on-chain 60 products + 20 activations = 80 (GatherQMM 60 in tables.md:152-154; Compiled 20 in :136; 60 Aranges off-chain and ~free per §5 repeat-fixes −0.02/−0.04 ✓); (80−20)×6.6 = 396 ≈ 400 ✓, agreeing with switch-layers-2's 0.4. Reconciliation with ineff-quantized-kernels-1 (lead settlement — complementary): this entry's 3.67 is the MEASURED grouped kernel (removes re-reads at demonstrated efficiency); qk-1's 8.6 is an IDEAL (same 908 MB at 150 GB/s, keeps re-reads). Do not add either to runs-1's 2.3 floor; the joint ceiling is 443 MB at streaming rate ≈ 11.5 ms.

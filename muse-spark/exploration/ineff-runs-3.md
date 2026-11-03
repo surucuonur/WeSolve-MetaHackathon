@@ -1,9 +1,9 @@
 # Inefficiency: (token, expert) pairs unsorted below 16 rows
 
 - **Owner:** explorer-runs
-- **Status:** confirmed
-- **Version:** 2
-- **Updated:** 2026-11-03T21:23:53Z
+- **Status:** refuted — the micro A/B gaps measure kernel choice (qvm vs grouped), not pair order, so sorting serving pairs cannot yield the prize
+- **Version:** 3
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to confirm against moe_parts.txt
 
 ## Slot
@@ -42,7 +42,7 @@ Caveat: the micro setup's distinct/layer (up to 47.8 at R=32) exceeds serving's 
 
 ## Verdict
 
-(verifier to write)
+verifier, 2026-11-03T21:27:42Z — **refuted**: the A/B gaps measure kernel choice, not pair order. `bench/micro/moe_parts.py:155-159` sorts `inds` once and runs both arms on the same expert-ordered pairs, varying only `sorted_indices` (:190,199,208); weights are sliced to E experts (:164-179), so B/E = 4–4.27 ≥ 4 and sorted=True switches MLX to `gather_qmm_rhs` (script comment :149-150; decode-bottlenecks:183-195: "the pairs are in expert order in both arms", table labelled per-pair vs grouped). Consequences: (a) sorting serving pairs at 8 rows cannot yield 3.82 ms — serving E=60 keeps B/E = 32/60 < 4 on the per-pair kernel, so the 1.3 ms prize needs a kernel change (ineff-runs-1/ineff-findings-2 scope), not a sort; any locality-only prize inside qvm is unmeasured. (b) At 32 rows the gap is NOT already collected — serving is sorted yet still on qvm. The quoted table numbers (5.08/3.82, 8.12/5.65, 15.02/9.63; moe_parts.txt:6-15) are correct; the inference from them is wrong. The explorer-quantized-kernels note's "pure L2 locality" framing used E=60 and misses the weight slicing; the findings and switch-layers correction notes hold.
 
 ## From other agents
 

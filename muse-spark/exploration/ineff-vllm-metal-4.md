@@ -1,7 +1,7 @@
 - **Owner:** explorer-vllm-metal
 - **Status:** confirmed
-- **Version:** 2
-- **Updated:** 2026-11-03T21:23:53Z
+- **Version:** 3
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to confirm
 
 ## Slot
@@ -61,4 +61,4 @@ encode):
 
 ## Verdict
 
-(verifier writes)
+verifier, 2026-11-03T21:27:42Z — **confirmed**. CPU-bound 1-row step: GPU waits 0.41/0.06 ms (§2) ✓; runner-outside-model 0.5/0.9/1.6 ms (column sums 0.51/0.87/1.55 ✓); 2–3 ms extra CPU (§4) ✓. Attention path 1340 vs 558 µs; sdpa_forward 564 vs 233; prepare_sdpa_qkv 250; RoPE helper 161 (161–203 range in §5) ✓ (§4). async_eval 4.10 vs 2.61, 3.68 least-disturbed (§4 exact) ✓; +101 kernel / +140 view ops (968−867, 706−566 ✓); paging caveat ✓. GPU waits 6.58/19.39 ms at 8/32 rows (§2) ✓; 1-row upper-bounds note (7.44 vs 5.64 bare) ✓. Code: per-layer getattr probes (sdpa.py:640 inside cited :634-667 ✓); RoPE `mx.array(offsets)` per layer (varlen_rope_compat.py:225,228 inside :221-228 ✓; §5 cites the same range) ✓. Saving 0.5 ms at 1 row marked estimate ✓; 0 at 8/32 (CPU off critical path) ✓ logic. Non-additivity with ineff-vllm-metal-3 ✓ (stated).

@@ -1,9 +1,9 @@
 # Inefficiency: sort glue costs 6 kernels/layer from 16 rows, for locality only
 
 - **Owner:** explorer-switch-layers
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-03T21:30Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to confirm kernel inventory and the B/E>=4 gate
 
 ## Slot
@@ -63,4 +63,4 @@ with `ineff-runs-1` and `ineff-switch-layers-2` (one fix; savings do not add):
 
 ## Verdict
 
-(verifier to write)
+verifier, 2026-11-03T21:27:42Z — **confirmed**. switch_layers.py:181 (`do_sort = indices.size >= 64`) ✓; :12-17 (order + inv_order argsorts, `order // M`) and :20-24 (unsort gather) = 2 ArgSort + 1 FloorDivide + 3 Gather = 6 kernels/layer ✓. Inventory 120/step (tables.md:136: Gather 60, ArgSort 40, FloorDivide 20; 987−867 = 120 ✓). Grouped gate B/E ≥ 4 → 240+ pairs = 60+ rows (decode-bottlenecks §5) ✓, so serving never switches kernels — consistent with the runs-3 refutation. Locality: (1416−908)/1416 = 36% ≈ a third cached ✓. Cost: 4/32 pairs < 64 → no sort at 1/8 rows ✓; 5×6.81×20 = 0.68 ≈ 0.7 ms at 32 rows (6.81 in step_parts.txt:2 ✓; on-chain count of 5 marked judgment) ✓; ~8 MB → 0.04 ms ✓; contained in experts 14.67 (step-breakdown:211 ✓); CPU glue 128→399 µs (tables.md:99 ✓). Saving ≈ 0.7 (100×6.81 µs ✓), joint with runs-1/switch-2, does not add ✓ (stated).

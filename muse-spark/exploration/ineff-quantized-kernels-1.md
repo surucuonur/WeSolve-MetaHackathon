@@ -1,9 +1,9 @@
 # Inefficiency: each (token, expert) pair runs its own qvm grid at ~1/3 peak bandwidth
 
 - **Owner:** explorer-quantized-kernels
-- **Status:** open
-- **Version:** 2
-- **Updated:** 2026-11-03T22:05Z
+- **Status:** confirmed
+- **Version:** 3
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to confirm dispatch lines and the GB/s arithmetic
 
 ## Slot
@@ -85,7 +85,7 @@ distinct/layer and glue; serving prize may differ.
 
 ## Verdict
 
-(verifier to write)
+verifier, 2026-11-03T21:27:42Z — **confirmed** (v2 text), with citation corrections. Dispatch: M=1 plus B/E < 4 rules out the rhs path at rows≤32 ✓ (decode-bottlenecks §5 condition; B/E = 128/60 = 2.13 — entry writes ≤2.1, corrected, still < 4). `affine_gather_qvm` (quantized.h:2356, in cited :2355-2416 ✓); strided-lane pattern (`qvm_impl` :1262-1264 ✓; gate 192 B stride / 16 B loads and scales 12-el / 24 B stride follow from the instantiation ✓); x-streaming loop (:1275-1287 ✓; the 12×/55 KB/3.75 KB figures are the owner's code model, loop structure consistent; (55−3.75)×128×20 = 131.2 ≈ 131 MB ✓, inside the 908 ✓). 24/24/48 groups = 4 pairs × 6/6/12 ✓; 24×64 = 1536 ≈ 1.5K, 48×64 ≈ 3K threads ✓. Cost: 60×6 µs = 0.36 ✓; 51/0.92 = 55 GB/s ✓; (540+55)×32×20 = 380.8 ≈ 383 MB modelled ✓; 383/5.08 = 75 GB/s ✓; 908/14.67 = 62 GB/s / 31% ✓; 51/200 = 0.26 ✓; ridge 26 (GLOSSARY:26) ✓; 158 GB/s output layer (step-breakdown:193-195 ✓); v2 additions (pairs ordered in both micro arms; findings-2's ~5.1; ~20 distinct/layer) ✓ all match sources. Savings: 51/150 = 0.34 → 0.58−0.1 ≈ 0.5 ✓; 383/150 = 2.55 → 2.53 ≈ 2.5 ✓; 908/150 = 6.05 → 8.62 ≈ 8.6 ✓; joint ideal 443/150 ≈ 3.0, prize ≈ 11.5 ✓. WRONG citations (numbers right, lines wrong): "gpu-counters :17-18" → the 908 MB figure is :32 (whole-step :12); "breakdown :210-213,259-262" are serialized-cost rows — knock-outs are :333-334 (and step-breakdown:170,210-211). Note: the entry's runs-3 note used E=60, but moe_parts.py:164-179 slices weights to E (8/16/30), so sorted=True did switch kernels in the micro test — the serving (E=60) analysis above is unaffected. Reconciliation with ineff-findings-2 (lead settlement — complementary): measured grouped kernel (3.67) vs this ideal streaming basis (8.6); do not add to runs-1's 2.3 floor — joint ceiling ≈ 11.5 ms.
 
 ## From other agents
 

@@ -1,9 +1,9 @@
 # Inefficiency: gate/up/down products and activation unfused
 
 - **Owner:** explorer-switch-layers
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-03T21:30Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-03T21:27:42Z
 - **Next:** verifier to confirm against the kernel inventory and brief rounding points
 
 ## Slot
@@ -60,7 +60,7 @@ product, silu-mul on bf16 values rounded to bf16 before the down product
 
 ## Verdict
 
-(verifier to write)
+verifier, 2026-11-03T21:27:42Z — **confirmed**. switch_layers.py:188-194 (up/gate/down `gather_qmm` calls) ✓ via mobilemoe.py:172-184 (the `gather_qmm` wrapper) ✓; compiled silu-mul activation (activations.py:9-11 `swiglu`) ✓. 80 on-chain + 60 off-chain Arange per step (tables.md:136,152-154 ✓); Aranges ~free (step-breakdown §5 repeat-fixes :438-463: −0.02/−0.04/+0.04 noise) ✓. Intermediates: 3×128×384×2 B = 0.29 MB/layer = 5.9 MB/step at 32 rows; 3×4×384×2 = 9 KB/layer at 1 row ✓. Cost: 0.92/140 = 6.6 µs (:170,182 ✓); 4×6.81×20 = 0.54 ms ✓; 0.2 MB ≈ 0 ms at 1 row ✓; 867 ops at 8 rows (:153 ✓); 5.9/200 = 0.03 ms at 32 rows ✓. Saving 3×6.81×20 = 0.41 ≈ 0.4 ms at all rows ✓. Boundary (fp32 accumulation + bf16 rounding per product, silu-mul rounded before down — brief:90) ✓. Absorbs ineff-quantized-kernels-2 (lead settlement — same fusion; qk-2's launch/intermediate figures agree within rounding).
 
 ## From other agents
 
