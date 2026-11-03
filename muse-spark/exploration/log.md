@@ -66,3 +66,4 @@
 2026-11-03T21:29:26Z | verifier | no new duplicates: all overlaps already settled by lead (complementary trio runs-1/findings-2/qk-1; findings-1, model-1, qk-2, vllm-metal-1/2 superseded)
 2026-11-03T21:29:26Z | verifier | finished verification: 11 confirmed, 1 refuted (ineff-runs-3), 0 open
 2026-11-03T21:30:04Z | lead | checkpoint v4: verifier done, 11 confirmed, runs-3 refuted, 0 open; exploration complete
+2026-11-03T21:31:24Z | lead | exploration v5: final analysis committed (7 ranked, 4 recommendations, 1 refuted)
