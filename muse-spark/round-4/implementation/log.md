@@ -2,3 +2,7 @@
 2026-11-04T21:50:48Z | boundary-1 | wrote Boundary in hyp-1-experts-minrows: cited round-3 boundary line-by-line, added min_rows:2 (only 1-row decode hands off; 1-request runs MLX code whole request) + max_rows:59 below 60-row switch, kernels 2-59, handed-off sizes untimed
 2026-11-04T21:51:21Z | boundary-2 | wrote Boundary in hyp-2-routing-margin (delta to round-3 hyp-3; starting point round-3 attempt-6 byte-identical kernels, max_rows: 32 kept with no min_rows; prefill 127/1016/2048 now handed off not timed, tie rule and pair order unchanged)
 2026-11-04T21:51:36Z | lead | boundaries drawn for hyp-1 and hyp-2; both to building, 4 builders started
+2026-11-04T21:52:06Z | builder-1-a | claimed muse-spark/round-4/kernels/experts/attempt-1 (hyp-1 direction a: pure spec change, min_rows:2 max_rows:59, kernels byte-identical to round-3 attempt-1)
+2026-11-04T21:53:10Z | builder-1-a | graded muse-spark/round-4/kernels/experts/attempt-1: G1 pass, G2 differ 0 all six sizes, beats_compiled true (decode faster 157.6/571.1 vs compiled 232.1/832.6, 1-row and prefill handed off); all predictions within 20%
+2026-11-04T21:53:10Z | builder-1-a | finished hyp-1 direction (a): attempt-1 recorded in notes.md and hyp-1-experts-minrows.md; next change: ready-check the three-slot set (no kernel change in this slot)
+2026-11-04T21:53:16Z | builder-1-b | claimed muse-spark/round-4/kernels/experts/attempt-2 for hyp-1-experts-minrows direction (b): same 1-row hand-off with max_rows 32 (narrow window) on round-3 attempt-1, kernels byte-identical, spec min_rows 2

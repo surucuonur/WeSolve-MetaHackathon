@@ -2,7 +2,7 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 2
+- **Version:** 3
 - **Updated:** 2026-11-04T21:49:10Z
 - **Next:** builders grading
 
@@ -209,7 +209,44 @@ fails G1 loudly. A pure `spec.json` hand-off change touches none of this.
 
 ## Builders
 
-*(one section per builder, filled as attempts return.)*
+### builder-1-a — direction (a): pure spec change (`min_rows: 2`, `max_rows: 59`)
+
+- **Attempt:** `muse-spark/round-4/kernels/experts/attempt-1` —
+  `block-0.metal` / `block-1.metal` byte-identical to the starting
+  point `muse-spark/round-3/kernels/experts/attempt-1` (MD5
+  `a1e95fc49844f714afd1a1e377967dae` / `631e710f5dd343427667a2270a166e6d`,
+  `diff` clean); `spec.json` = starting point's plus `"min_rows": 2`,
+  `"max_rows": 59` kept. Kernels run 2–59 rows; 1 row and all prefill
+  sizes hand off. Full detail in the attempt's `notes.md`.
+- **Predicted µs/layer** (from the starting point's grade run;
+  handed-off = that run's compiled, kernel-run = its candidate):
+  1 row 86.6 `handed off`; 8 rows 168.9 `faster` (saving
+  238.2 − 168.9 = 69.3); 32 rows 554.7 `faster` (883.4 − 554.7 =
+  328.7); prefill 127 / 1,016 / 2,048: 1,131.1 / 4,133.5 / 7,557.8
+  `handed off`. G1 pass, G2 differ 0, `beats_compiled` true.
+- **Measured** (`grade.json` in the attempt folder; candidate vs
+  reference vs compiled): **G1 pass; G2 pass, differ 0 /
+  max_ulp 0.0 at all six sizes, no first difference.** 1 row
+  73.9 / 76.2 / 73.9 (`handed off`); 8 rows 157.6 / 233.0 / 232.1
+  (`faster`, 30 wins); 32 rows 571.1 / 842.5 / 832.6 (`faster`,
+  30 wins); prefill 127: 1,026.6 / 1,016.0 / 1,026.6 (`handed off`);
+  1,016: 4,013.4 / 4,070.0 / 4,013.4 (`handed off`); 2,048:
+  7,412.5 / 7,452.5 / 7,412.5 (`handed off`).
+  `phases_vs_compiled`: decode `faster`, prefill `handed off`.
+  **`beats_compiled` true.** Baseline `none` — no `beats_baseline`.
+  Vs the starting point's run: the 1-row `slower` (96.9 vs 86.6,
+  5 wins) is now `handed off`; 8/32-row margins this run
+  74.5 / 261.5 µs/layer (232.1 − 157.6, 832.6 − 571.1).
+- **Miss:** none over 20% — measured vs predicted −14.7% (1 row),
+  −6.7% (8), +3.0% (32), −9.2% / −2.9% / −1.9% (prefill). Level
+  shift is run noise (compiled bar moved 86.6 → 73.9 at 1 row
+  between runs); handed-off sizes equal compiled exactly by
+  construction; kernel sizes run byte-identical kernels.
+- **Taught:** the spec change alone flips `beats_compiled`
+  false → true at zero kernel cost, on the already-measured
+  8/32-row wins. Unproven remains whole-request: with 1 request
+  this slot runs MLX's own code everywhere, so G3 passes only
+  inside a faster set (see **Unverified**).
 
 ## Boundary checks
 
