@@ -7,7 +7,7 @@ description: Run one round of the Muse agent on the MobileMoE-S kernels as a swa
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. Committed on main and tagged `muse-code-era` before the first Muse Code session; each later version is committed before the round that uses it. [Who made what](../../../PROVENANCE.md).*
 
-**Skill version 7.** This file, the role cards and tracking.md are versioned together; [CHANGELOG.md](CHANGELOG.md) lists every version. Each round records the version it ran (see *Versions* in tracking.md).
+**Skill version 8.** This file, the role cards and tracking.md are versioned together; [CHANGELOG.md](CHANGELOG.md) lists every version. Each round records the version it ran (see *Versions* in tracking.md).
 
 You are the **lead** of a Muse Code session in your own worktree on the branch `muse-agent`. The first prompt names the Meta model you run as, the name your commit subjects start with, and the co-author line every commit ends with. `claude/muse-agent-brief.md` fixes the task, the slots, the tools and limits, the grader command and the pass criteria (G1, G2). Four ADRs change it in five ways:
 
@@ -17,7 +17,7 @@ You are the **lead** of a Muse Code session in your own worktree on the branch `
 4. **Files** (ADR 0007, [ADR 0009](../../../claude/adr/0009-rounds-build-on-each-other.md)). Each round writes in its own **round folder**: round 1 at the top of `muse-spark/`, round N from 2 on in `muse-spark/round-<N>/`. It holds `exploration/` and `implementation/`, the round's shared documents, which replace `strategy.md`; `kernels/<slot-folder>/attempt-<M>/`; and `summary.md`. tracking.md writes it `<round>/`.
 5. **Rounds build on each other** (ADR 0009). A finished round's files are frozen: read them and cite them, and the hooks refuse any change to them. From round 2 on, a slot may have a **baseline**: the best attempt so far that passes the current G2 and that Claude's G3 accepted: against the unchanged model and the compiled reference, faster in one phase, decode or prefill, and slower in neither ([ADR 0011](../../../claude/adr/0011-decode-and-prefill.md)). A new attempt must beat it in the same grader run. A slot without one has a **starting point** instead: an earlier attempt to build from, which Claude's measurement names, with what kept it from being a baseline.
 
-The rest of the brief stands. The goal: kernels that pass G1 and G2 and have `beats_compiled` true, faster in one phase, decode or prefill, and slower in neither (ADR 0011); where the slot has a baseline, `beats_baseline` true too; faster because they remove a cause you can name. A faster decode step bought with a slower prefill is no improvement. An attempt built for decode sizes may hand prefill-sized inputs to the compiled reference with `max_rows` (the brief's launch spec). The Muse agent was Muse Spark in round 1 and Muse Wonder in round 2 ([ADR 0008](../../../claude/adr/0008-muse-wonder.md)), and is Muse Spark's contributor model again from round 3 ([ADR 0012](../../../claude/adr/0012-muse-spark-contributor-unattended.md)); the first prompt names the model you run as, and documents from earlier rounds say the model of their round. No one approves your tool calls during the round, so the rules here are yours to keep.
+The rest of the brief stands. The goal: kernels that make whole requests faster. In the grader they pass G1 and G2 and have `beats_compiled` true, faster in one phase, decode or prefill, and slower in neither (ADR 0011), and where the slot has a baseline `beats_baseline` true too, because they remove a cause you can name. Then the **ready check**, the same G3 Claude runs after the round, run by you inside it, must pass them before they are `ready` ([ADR 0013](../../../claude/adr/0013-measure-what-you-claim.md)). A faster decode step bought with a slower prefill is no improvement, and a claim no one measured is no result. An attempt built for decode sizes may hand prefill-sized inputs to the compiled reference with `max_rows` (the brief's launch spec). The Muse agent was Muse Spark in round 1 and Muse Wonder in round 2 ([ADR 0008](../../../claude/adr/0008-muse-wonder.md)), and is Muse Spark's contributor model again from round 3 ([ADR 0012](../../../claude/adr/0012-muse-spark-contributor-unattended.md)); the first prompt names the model you run as, and documents from earlier rounds say the model of their round. No one approves your tool calls during the round, so the rules here are yours to keep.
 
 ## The swarm
 
@@ -28,8 +28,9 @@ The rest of the brief stands. The goal: kernels that pass G1 and G2 and have `be
 | **Verifier** | `verifier` | Check every inefficiency against its sources | [verifier.md](verifier.md) |
 | **Builder** | `builder-<n>-<letter>` | Write and grade one solution for one hypothesis: one attempt | [builder.md](builder.md) |
 | **Boundary agent** | `boundary-<n>` | Write what a hypothesis's solution must keep identical, and check passing attempts against it | [boundary.md](boundary.md) |
+| **Checker** | `checker-<n>`, `checker-final` | Check every speed claim against the file it cites: a hypothesis's before it closes, and the round's final claims | [checker.md](checker.md) |
 
-You don't explore, build or grade yourself. Start each helper with a prompt of this shape:
+You don't explore, build or grade yourself; the one GPU job you run is the ready check (step 4). Start each helper with a prompt of this shape:
 
 > You are `<name>`, a `<role>` in round `<N>`'s swarm; this round writes in `<round folder>`. Read `.agents/skills/muse-round/<card>` and `.agents/skills/muse-round/tracking.md`, then: `<task>`.
 
@@ -77,7 +78,7 @@ Commit it as exploration v1. **Done** when every slot has its baseline or starti
 
 ### 2. Exploration
 
-1. **Set up the folder.** Write `<round>/exploration/README.md` with a heading, its version line (v1, with skill version 7), the tracker (one row per territory) and `## Versions`, and an empty `log.md`.
+1. **Set up the folder.** Write `<round>/exploration/README.md` with a heading, its version line (v1, with skill version 8), the tracker (one row per territory) and `## Versions`, and an empty `log.md`.
 2. **Start the explorers and the verifier,** all at once.
    - **Round 1** starts with these territories:
 
@@ -136,24 +137,38 @@ Take the ranked inefficiencies in order, at most two at a time, in different slo
    - Pick the best attempt: it passes G1, G2 and its boundary check, has `beats_compiled` true and, where the slot has a baseline, `beats_baseline`, and it is the fastest across the six sizes.
    - Set the status to `hardening`, and start a builder for that attempt's next single change.
    - Repeat while the attempt still has a cause you can name and remove.
+   - **Change approach after three alike failures.** Keep the hypothesis entry's failure ledger at each collect: every graded attempt that lost, the size or phase it lost at, and its named cause. When three attempts have lost at the same phase for the same cause, the next one changes approach (another kernel structure, parallelisation or dataflow, not a tuning), and its `notes.md` says "approach change: from X to Y"; or you log why not. A cause renamed without a measurement that refutes the old one is the same cause.
 6. **Close.**
-   - **`ready`:** the best attempt passes G1, G2 and its boundary check, has `beats_compiled` true and, where the slot has a baseline, `beats_baseline` true, and you can name no further change worth making. Write the **Decision**: the attempt, why it is best, and what G3 should show.
+   - **`candidate`:** the best attempt passes G1, G2 and its boundary check, has `beats_compiled` true and, where the slot has a baseline, `beats_baseline` true, and you can name no further change worth making. Write the **Decision**: the attempt, why it is best, and the change in whole requests you predict, labelled a prediction. Then start `checker-<n>` on the entry; the hypothesis is a candidate once its **Checks** section says `pass`.
    - **`dropped`:** say why. A slot whose hypotheses are all dropped keeps its baseline, or the reference where it has none.
 
-Then open the next-ranked inefficiency. **Done** when no confirmed inefficiency is left that you judge will pay. Write why in the implementation README.
+Then open the next-ranked inefficiency.
+
+**The ready check** ([ADR 0013](../../../claude/adr/0013-measure-what-you-claim.md)). Once no hypothesis is building or hardening and at least one is a `candidate`, run it yourself, over every candidate in one call:
+
+```bash
+.venv/bin/python bench/grader/check_ready.py <round>/checks/ready-<k> <slot>=<attempt folder> [<slot>=<attempt folder> ...]
+```
+
+It times the candidates in vLLM exactly as Claude's G3 will after the round, each alone and, with more than one, all together, then audits its own log and writes `ready-verdict.json`. It takes about 10 to 15 minutes per slot, more for an attempt with a slow prefill, and waits its turn for the GPU. Commit its folder at the next checkpoint.
+- **Exit 0 or 1: a verdict, and it stands.** A candidate whose `muse-<slot>` passes becomes `ready`; one that fails goes back to `hardening` with the failure in its ledger, or to `dropped`. Cite the file either way. With more than one candidate, submitting them together needs `muse-all` to pass; if some pass alone and `muse-all` fails, a second check may take only those.
+- **Exit 2: no verdict.** The run stopped or broke the protocol; run it again in a new folder.
+- **At most two ready checks per round.**
+
+**Done** when no confirmed inefficiency is left that you judge will pay, and every candidate has a ready-check verdict. Write why in the implementation README.
 
 ### 5. Finish
 
-1. **The implementation README:** the final tracker, one paragraph per hypothesis, and a **Ready to test** section. It names the attempt per slot that goes to G3, this round's, the baseline kept, or the reference, and the change you expect in G3's four workloads, in the decode step, the prompt time and the whole request, against the previous round's, with how you worked it out.
+1. **The implementation README:** the final tracker, one paragraph per hypothesis, and a **Ready to test** section. It names the attempt per slot that goes to Claude's G3: a `ready` attempt, the baseline kept, or the reference. For the `ready` ones it shows the ready check's measured change in the four workloads (the decode step, the prompt time and the whole request, against the unchanged model and the compiled reference), citing `ready-verdict.json`, with your earlier prediction beside it, labelled PREDICTION, and the **Unverified** list. Nothing else in it is an end-to-end number.
 2. **The exploration README:** add *What building taught*, the analysis corrected by what the attempts showed.
 3. **`<round>/summary.md`:** a `## Round N` section with:
    - the model, the skill version this round ran, and the final versions of both READMEs;
    - the final attempt per slot;
    - the number of graded attempts per slot, this round and over all rounds;
-   - the expected G3 change;
+   - the ready check's measured change, citing its file;
    - what you'd try next;
    - your recommendations outside the slots.
-4. **Commit,** then reply with this round's commits and the words "Round N finished".
+4. **Check, commit, reply.** Start `checker-final` on *Ready to test* and the summary, and fix what it finds until it signs `pass`. Then commit, and reply with this round's commits and the words "Round N finished".
 
 ## Your own rules
 
@@ -161,7 +176,7 @@ Then open the next-ranked inefficiency. **Done** when no confirmed inefficiency 
   - you write the two READMEs, the hypothesis entries' status blocks and decisions, and `summary.md`;
   - every helper writes only what its card names;
   - all of it stays in this round's folder.
-- **G3 and vLLM belong to surucuonur's team,** who run them after merging your branch.
+- **Claude's G3 after the round is the authority;** your ready check is the same measurement, made earlier. vLLM runs only through the ready check.
 - **The rules every agent keeps** are in tracking.md.
 
 ## Commits

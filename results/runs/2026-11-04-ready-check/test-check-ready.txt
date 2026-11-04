@@ -1,0 +1,15 @@
+ok   unchanged: exit 1, want 1 
+ok   three repeats: exit 2, want 2 base 1x128: repeats [0, 1, 2], want 0 to 4
+ok   one workload: exit 2, want 2 base 1x128: repeats [], want 0 to 4
+ok   plain engine: exit 2, want 2 run compiled-routing 32x128 rep 0: engine 'plain'
+ok   9 tokens: exit 2, want 2 run compiled-routing 32x128 rep 0: tokens 9
+ok   marker says 9 tokens: exit 2, want 2 marker tokens is 9, want 256
+ok   no marker: exit 2, want 2 want one ready-check marker in /var/folders/2k/_vzdgdjj7sj1t7w9p73kkgdm0000gn/T/tmp3hwhnz5
+ok   two markers: exit 2, want 2 want one ready-check marker in /var/folders/2k/_vzdgdjj7sj1t7w9p73kkgdm0000gn/T/tmp3hwhnz5
+ok   extra variant: exit 2, want 2 variants timed ['base', 'compiled-all', 'compiled-combine', 'compiled-routing', 'muse-all'
+ok   forged g3-vllm.json: exit 2, want 2 g3-vllm.json differs from the G3 verdict recomputed from the log
+ok   a prompt time missing: exit 2, want 2 run compiled-routing 32x128 rep 0: no prompt_ms
+ok   changed tokens: exit 1, want 1 
+ok   combination not timed: exit 2, want 2 variants timed ['base', 'compiled-combine', 'compiled-routing', 'muse-combine', 'muse-rout
+ok   forged ready-verdict.json: --audit exit 2, want 2
+14 of 14 cases as expected

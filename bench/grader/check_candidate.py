@@ -8,8 +8,9 @@ reference's, bit for bit, since only then are the model's tokens identical
 (claude/adr/0010-exact-at-every-size.md). The timing runs at the same six
 sizes and chains the 20 layers, so each call waits for the one before, as in
 the model. The grader prints its verdict as JSON, and writes it to --out when
-given. It never writes into the attempt folder, which holds only the Muse
-agent's files.
+given. It writes into an attempt folder only when --out points there, as
+the Muse agent's builders do with grade.json; load() reads only spec.json and
+the block-N.metal files.
 
   .venv/bin/python bench/grader/check_candidate.py <attempt folder> <slot> [--out FILE]
       [--baseline [SLOT=]FOLDER ...]

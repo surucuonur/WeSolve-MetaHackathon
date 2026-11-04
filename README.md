@@ -37,7 +37,8 @@ A Meta model working in Muse Code, Meta's own coding agent, works as a swarm of 
 - **The combine kernel** slows the decode step with 32 requests, so the submitted pair gains 16% in throughput with 1 request and loses 3–4% with 32.
 - **An experts kernel round 2 didn't submit** shortens the decode step by up to 19%, but processes prompts 7 to 15 times slower, so whole requests lose 10–83% of their throughput.
 - **Compiling MLX's own code for the three slots**, with no new kernel, raises throughput by 0.6–3.1% with 8 and 32 requests, outside the spread between repeats, and by a median 12% with 1 request, where the repeats are too noisy to be sure. No Muse version gains in every workload.
-- From round 3 the grader and G3 time both phases, and an attempt may hand prefill-sized inputs to MLX's compiled code ([ADR 0011](claude/adr/0011-decode-and-prefill.md)). The unchanged engine these numbers compare against matches vLLM as shipped, without Claude's timing hooks, within the noise between repeats ([results/runs/2026-11-04-clean-vllm/](results/runs/2026-11-04-clean-vllm/)).
+- From round 3 the grader and G3 time both phases, and an attempt may hand prefill-sized inputs to MLX's compiled code ([ADR 0011](claude/adr/0011-decode-and-prefill.md)).
+- From round 3 the swarm also runs that G3 itself, inside the round, before it calls anything ready, and a checker matches every speed claim to the file it comes from. The fix was designed, tested and reviewed by a swarm in Muse Code ([ADR 0013](claude/adr/0013-measure-what-you-claim.md)). The unchanged engine these numbers compare against matches vLLM as shipped, without Claude's timing hooks, within the noise between repeats ([results/runs/2026-11-04-clean-vllm/](results/runs/2026-11-04-clean-vllm/)).
 
 ## How Meta's models are used
 

@@ -30,7 +30,7 @@ Every shared document carries a version number, so a reader knows which version 
 **Phase versions.** Each README opens with its version line:
 
 ```markdown
-**Version:** v5 · 2026-11-04T09:40Z · skill version 7
+**Version:** v5 · 2026-11-04T09:40Z · skill version 8
 ```
 
 - **Who raises it:** the lead, at every checkpoint, and each version is exactly one commit.
@@ -105,12 +105,15 @@ Entries are named so that two agents never pick the same name:
 
 ### Hypothesis entry
 
-1. Status block. The lead owns it; the statuses are `boundary`, `building`, `hardening`, `ready` and `dropped`.
+1. Status block. The lead owns it; the statuses are `boundary`, `building`, `hardening`, `candidate` (passes the grader's gates and its boundary check, signed by its checker), `ready` (a ready check passed it) and `dropped`.
 2. **Inefficiency** it removes, the slot, and from round 2 on the slot's baseline folder, or `none` and its starting point.
 3. **Boundary**, written by the boundary agent: what the solution must keep identical (see `boundary.md`).
 4. **One section per builder:** its direction, its attempts (folder, predicted and measured µs per layer at the six sizes with each size's verdict, G1, G2, `beats_compiled`, and where the slot has a baseline its time and `beats_baseline`), and what each attempt taught.
 5. **Boundary checks** of the attempts that passed G2.
-6. **Decision:** the best attempt and why. When the status is `ready`, it states what G3 should show.
+6. **Decision:** the best attempt and why, with the change in whole requests it predicts, labelled a prediction; once a ready check has run, its `ready-verdict.json` and the measured change.
+7. **Failure ledger,** kept by the lead: each graded attempt that lost, the size or phase it lost at, its named cause and its approach (`SKILL.md` step 4, *Harden*).
+8. **Unverified:** what no one measured, the boundary's *can't see* list at least.
+9. **Checks:** each checker's verdict, `pass` or its defects with file and line.
 
 ## The checklist
 
@@ -149,7 +152,12 @@ Two claims on the same item go to the lead, who settles them.
 
 - **Writes go only to this round's folder, in the files your role names.** Earlier rounds' folders, everything else in the worktree, and everything outside it are read-only.
 - **Only the lead commits.** Helpers never run `git add` or `git commit`.
-- **The grader is the only GPU job.** Run it only as a builder, through the brief's command; it waits its turn when another run has the GPU. Load no model and start no other GPU work: the machine has 16 GB and slows down sharply when memory runs short.
-- **Every number has a source:** a file and line, a table (path and row), a grader verdict (attempt folder), or arithmetic shown in full.
+- **The grader and the ready check are the only GPU jobs.** Builders run the grader through the brief's command; the lead runs the ready check (`SKILL.md` step 4). Both wait their turn for the GPU. Start no other GPU work and load no model outside them: the machine has 16 GB and slows down sharply when memory runs short. A run of `time_candidates.py`, `breakdown.py` or any other timing script made directly is evidence of nothing.
+- **Every number has a source,** and every speed number says its level and its kind:
+  - **measured, piece:** the grader verdict that timed exactly that slot, `grade.json` in its attempt folder;
+  - **measured, whole request:** the `ready-verdict.json` that timed exactly that slot or combination;
+  - **prediction:** anything else. It counts only the candidate's own measured effect, shows its arithmetic, and stands beside the measured value once there is one.
+
+  A combination is measured as one, never added up from its slots. What no one measured goes under **Unverified**, never assumed free, neutral or zero. Other numbers cite a file and line, a table (path and row), or arithmetic shown in full.
 - **Credentials stay unread:** `.env` files, `~/.config/muse/` and any key store.
 - **The API-stage kernels** in the history before the tag `agent-era` are from an earlier, removed stage (PROVENANCE.md) and stay unread.

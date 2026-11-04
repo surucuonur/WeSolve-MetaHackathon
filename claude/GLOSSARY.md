@@ -144,6 +144,21 @@ _Avoid_: speedup (for a change measured in one phase only)
 An attempt's choice to run the compiled reference instead of its own kernels above a row count it names, so prefill-sized inputs stay on MLX's code.
 _Avoid_: fallback
 
+**Ready check**:
+The lead's in-round run of G3 over every candidate attempt at once, with its protocol fixed and its own log audited; only its passing verdict makes an attempt ready.
+_Avoid_: G3 (that is Claude's run after the round), end-to-end test
+
+**Candidate**:
+An attempt that passes the grader's gates and its boundary check, with its claims checked, and waits for the ready check.
+_Avoid_: ready (that needs the ready check)
+
+**Prediction**:
+A speed number no one measured for exactly what it describes, labelled as such, counting only the candidate's own measured effect and shown beside the measured value once there is one.
+_Avoid_: expected gain, estimate (unlabelled)
+
+**Unverified**:
+What no one measured, listed as such in a hypothesis and in the round's final claims, and never assumed free, neutral or zero.
+
 **Baseline** (of a slot):
 A slot's best attempt so far that passes the current G2 and that Claude's G3 accepted, named in Claude's measurement of the previous round; every new attempt for that slot must beat it in the same grader run. A slot may have none.
 _Avoid_: reference (that is the original MLX code and its compiled version)
@@ -157,7 +172,7 @@ The one agent of a swarm that starts the helpers, keeps the shared documents cur
 _Avoid_: orchestrator, main agent
 
 **Helper agent**:
-An agent the lead starts: an explorer, the verifier, a builder or a boundary agent. It reports back and never commits.
+An agent the lead starts: an explorer, the verifier, a builder, a boundary agent or a checker. It reports back and never commits.
 _Avoid_: worker, subagent (when the role matters, not the mechanism)
 
 **Reminder agent**:

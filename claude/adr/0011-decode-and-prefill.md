@@ -48,7 +48,7 @@ On 2026-11-04 surucuonur set the rule: "The improvement should be in the two pha
 - **At prefill sizes, a slot with a hand-off is MLX's code, not the Muse agent's.** The claim for such an attempt is "faster decode, unchanged prefill".
 - **Grader runs and G3 take longer.** Every attempt is now timed at three more sizes. G3 runs 5 repeats instead of 3, and its 32 × 1,024 workload adds at least 16 s per variant per repeat.
 - **The decode verdict is stricter.** An attempt whose median beat the compiled reference by noise is now `same`.
-- **Not covered:** prefill chunks of other sizes, and decode steps with other row counts. The boundary agent reports them; G3's four workloads are the end-to-end check.
+- **Not covered:** prefill chunks of other sizes, and decode steps with other row counts. The boundary agent reports them; G3's four workloads are the end-to-end check. Not covered means not measured: from round 3 the swarm lists these as **Unverified**, never as free ([ADR 0013](0013-measure-what-you-claim.md)); round 2 read ADR 0010's line like this one as leave to slow the prefill.
 - **At 1 request the whole-request time is noisy.** On 2026-11-04 its repeats spread 6% to 41%, so G3 there mostly says `same`, which passes the "never slower" test without showing a gain.
 
 ## Considered options

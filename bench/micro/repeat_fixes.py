@@ -271,7 +271,7 @@ def main():
         variants = Variants("vllm", bd.RUNNER[0].model)
         checks = vllm_checks(llm, variants)
 
-    time_variants(args.engine, variants, checks, run, log)
+    time_variants(args.engine, variants, checks, run, log, tokens=args.tokens)
 
 
 def prompt_ms():
@@ -282,9 +282,10 @@ def prompt_ms():
     return (done - steps[0]["t"]) * 1e3 if steps and done is not None else None
 
 
-def time_variants(engine, variants, checks, run, log, settings=SETTINGS, repeats=REPEATS):
+def time_variants(engine, variants, checks, run, log, settings=SETTINGS, repeats=REPEATS, tokens=None):
     """Log the checks, then time every variant at *settings* (rows, prompt tokens)
-    in *repeats* shuffled repeats. Each run also records its wall time and prompt_ms()."""
+    in *repeats* shuffled repeats. Each run also records its wall time, prompt_ms()
+    and *tokens*, the output tokens per request that *run* generates."""
     with log.open("a") as f:
         for (name, rows), c in checks.items():
             f.write(
@@ -314,6 +315,7 @@ def time_variants(engine, variants, checks, run, log, settings=SETTINGS, repeats
         record.update(
             wall_ms=wall,
             prompt_ms=prompt_ms(),
+            tokens=tokens,
             kind="run",
             engine=engine,
             variant=name,

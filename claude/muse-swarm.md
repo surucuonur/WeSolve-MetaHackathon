@@ -4,7 +4,7 @@
 
 The Muse agent, Meta's model working in Muse Code (Muse Spark in round 1 and from round 3, Muse Wonder in round 2; [ADR 0008](adr/0008-muse-wonder.md), [ADR 0012](adr/0012-muse-spark-contributor-unattended.md)), speeds up MobileMoE-S's decode step and prefill as a **swarm**: several agents in one Muse Code session, each covering part of the problem, sharing what they find in documents that all of them read. This page explains how one round runs, step by step, and where to watch it.
 
-- **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 7. This page describes it.
+- **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 8. This page describes it.
 - **Why it is built this way:** [ADR 0007](adr/0007-muse-spark-swarm.md) records the decision.
 - **The diagrams:** [diagrams/muse-swarm.drawio](diagrams/muse-swarm.drawio) opens in draw.io, with one page each for the overview, exploration and implementation. The images below are exported from it.
 
@@ -19,17 +19,18 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
 
 | Role | How many | What it does | What it writes |
 |---|---|---|---|
-| **Lead** | 1 | Starts the helpers, keeps the two phase READMEs current, settles clashes, commits | the READMEs, hypothesis entries, `summary.md`; every commit |
+| **Lead** | 1 | Starts the helpers, keeps the two phase READMEs current, settles clashes, runs the ready check, commits | the READMEs, hypothesis entries, `summary.md`; every commit |
 | **Explorer** | 8 to start | Maps one **territory** of the code or the measurements and posts the **inefficiencies** it finds | its territory entry, its inefficiency entries, notes on others' entries |
 | **Verifier** | 1 | Checks every inefficiency against its sources and confirms or refutes it | the verdict and status of inefficiency entries |
 | **Builder** | 2–3 per hypothesis | Writes one solution, grades it, and reports the result: one **attempt** | its attempt folder, its section of the hypothesis entry |
 | **Boundary agent** | 1 per hypothesis | Writes down what a solution must keep unchanged, and checks passing attempts against it | the hypothesis entry's Boundary and Boundary checks |
+| **Checker** | 1 per hypothesis, and 1 at the end | Checks every speed claim against the file it cites, before a hypothesis closes and over the round's final claims | the hypothesis entry's Checks, the check line under Ready to test |
 
 ## Exploration
 
 ![Exploration: explorers write entries and log lines in the shared folder; the verifier confirms or refutes inefficiencies; the lead checkpoints and commits](diagrams/muse-swarm-exploration.svg)
 
-1. **The lead opens the phase.** It writes `<round>/exploration/README.md` with its version line (v1, skill version 7), a tracker table and an empty log, and commits it as `exploration v1`. From round 2 on, the README opens with the round's **starting point** (see *Rounds build on each other*).
+1. **The lead opens the phase.** It writes `<round>/exploration/README.md` with its version line (v1, skill version 8), a tracker table and an empty log, and commits it as `exploration v1`. From round 2 on, the README opens with the round's **starting point** (see *Rounds build on each other*).
 2. **The explorers and the verifier start at once,** one explorer per territory. Round 1 started with eight:
    - **Code:**
      - the model's layer around the slots (`mobilemoe.py`);
@@ -84,16 +85,17 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
    1. claims the next attempt number with `mkdir`, which fails if another builder took it first;
    2. writes the kernels and a `notes.md` with the cause it removes and its predicted time per layer;
    3. grades the attempt with the grader. The GPU lock queues runs, so two gradings never overlap and the timings stay clean;
-   4. records G1, G2 and its timings at the six sizes against the original and the compiled reference;
+   4. records G1, G2 and its timings at the six sizes against the original and the compiled reference, citing the grader's verdict file, `grade.json`, kept in the attempt folder;
    5. if the attempt failed or missed its prediction by more than 20%, finds out why and adds the answer to the analysis.
 5. **Commit and check.** When a builder returns, the lead commits its attempt as the next implementation version. The boundary agent then checks every attempt that passed G2 for what the grader can't see: other row counts, threadgroup memory read before it is written, and results that depend on thread timing.
 6. **Harden or close.**
-   - **Harden:** if the best attempt still has a cause that can be named and removed, a builder makes its next single change.
-   - **Ready:** once it passes G1, G2 and its boundary check, and beats the compiled reference and any baseline in both phases (faster in decode or prefill, slower in neither; [ADR 0011](adr/0011-decode-and-prefill.md)), the hypothesis is `ready`. Its Decision states what G3 should show.
+   - **Harden:** if the best attempt still has a cause that can be named and removed, a builder makes its next single change. After three attempts lost at the same phase for the same cause, the next one must change approach, or the lead logs why not.
+   - **Candidate:** once it passes G1, G2 and its boundary check, and beats the compiled reference and any baseline in both phases (faster in decode or prefill, slower in neither; [ADR 0011](adr/0011-decode-and-prefill.md)), and a checker has signed its claims, the hypothesis is a `candidate`. Its Decision predicts the change in whole requests, labelled a prediction.
+   - **Ready check:** when the candidates settle, the lead runs `bench/grader/check_ready.py` over all of them in one call: the same G3 Claude runs after the round. Only a passing verdict makes an attempt `ready` ([ADR 0013](adr/0013-measure-what-you-claim.md)).
    - **Dropped:** a hypothesis that doesn't pay off is `dropped`, with the reason.
 7. **Next, and finish.**
    - Then comes the next-ranked inefficiency. There is no attempt limit; the lead ends the phase when it judges no remaining inefficiency will pay, and says why.
-   - The round finishes with both READMEs final, including a **Ready to test** section naming the attempt per slot that goes to G3.
+   - The round finishes with both READMEs final, including a **Ready to test** section naming the attempt per slot that goes to G3, with the ready check's measured change, any prediction labelled beside it, and the **Unverified** list; a final checker signs it before the last commit.
    - `<round>/summary.md` gets a round section: the model, the skill version, the final attempts and the number of graded attempts per slot.
 
 ## Rounds build on each other
@@ -129,7 +131,7 @@ Every version is raised by a single writer, so no number is taken twice:
 - **Placement.** The Muse agent writes only in its round's folder in `muse-spark/`, on `muse-agent`, and only the lead commits, always with its model's co-author. A finished round's files can't change. The git hooks refuse anything else, and [tools/provenance_check.py](../tools/provenance_check.py) re-checks the whole history.
 - **Sources.** Every number in the shared documents has a source: a file and line, a table row, a grader verdict, or arithmetic shown in full.
 - **Attempts.** Every graded attempt is committed and counted, so a result can't hide how many tries it took.
-- **The GPU.** The grader is the only GPU job, and runs queue through [bench/grader/gpu_lock.py](../bench/grader/gpu_lock.py).
+- **The GPU.** The grader (builders) and the ready check (the lead) are the only GPU jobs, and runs queue through [bench/grader/gpu_lock.py](../bench/grader/gpu_lock.py).
 - **Independent measurement.** After the round, Claude merges the branch with `--no-ff`, re-runs G1 and G2, and runs G3 independently ([PROVENANCE.md](../PROVENANCE.md)).
 
 ## Following a round live
@@ -151,7 +153,7 @@ git log --oneline main..muse-agent                           # every checkpoint,
 |---|---|
 | The lead's procedure | [SKILL.md](../.agents/skills/muse-round/SKILL.md) |
 | Shared documents, versions, adapting rule, rules for every agent | [tracking.md](../.agents/skills/muse-round/tracking.md) |
-| Role instructions | [explorer.md](../.agents/skills/muse-round/explorer.md), [verifier.md](../.agents/skills/muse-round/verifier.md), [builder.md](../.agents/skills/muse-round/builder.md), [boundary.md](../.agents/skills/muse-round/boundary.md) |
+| Role instructions | [explorer.md](../.agents/skills/muse-round/explorer.md), [verifier.md](../.agents/skills/muse-round/verifier.md), [builder.md](../.agents/skills/muse-round/builder.md), [boundary.md](../.agents/skills/muse-round/boundary.md), [checker.md](../.agents/skills/muse-round/checker.md) |
 | The task, slots and pass criteria | [muse-agent-brief.md](muse-agent-brief.md), as changed by [ADR 0006](adr/0006-muse-spark-in-muse-code.md) and [ADR 0007](adr/0007-muse-spark-swarm.md) |
 | The launcher (model and sign-in, worktree, own home folder, 12 agents) | [tools/muse-agent/start.sh](../tools/muse-agent/start.sh) |
 | Session transcripts | [tools/export_transcript.py](../tools/export_transcript.py), into `muse-spark/transcripts/` |

@@ -175,8 +175,12 @@ def g3(log, names, settings, out):
 
     verdict = {}
     for name in [n for n in names if n.startswith("muse-")]:
+        bars = ("base", "compiled-" + name.removeprefix("muse-"))
+        if bars[1] not in names:  # a --variant named muse-*: no compiled counterpart to judge against
+            print(f"G3 {name}: not judged, no {bars[1]} variant")
+            continue
         verdict[name] = {}
-        for bar in ("base", "compiled-" + name.removeprefix("muse-")):
+        for bar in bars:
             settings_v = {
                 f"{rows}x{prompt}": {
                     m: against(c, b)
@@ -256,7 +260,7 @@ def main():
         variants = Variants(args.attempts, args.variant)
         checks = rf.vllm_checks(llm, variants)
 
-    rf.time_variants(args.engine, variants, checks, run, log, settings, args.repeats)
+    rf.time_variants(args.engine, variants, checks, run, log, settings, args.repeats, args.tokens)
     if args.engine == "vllm":
         g3(log, variants.names, settings, args.out / "g3-vllm.json")
 

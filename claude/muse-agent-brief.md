@@ -199,6 +199,8 @@ The pass criteria were fixed before the first round. From round 2, G2 is exact a
 
    Against both the original model and an `mx.compile` of the same reference code, the attempt passes when the decode step or the prompt time is faster in every workload, neither is slower in any, and no whole request is slower. Faster and slower mean that the ranges over the repeats don't overlap.
 
+   **From round 3, the same G3 runs inside the round too:** the lead's **ready check**, `bench/grader/check_ready.py`, with every candidate in one call. It also requires the same greedy tokens, and audits its own log. Only its passing verdict makes an attempt `ready`; Claude's G3 after the round decides. The skill says when the lead runs it ([ADR 0013](adr/0013-measure-what-you-claim.md)).
+
 **What the grader prints for an attempt** (JSON):
 - `g1` false and the compiler's error message;
 - or the correctness results per size: for routing, the rows that differ; for combine and experts, the elements that differ and the largest gap in units in the last place; with the first example;
@@ -210,6 +212,6 @@ The pass criteria were fixed before the first round. From round 2, G2 is exact a
 - **Per phase:** decode (1, 8, 32 rows) and prefill (127, 1,016, 2,048 rows) are each `faster` when every size is, `slower` when any size is, and `not slower` otherwise.
 - **`beats_compiled`** is true when one phase is `faster` and neither is `slower`.
 
-It is a guide; G3 decides.
+It is a guide; the ready check in the round, and Claude's G3 after it, decide.
 
 **When a slot stops.** Work on a slot stops at the first attempt that passes G1 and G2 and has `beats_compiled` true, or after 5 attempts. Name your final attempt per slot in `muse-spark/summary.md`; it goes to the end-to-end and G3 checks, which surucuonur's team runs after merging your branch.
