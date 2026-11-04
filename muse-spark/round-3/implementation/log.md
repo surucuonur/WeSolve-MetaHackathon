@@ -57,3 +57,7 @@
 2026-11-04T18:24:35Z | builder-3-e | graded attempt-5: G1+G2 pass (first direction-b kernel to run), decode faster/same/same, prefill slower x3, beats_compiled false; recorded in notes.md, hyp-3 section, ineff notes
 2026-11-04T18:24:35Z | builder-3-e | done: one attempt graded and recorded; next change is multi-block streaming per group (one w-staging, 2-4 sequential 8-row blocks) in a copied attempt
 2026-11-04T18:25:06Z | lead | v14: routing-5 GEMM exact but off (ledger, line ends); hyp-3 hardening, one re-grade of attempt-1
+2026-11-04T18:25:25Z | builder-3-f | claimed muse-spark/round-3/kernels/routing/attempt-6 for hyp-3 noise test: byte-identical copy of attempt-1
+2026-11-04T18:26:07Z | builder-3-f | graded attempt-6: G1+G2 pass, decode faster x3 (28/27/25), prefill same x3 (13/16/19) — 2048-row slower did NOT reproduce, beats_compiled true
+2026-11-04T18:26:07Z | builder-3-f | done: verdict in notes.md + hyp-3 section; identical-code-noise call confirmed, no miss to explain; next is lead decision on boundary/ready check
+2026-11-04T18:26:37Z | lead | v15: routing-6 beats_compiled true (noise not reproduced); boundary check next

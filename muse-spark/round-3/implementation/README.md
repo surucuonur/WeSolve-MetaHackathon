@@ -1,6 +1,6 @@
 # Implementation: round 3
 
-**Version:** v14 · 2026-11-04T18:24:53Z · skill version 8
+**Version:** v15 · 2026-11-04T18:26:21Z · skill version 8
 
 ## Tracker
 
@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | `hyp-1-combine-devolatilize` | `combine` | `builder-1-a`, `builder-1-b` | 1: pass, pass, 46.8 / 42.0 / 49.2 (55.5 / 56.8 / 72.8); 2: pass, pass, 31.8 / 34.7 / 32.7 (36.9 / 41.1 / 45.7) | candidate |
 | `hyp-2-experts-prefill` | `experts` | `builder-2-a`, `builder-2-b`, `builder-2-c`, `builder-2-d`, `builder-2-e` | 1: pass, pass, 96.9 / 168.9 / 554.7 (86.6 / 238.2 / 883.4); 2: pass, pass, 152.8 / 173.3 / 634.1 (113.0 / 240.4 / 896.3); 3: fail (G1), —, —; 4: pass, pass, 122.2 / 206.4 / 584.7 (77.9 / 237.6 / 807.4); 5: pass, pass, 234.3 / 252.7 / 560.4 (118.4 / 291.7 / 802.4) | dropped |
-| `hyp-3-routing-prefill` | `routing` | `builder-3-a`, `builder-3-b`, `builder-3-c`, `builder-3-d`, `builder-3-e`, `builder-3-f` | 1: pass, pass, 103.6 / 129.9 / 126.5 (139.4 / 157.2 / 149.7); 2: fail (G1), —, —; 3: pass, pass, 66.1 / 96.1 / 109.5 (64.7 / 95.4 / 103.9); 4: fail (G1), —, —; 5: pass, pass, 72.6 / 123.3 / 111.9 (76.2 / 120.4 / 107.7) | hardening |
+| `hyp-3-routing-prefill` | `routing` | `builder-3-a`, `builder-3-b`, `builder-3-c`, `builder-3-d`, `builder-3-e`, `builder-3-f` | 1: pass, pass, 103.6 / 129.9 / 126.5 (139.4 / 157.2 / 149.7); 2: fail (G1), —, —; 3: pass, pass, 66.1 / 96.1 / 109.5 (64.7 / 95.4 / 103.9); 4: fail (G1), —, —; 5: pass, pass, 72.6 / 123.3 / 111.9 (76.2 / 120.4 / 107.7); 6: pass, pass, 51.7 / 90.9 / 132.2 (66.3 / 104.0 / 152.0) | hardening |
 
 The experts 1-row decode gap ([ineff-baseline-experts-2](../exploration/ineff-baseline-experts-2.md)) folds into hyp-2's hardening: the close rule needs `beats_compiled`, which needs the 1-row fix on attempt-1's line, so no separate hyp-4 opens.
 
@@ -16,6 +16,7 @@ Ranked decode item 1 (`ineff-g3-2`, the three-way interaction at 8 requests) is 
 
 ## Versions
 
+- v15 · 2026-11-04T18:26:21Z · routing attempt-6 graded (identical copy, 2048 slower not reproduced, beats_compiled true — best); boundary check next · changed: hyp-3-routing-prefill v8
 - v14 · 2026-11-04T18:24:53Z · routing attempt-5 graded (GEMM exact, prefill 1.4-3.5x off — line ends); hyp-3 hardening on attempt-1, one re-grade to test noise · changed: hyp-3-routing-prefill v7
 - v13 · 2026-11-04T18:22:08Z · routing attempt-4 graded (G1 fail, pipeline cap moved 640→576); ledger, one more fix at 8 rows/group · changed: hyp-3-routing-prefill v6
 - v12 · 2026-11-04T18:19:19Z · routing attempt-3 graded (G2 pass, decode same x3, prefill still slower — re-read dominates); ledger · changed: hyp-3-routing-prefill v5

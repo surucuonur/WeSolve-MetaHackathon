@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** hardening
-- **Version:** 7
-- **Updated:** 2026-11-04T18:24:53Z
-- **Next:** builder-3-f re-grades a byte-identical copy of attempt-1 (one run only — tests the identical-code-noise call at 2048 rows)
+- **Version:** 8
+- **Updated:** 2026-11-04T18:26:21Z
+- **Next:** boundary-3 checks attempt-6 (G2 pass, beats_compiled true); then Decision + checker-3
 
 ## Inefficiency
 
@@ -208,6 +208,30 @@ threadgroup 21,504 -> 20,480 B; `block-0`/`block-1` byte-identical
   barriers/row fall 2-4x, no more threads, G2-safe); then shrink
   live `part[16]` if occupancy still binds (see notes.md).
 
+### builder-3-f — hardening: byte-identical re-grade of attempt-1 (one-run noise test)
+
+No kernel change by design: `block-0.metal`, `block-1.metal` and
+`spec.json` copied from attempt-1 with zero edits (`diff` empty on
+all three files) to test whether the 2,048-row `slower` (8/30 wins
+on literally identical code) reproduces. Predicted decode `faster`
+x3 kept and prefill `same`-or-better at every size including 2,048
+(medians within ~3%), `beats_compiled` true.
+
+- **attempt-6** (`muse-spark/round-3/kernels/routing/attempt-6/`):
+  G1 pass; G2 pass all six, differ 0. Measured (`grade.json`):
+  decode 1/8/32 rows: 51.7 / 90.9 / 132.2 vs compiled 66.3 /
+  104.0 / 152.0 — `faster` (28/27/25); original 71.9 / 113.0 /
+  150.8. Prefill 127/1,016/2,048 rows: 83.6 / 220.8 / 289.5 vs
+  compiled 84.0 / 222.3 / 288.8 — `same` (13/16/19); original
+  103.9 / 234.5 / 319.6. `phases_vs_compiled` decode `faster`,
+  prefill `not slower`; `beats_compiled` true. Taught: the
+  2,048-row `slower` did not reproduce (19 wins, median +0.2%) —
+  the identical-code-noise call is confirmed, attempt-1's 8/30 was
+  a verdict-level noise event, and the hand-off banks the prize
+  (see notes.md). Next: none from this builder — the noise test
+  passed; the lead decides whether attempt-6 (or attempt-1)
+  proceeds to boundary check / ready check.
+
 ## Boundary checks
 
 ### attempt-1 — pass (boundary-3, 2026-11-04T18:14:51Z)
@@ -233,6 +257,7 @@ Still unverified (inherited can't-see items, for **Unverified**): hand-off exact
 ## Failure ledger
 
 - attempt-1 (max_rows 32): G1+G2 pass, decode `faster` x3, prefill `same`/`same`/`slower` (2,048 rows: 8/30 wins, exactly the 22-loss threshold; candidate medians within 2.7% of compiled on literally identical code — paired noise, not a slowdown). Cause (suspected): noise on identical code; the builder's proposed next change is a re-grade of a byte-identical copy under a new number. Approach: hand-off (no kernel change can move identical-code timing).
+- attempt-6 (byte-identical copy of attempt-1, one-run noise test): G1+G2 pass, decode `faster` × 3 (51.7/90.9/132.2 vs 66.3/104.0/152.0; 28/27/25 wins), prefill `same` × 3 (83.6/220.8/289.5 vs 84.0/222.3/288.8; 13/16/19 wins, medians within 0.7%). `beats_compiled` true. The 2,048-row `slower` did NOT reproduce (19/30 wins, +0.2%) — the identical-code-noise call is confirmed, and attempt-1's ledger line stands as a noise event, not a speed cause. Best attempt; no further change worth making (the code above `max_rows` IS the compiled reference).
 - attempt-2 (GEMM-shaped sharing, 16 rows/group): G1 fail — kernel 1 asks 960 threads/group (16 rows × 60 experts), pipeline max is 640; no G2, no timing. Cause: compile error (threadgroup size), not a speed cause; fix is 10 rows/group (600 threads) in a copied attempt.
 - attempt-3 (drop `parts` where partitions = 1, two-kernel split at rows = 768): G1+G2 pass, decode `same` × 3 (66.1/96.1/109.5 vs 64.7/95.4/103.9; 14/15/9 wins — the ~2–3 µs copy launch flips `faster` to `same`), prefill `slower` × 3 (266.0/1,098.3/2,097.3 vs 96.9/235.3/299.7 — the traffic re-read dominates; shape residual removal consistent with −15%/−17% but drift-confounded). Cause: per-row re-read untouched plus copy-launch wiring cost at decode. Approach: narrower staged footprint. (Declined: the proposed `--baseline` re-grade — this round has no baselines, so no `--baseline` runs.)
 - attempt-4 (GEMM-shaped sharing, 10 rows/group): G1 fail — 600 threads/group against a pipeline max of 576 (the cap moved with the kernel: attempt-2's recompile reported 640); no G2, no timing. Cause: compile error (register allocation shifting the pipeline cap ~11% under recompilation, inferred). Fix: 8 rows/group (480 threads) in a copied attempt — inside round-1 attempt-2's proven-passing band.
