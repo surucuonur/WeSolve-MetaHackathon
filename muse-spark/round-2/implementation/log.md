@@ -18,3 +18,4 @@
 2026-11-04T03:48:08Z | builder-2-b | graded round-2 routing attempt-2: G1 pass, G2 pass at decode 1/8/32 (rows_differ 0, scalar GEMV-tree + split-K partition order bit-exact, no MMA), G2 fail prefill 127/1016/2048 (2453/20128/40453 differ, by-design 32 partitions vs MLX 8/regular), no timing (grader times only correct attempts); recorded in hyp-2-routing-exact and ineff-baseline-routing-1
 2026-11-04T03:48:12Z | lead | checkpoint v4: all three graded attempts pass boundary checks; hardening next (routing attempt-2 still building, not committed)
 2026-11-04T03:48:55Z | lead | checkpoint v5: routing attempt-2 scalar decode-exact; hardening directions set for both hyps
+2026-11-04T03:49:41Z | lead | hardening: hyp-1 from attempt-1 (best G2-passing, wins 8/32), hyp-2 from attempt-1 (only full G2 pass); scalar insight carried into routing hardening

@@ -1,10 +1,10 @@
 # Hypothesis 2: routing kernel with the reference's exact float32 arithmetic
 
 - **Owner:** lead
-- **Status:** building
-- **Version:** 5
-- **Updated:** 2026-11-04T03:48:31Z
-- **Next:** hardening: attempt-1 staging fix and attempt-2 prefill-geometry fix compete
+- **Status:** hardening
+- **Version:** 6
+- **Updated:** 2026-11-04T03:49:13Z
+- **Next:** hardening from attempt-1: scalar accumulation, same regime orders
 
 ## Inefficiency
 

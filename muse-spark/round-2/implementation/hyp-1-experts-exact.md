@@ -1,10 +1,10 @@
 # Hypothesis 1: experts kernel exact at every size, faster chained at 1 row
 
 - **Owner:** lead
-- **Status:** building
-- **Version:** 4
-- **Updated:** 2026-11-04T03:47:53Z
-- **Next:** hardening from attempt-1 (block-parallel decode, 4 blocks/group)
+- **Status:** hardening
+- **Version:** 5
+- **Updated:** 2026-11-04T03:49:13Z
+- **Next:** hardening from attempt-1: block-parallel decode, 4 blocks per group
 
 ## Inefficiency
 
