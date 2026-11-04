@@ -2,7 +2,7 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 2
+- **Version:** 3
 - **Updated:** 2026-11-04T21:49:10Z
 - **Next:** builders grading
 
@@ -49,7 +49,39 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory (`claude/m
 
 ## Builders
 
-*(one section per builder, filled as attempts return.)*
+### builder-2-b — direction (b): trim the staged path's shape cost
+
+**Direction:** remove the dead `parts` zeroing (ineff-baseline-routing-2
+item 4) without touching the per-row `w_router` re-read, the barrier
+count, the partition formula or any accumulation order; `max_rows: 32`
+kept, no added launch, threadgroup unchanged (256 threads, 28,080 B).
+
+- **attempt-1** (`muse-spark/round-4/kernels/routing/attempt-1/`):
+  the 2,048-write `parts[]` zero loop is deleted and each
+  (partition, expert) partial is initialised to `0.0f` on first touch
+  (`(c_lo == pc0) ? 0.0f : parts[...]`); everything else byte-identical
+  to the starting point. Predicted ≈45 / 144 / 151 µs/layer at
+  1 / 8 / 32 rows (re-grade anchor minus ≤0.5 µs saving), `faster` ×3,
+  prefill `handed off` ×3. **Measured: G1 pass, G2 pass at all six
+  sizes (`rows_differ` 0, `max_rel_err` 0.0); candidate
+  58.5 / 136.9 / 74.7 vs compiled 86.1 / 157.3 / 92.1 µs/layer,
+  wins 30 / 26 / 30, decode `faster` ×3, prefill `handed off` ×3,
+  `beats_compiled` true** (`grade.json`). Baseline `none`, so no
+  `beats_baseline`. Absolutes missed the anchor by +30% / −5% / −51%:
+  machine-state drift, proven by the same run's compiled bar moving
+  +37% / −2% / −46% against the same anchor with candidate/compiled
+  ratios steady (0.68 / 0.87 / 0.81 vs re-grade 0.72 / 0.90 / 0.88);
+  the change's own ≤0.5 µs effect is inside paired noise, as
+  predicted. Taught: first-touch init is a free, bit-exact deletion —
+  the zeroing's cost was never resolvable at decode sizes, so the
+  remaining direction-(b) prize is the barrier/tail shape (items
+  1–2), not more deletions.
+
+### builder-2-a — direction (a): share `w_router` across rows
+
+**Direction:** at `rows > 16`, one 256-thread threadgroup covers 4 rows (240 `(row, expert)` threads + 16 staging helpers); `w_router` chunks are staged once per group with the starting point's coalesced `float4` loads and reused for all 4 rows (device traffic at 32 rows 5.90 → 1.47 MB/layer). Each thread folds its partition partials in-register in the starting point's exact order; sigmoid, strictly-greater top-4 and weights fold copied op-for-op. At `rows <= 16` (GEMV at 1 included) the staged path runs verbatim on a shared `tg[7616]` buffer (30,464 B, 256 threads). `max_rows: 32` kept, no `min_rows`; `block-1.metal`/`spec.json` byte-identical to the starting point.
+
+- **attempt-2** (`muse-spark/round-4/kernels/routing/attempt-2/`): first in direction (a). Predicted ~45 / 144 / 147 µs/layer at 1 / 8 / 32 rows (32-row saving 24 rows × 0.16 µs/row realised marginal = 3.8 µs off the 151.3 anchor), prefill `handed off` ×3. **Measured: G1 pass, G2 pass at all six sizes (`rows_differ` 0, `max_rel_err` 0.0); candidate 44.4 / 71.6 / 83.8 vs compiled 59.2 / 87.6 / 92.1 µs/layer, wins 30 / 30 / 29, decode `faster` ×3, prefill `handed off` ×3, `beats_compiled` true** (`grade.json`). Baseline `none`, so no `beats_baseline`. Taught: sharing is bit-exact at decode sizes (first sharing design timed at 17–32 rows) and the 1/8-row margins hold (14.8 / 16.0 vs the starting point's 17.7 / 15.8), but the 32-row margin narrowed to 8.3 µs/layer against the starting point's cross-run-stable ~19.7 — collapsing each row to 60 serial `(row, expert)` threads (8 compute groups, 24 exit-only groups) gave up more partition parallelism than the ~3.8 µs/layer of realised traffic saving bought. Absolutes missed by −50% / −43% at 8/32 from chained machine drift (the compiled bar moved 160.0 → 87.6 and 171.0 → 92.1 in the same run); the margin miss is the real one. Next change: share `w` inside the staged path's partition-parallel layout (2 rows per group, interleaved `parts`) rather than per-`(row, expert)` serial threads, or drop (a) for (b).
 
 ## Boundary checks
 

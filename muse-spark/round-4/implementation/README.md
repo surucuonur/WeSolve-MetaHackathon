@@ -1,18 +1,19 @@
 # Implementation: round 4
 
-**Version:** v4 · 2026-11-04T21:55:00Z · skill version 10
+**Version:** v5 · 2026-11-04T21:57:30Z · skill version 10
 
 ## Tracker
 
 | Hypothesis | Slot | Builders | Attempts: G1, G2, µs per layer at 1 / 8 / 32 rows (compiled) | Status |
 |---|---|---|---|---|
 | `hyp-1-experts-minrows` | `experts` | `builder-1-a`, `builder-1-b` | 1: pass, pass, handed off / 157.6 / 571.1 (232.1 / 832.6); 2: pass, pass, handed off / 170.5 / 538.1 (236.8 / 823.2) | building |
-| `hyp-2-routing-margin` | `routing` | `builder-2-a`, `builder-2-b` | — | building |
+| `hyp-2-routing-margin` | `routing` | `builder-2-a`, `builder-2-b` | 1: pass, pass, 58.5 / 136.9 / 74.7 (86.1 / 157.3 / 92.1); 2: pass, pass, 44.4 / 71.6 / 83.8 (59.2 / 87.6 / 92.1) | building |
 
 Ranked item 6 (combine at its floor) opens no kernel hypothesis: exploration confirms no bit-exact change widens its decode margin, so the slot is carried into the set by a byte-identical re-grade of its starting point under `hyp-3-combine-setcopy`, opened once one of the two hypotheses above closes. The three-slot interaction (`ineff-g3-2`) is carried as a constraint on every set claim and is measured by the ready check, not built against.
 
 ## Versions
 
+- v5 · 2026-11-04T21:57:30Z · routing attempts 1+2 graded (both beats_compiled; direction a narrowed 32-row margin), experts boundary checks pass · changed: hyp-1-experts-minrows v5, hyp-2-routing-margin v3
 - v4 · 2026-11-04T21:55:00Z · experts attempt-2 graded, beats_compiled true; boundary checks next · changed: hyp-1-experts-minrows v4
 - v3 · 2026-11-04T21:53:17Z · experts attempt-1 graded, beats_compiled true (1-row and prefill handed off); boundary check next · changed: hyp-1-experts-minrows v3
 - v2 · 2026-11-04T21:52:00Z · boundaries drawn, 4 builders started (2 experts, 2 routing) · changed: hyp-1-experts-minrows v2, hyp-2-routing-margin v2
