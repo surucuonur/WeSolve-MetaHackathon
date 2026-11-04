@@ -161,3 +161,44 @@ steps) plus the chained fixed cost, which no block packing
 shortens — and the split adds a launch, a `hidden` round-trip
 and duplicated `tg_x`/`tg_h` loads (+19% at 32 rows). Full
 numbers and miss analysis in the attempt's `notes.md`.
+
+builder-1-d, 2026-11-04T03:56:18Z — round-2
+`kernels/experts/attempt-4` tested the serial-chain lever
+attempt-3 named: back in attempt-1's fused single kernel
+(512 threads/pair, one kernel), gate and up for each block run
+in one interleaved K loop (`qvm_gate_up_pair`) — both blocks'
+weight/scale loads for a strided `k` issued before either
+accumulates, per-block `qvm_block` order/`simd_sum` and the
+scalar prefill path byte-identical. Graded chained 94.0 /
+177.0 / 591.3 µs/layer vs compiled 73.5 / 239.0 / 796.3, G2
+pass all six (differ 0). The interleave breaks the
+103.6–109.5 plateau at latency-bound sizes (1 row −9.9% and
+8 rows −8.4% vs attempt-1's 104.3/193.3; 23.5/99.9 vs
+21.2/91.5 GB/s), confirming the per-block serial chain was
+the lever — but the second live 32-float accumulator taxes
+streaming occupancy at 32 rows (+10.4% vs attempt-1's 535.7;
+119.7 vs 132.1 GB/s), where group parallelism already hides
+load latency. The remaining 1-row gap to compiled (94.0 vs
+73.5) is the still-sequential down chain plus chained fixed
+cost. Next: row-conditional interleave in the same fused
+kernel. Full numbers in the attempt's `notes.md`.
+
+builder-1-e, 2026-11-04T04:03:18Z — round-2
+`kernels/experts/attempt-5` kept attempt-4's fused interleaved
+kernel and parallelized only the block stores: after each
+`simd_sum` every lane holds the full reduced 32-vector, so lane
+`j` now stores element `j` (`tg_gate`/`tg_up`/`y`, one store per
+lane) instead of lane 0 serially storing all 32 per block
+(48 blocks/pair). Graded chained 92.1 / 162.0 / 534.8 µs/layer
+vs compiled 75.9 / 234.6 / 798.2, G2 pass all six (differ 0) —
+the broadcast premise is confirmed by G2 itself. The change
+dominates attempt-4 at every size (−2.0% / −8.5% / −9.6%) and
+restores attempt-1's 32-row rate (534.8 vs 535.7; 132.3 GB/s)
+with the interleave kept, so attempt-4's register-tax reading
+was confounded: lane 0's 32 uncoalesced single-lane device
+stores to `y` per down block taxed streaming steps ~9% on their
+own. The row-conditional interleave is moot. At 1 row the gain
+is small (94.0 → 92.1); the remaining gap to compiled is the
+sequential down chain plus chained fixed cost. Next:
+interleave two down blocks per simdgroup. Full numbers in the
+attempt's `notes.md`.

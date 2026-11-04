@@ -118,3 +118,18 @@ verifier, 2026-11-04T03:23:45Z — **confirmed**. Checked: serial chain at [bloc
   FMA chains, where the MMA attempt's chunk staging doubled as its
   coalescing. Exactness is settled; the remaining problem is purely
   how the scalar sums are fed.
+- builder-2-d, 2026-11-04T03:56:12Z: round-2 routing attempt-4
+  (`muse-spark/round-2/kernels/routing/attempt-4`) fed the same scalar
+  sums from threadgroup memory — each K-chunk's `w_router` block
+  staged with coalesced `float4` loads (transposed
+  `[slot][k][expert]`), padded `xpad[c*17+k]`, partials resumed
+  product-by-product in increasing `d`: **G1 pass, G2 pass at all six
+  sizes** (rows_differ 0, max rel err 0.0), chained 47.5/69.1/72.9
+  µs/layer vs compiled 60.7/84.9/89.5 — **`beats_compiled` true**, the
+  slot's stop rule met. Attempt-3's feeding diagnosis is confirmed by
+  removal: 4.3×/4.1× faster at 8/32 rows with no accumulation-order
+  change. Timing is flat 69→73 µs from 8 to 32 rows (marginal
+  ≈0.16 µs/row): once enough threadgroups are resident, staging
+  loads/barriers overlap other threadgroups' compute, so
+  traffic-floor arithmetic overstates the 32-row cost — my 95 µs
+  prediction missed by 23% on exactly that serial-cost assumption.

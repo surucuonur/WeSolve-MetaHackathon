@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** hardening
-- **Version:** 6
-- **Updated:** 2026-11-04T03:52:53Z
-- **Next:** boundary check attempt-3; next: fused interleave gate/up from attempt-1
+- **Version:** 7
+- **Updated:** 2026-11-04T04:04:00Z
+- **Next:** hardening from attempt-5: interleaved down block pair
 
 ## Inefficiency
 
@@ -262,6 +262,82 @@ Any prefill branch must stay inside both limits at all six sizes.
   per-block chain itself (interleaved gate/up loads) inside the
   fused kernel, not more groups.
 
+### builder-1-d — hardening: fused interleave gate/up
+
+- Attempt: `muse-spark/round-2/kernels/experts/attempt-4` (builds
+  on best attempt `muse-spark/round-2/kernels/experts/attempt-1`).
+  Same fused single kernel, same 512 threads/pair and grid; the
+  one change is decode-only: simdgroup `b` computes block `b` of
+  both gate and up in one interleaved K loop
+  (`qvm_gate_up_pair`) — for each strided `k`, both blocks' weight
+  words, scales and biases are loaded before either accumulates,
+  into separate accumulators, keeping each block's `qvm_block`
+  add order, dequant terms and `simd_sum` identical. Down still
+  uses `qvm_block` verbatim; prefill reuses attempt-1's scalar
+  `qmm_accum` byte-identical, with the same `rows >= 60` branch,
+  silu and rounding points. No kernel split, no threadgroup-count
+  change; threadgroup memory unchanged at 3,840 B.
+- Predicted (chained µs/layer at 1/8/32): 90 / 178 / 505.
+  Measured (grader, this run): **94.0 / 177.0 / 591.3**, vs
+  reference 81.2 / 252.1 / 799.2 and compiled 73.5 / 239.0 /
+  796.3 in the same run. Attempt-1 (other run): 104.3 / 193.3 /
+  535.7 vs compiled 77.6 / 235.7 / 791.6.
+- **G1 pass; G2 pass — differ 0, max_ulp 0.0 at all six sizes**
+  (decode exact via unchanged per-block qvm math; prefill exact
+  via attempt-1's scalar BK=32 path). `beats_compiled` false:
+  wins 8/32 rows, loses 1 row (94.0 vs compiled 73.5). Baseline
+  `none` — no `wins_vs_baseline`/`beats_baseline`. Prediction
+  missed +4% / −1% / +17% (all inside the 20% bar; see attempt
+  notes).
+- Learned: interleaving breaks the 103.6–109.5 plateau at
+  latency-bound sizes — first sub-plateau 1-row result (94.0,
+  −9.9% vs attempt-1) and −8.4% at 8 rows (177.0), confirming
+  the serial K chain, not group count, was the lever. But the
+  second live 32-float accumulator taxes streaming occupancy:
+  +10.4% at 32 rows (591.3 vs 535.7; 119.7 vs 132.1 GB/s), where
+  group parallelism already hides load latency. Next: make the
+  interleave row-conditional (`qvm_gate_up_pair` at low rows,
+  sequential `qvm_block` above the crossover) in the same fused
+  kernel — both branches bit-identical, so G2 is unaffected.
+
+### builder-1-e — hardening: parallel block stores
+
+- Attempt: `muse-spark/round-2/kernels/experts/attempt-5` (builds
+  on attempt-4). Same fused single kernel, 512 threads/pair, same
+  interleaved gate/up, silu, prefill branch and grids
+  (`block-1.metal` and `spec.json` byte-identical to attempt-4).
+  The one change is decode-only: after each `simd_sum` every lane
+  holds the full reduced 32-vector, so lane `j` stores element
+  `j` — `tg_gate[b*32 + lane] = p[lane]`, `tg_up` likewise, and
+  `y[pair*768 + b*32 + lane] = p[lane]` for down — one store per
+  lane, 32-way parallel, replacing lane 0's serial 32-store loops
+  (48 blocks × 32 stores per pair). Prefill already stored per
+  lane and is untouched.
+- Predicted (chained µs/layer at 1/8/32): 91 / 175 / 589.
+  Measured (grader, this run): **92.1 / 162.0 / 534.8**, vs
+  reference 95.7 / 232.4 / 802.3 and compiled 75.9 / 234.6 /
+  798.2 in the same run. Attempt-4 (other run): 94.0 / 177.0 /
+  591.3 vs compiled 73.5 / 239.0 / 796.3.
+- **G1 pass; G2 pass — differ 0, max_ulp 0.0 at all six sizes**
+  (the broadcast premise holds: lane `j` storing `p[j]` after
+  `simd_sum` reproduces attempt-4's serial stores bit for bit, at
+  gate, up and down). `beats_compiled` false: wins 8/32 rows,
+  loses 1 row (92.1 vs compiled 75.9). Baseline `none` — no
+  `wins_vs_baseline`/`beats_baseline`. Prediction missed
+  +1.2% / −7.4% / −9.2% (all inside the 20% bar; see attempt
+  notes).
+- Learned: parallel stores dominate attempt-4 at every size
+  (−2.0% / −8.5% / −9.6%) and restore attempt-1's 32-row rate
+  (534.8 vs 535.7; 132.3 GB/s) with the interleave kept — lane
+  0's serial stores were not just a latency tail: at streaming
+  sizes the 32 uncoalesced single-lane device stores to `y` per
+  down block taxed every step ~9%. The gain is smallest at
+  1 row, where the remaining ~16 µs gap to compiled is the
+  sequential down chain plus chained fixed cost. Attempt-4's
+  proposed row-conditional interleave is moot. Next: interleave
+  two down blocks per simdgroup, keeping per-block order and
+  the parallel store.
+
 ## Boundary checks
 
 ### attempt-2 (`muse-spark/round-2/kernels/experts/attempt-2`) — boundary-1 · 2026-11-04T03:45:19Z — **pass**
@@ -283,6 +359,26 @@ Checked `block-0.metal` (B0), `block-1.metal` (B1) and `spec.json` against the B
 - **Threadgroup memory vs the 32 KB limit.** Not close. `tg_x[768] + tg_gate[384] + tg_up[384] + tg_h[384]` = 1,920 bfloat16 = 3,840 B (B0:21–24), 11.7% of the 32,768 B limit, rows-independent so it holds at every row count. Threads per threadgroup are 512 ≤ 1,024 (`spec.json:1`).
 - **Thread-timing dependence.** None found. All cross-thread sharing is ordered by `threadgroup_barrier` between write and read (B0:29,70,83), and all three barriers sit outside any lane- or simd-divergent control flow — `prefill` (B0:19) is uniform across the group, so every thread reaches each barrier. Each threadgroup writes a disjoint `y` slice (unique `pair`; B0:93,104), each `tg_gate`/`tg_up`/`tg_h` element is written exactly once (previous bullet), `atomic_outputs` is false and no atomics are used (`spec.json:1`). The only reductions are the fixed `simd_sum` tree (B1:44–47), entered only under simd-uniform guards (`simd < 12` at B0:37,47,58,64; `b = v*16 + simd < 24` at B0:88,101), so a simdgroup always reduces wholly or skips wholly, and the fixed-order serial `BK=32` accumulation in `qmm_accum` (B1:73–80) — neither order can vary with scheduling.
 - **Captured-input assumptions.** None beyond the slot contract. The decode helper `qvm_block` is body-identical to the starting point's proven helper (verified against `muse-spark/kernels/experts/attempt-4/block-1.metal`), keeping float32 dequant `x·(scale·q + bias)` and `simd_sum` order (B1:12–48), and the silu is the starting point's full-bfloat16 lowering, shared by both branches (B0:74–81). In the prefill branch every weight is rounded to bfloat16 before the multiply, `(bfloat)(scale·q + bias)` (B1:78–79); its one written equivalence — MLX's odd-nibble form `(s/16)·(byte & 0xf0) + b` — is exact, not sampled: scaling by a power of two is exact and `s·q` is exact in float32 for 4-bit `q` (B1:56–58). Hard-coded constants are the model's fixed slot dimensions (768/384 widths, 12/24 output blocks, `G = 12/24`, `Ww = 48/96`, per-expert strides 36864/9216), not properties of the captured arrays. The kernel assumes only what the Boundary guarantees — `inds` values in [0,60), flat row-major `[rows,768]` `x` and `[rows,4]` `inds`, contiguous weights — and no property of the captured distributions: `e = inds[pair]` is used directly per pair (B0:18), so any expert order, duplicates, skewed popularity (including an expert absent or chosen by every row), near-tie ids on either side, and later prefill chunks all take the same path; there are no value-based early exits. Residual, not a defect: `qmm_accum` reproduces `BlockMMA`'s 8-wide fragment dots with a single thread's serial adds in `BK=32` order (B1:73–80) rather than by construction with `simdgroup_multiply_accumulate` as attempt-2 does, and territory-quantized-kernels §E notes no source-level proof that the hardware order coincides. Its equality therefore rests on the G2 evidence (differ 0 at 127/1,016/2,048 rows over all 20 layers) plus the same full-bfloat16 silu residual already recorded for the starting point in round 1; since the per-output order is independent of row count and expert distribution, other row counts add no risk to it, but an unseen activation value cannot be ruled out from source alone.
+
+### attempt-3 (`muse-spark/round-2/kernels/experts/attempt-3`) — boundary-1 · 2026-11-04T03:54:50Z — **pass**
+
+Checked `block-0.metal` (B0), `block-1.metal` (B1), `block-2.metal` (B2) and `spec.json` against the Boundary above for what G2 cannot see. No defect found.
+
+- **Row counts on each side of 60.** Both kernels branch on the dispatch threshold itself, not the tested bracket: `rows = inds_shape[0]`, `prefill = rows >= 60` (B0:17–18; B1:13–14) is exactly `B = rows*4 >= 240 ⇔ B/E >= 4` at `E = 60`, so 33–59 rows stay on `gather_qvm` arithmetic and 60–126 take `gather_qmm_rhs` arithmetic, as the Boundary requires. The sort threshold (rows ≥ 16) is correctly ignored — the kernels are positional, `pair = tg/3` (gate/up) or `tg/6` (down), `e = inds[pair]` (B0:19–23; B1:15–18), so reference-internal sorting cannot change their bits at 16–59 rows. Nothing else depends on the row count: the grids are linear, `rows*1536` / `rows*3072` threads = `rows*12` / `rows*24` groups of 128 (`spec.json:1`), with `blk = chunk*4 + simd` covering all 12 gate/up and 24 down blocks per pair (`blk` 0–11 at B0:20–21, 0–23 at B1:16–17) for any `rows >= 1`, including untested 2–7, 9–31, 61–126, 128–1,015, 1,017–2,047 and >2,048, and prefill chunks other than the first. Per-pair independence (no offsets, no cross-pair grouping, no chunk state) and a rows-independent per-output K order in both branches mean chunk position and prompt length cannot change a row's arithmetic. A short later chunk of <60 rows correctly falls back to the `qvm` branch in both kernels, matching the reference's per-call dispatch. Index maxima stay inside the per-expert extents at any valid `e`: `W` word `36863 < 36864` and scale/bias `9215 < 9216` (B0:24–25; B1:19–20; B2:35–39,69–72).
+- **Unwritten threadgroup reads.** None. Gate/up: `tg_x[768]` is fully written by `for (i = tid; i < 768; i += 128)` (B0:31–33) and barriered (B0:34) before any `qvm_block`/`qmm_accum` read of it (B0:38,45,53,56). `tg_gate`/`tg_up[128]` are fully covered before the barrier at B0:60 and the silu reads at B0:62–63: in decode, each simdgroup's lane 0 stores its block's 32 outputs (B0:40–44,47–51); in prefill, each lane stores one output, `simd*32 + lane` (B0:55,58) — 4 simdgroups × 32 = 128 entries either way. Down: `tg_h[384]` is fully written by `for (i = tid; i < 384; i += 128)` (B1:24–26) and barriered (B1:27) before the down reads (B1:31,39–40). No threadgroup buffer is reused across tiles in either kernel, so no stale value can be read, and `qvm_block` zero-initialises its private `p[32]` before accumulating (B2:26–28). Device-side, `hidden` is written at every `(pair, blk*32 + lane)` — 3 groups/pair × 4 blocks × 32 lanes = 384 elements, each exactly once (B0:19–21,62–63) — before the down kernel (second in `spec.json:1` order) reads it, and `y` is written at every output element in both branches (B1:33–36 decode by lane 0 per block, B1:41 prefill per lane), so the uninitialised intermediate is never read.
+- **Threadgroup memory vs the 32 KB limit.** Not close. Gate/up: `tg_x[768] + tg_gate[128] + tg_up[128]` bfloat16 = `1536 + 256 + 256 = 2,048 B` (6.25% of 32,768 B; declarations at B0:27–29). Down: `tg_h[384]` = 768 B (2.3%; B1:22). The shared header allocates no threadgroup tile buffers in either branch (B2:14–76 takes threadgroup pointers as parameters only), so there is no prefill-only allocation to tax decode residency, unlike attempt-2. All allocations are rows-independent, so this holds at every row count. Threads per threadgroup are 128 ≤ 1,024 (`spec.json:1`).
+- **Thread-timing dependence.** None found. All threadgroup sharing is ordered by `threadgroup_barrier` between write and read (B0:34,60; B1:27), and both barriers sit outside any lane- or simd-divergent control flow — `prefill` (B0:18; B1:14) is derived from `inds_shape[0]`, uniform across the group, so every thread reaches each barrier. Every simdgroup owns a valid block in both kernels (`blk` always in 0–11 / 0–23), so the `qvm_block` calls (B0:38,45; B1:31) are entered by all 32 lanes of each simdgroup and the fixed `simd_sum` tree (B2:47–49) always reduces wholly; only the disjoint store sits inside the `lane == 0` guard. Each threadgroup writes a disjoint slice of `hidden`/`y` (unique `pair`/`blk`/`lane`; B0:62–63; B1:35,41), `atomic_outputs` is false and no atomics are used (`spec.json:1`), and the prefill accumulation is a fixed-order serial `BK=32` loop in a single thread per output (B2:66–73) — neither order can vary with scheduling. The gate/up → down dependency is kernel-launch order in the spec list plus the `hidden` data dependency, not timing.
+- **Captured-input assumptions.** None beyond the slot contract. The helpers are body-identical to attempt-1's proven copies (verified by diff against `muse-spark/round-2/kernels/experts/attempt-1/block-1.metal`, comments aside): `qvm_block` keeps float32 dequant `x·(scale·q + bias)`, the strided-lane order and `simd_sum` (B2:29–49), `qmm_accum` rounds every weight to bfloat16 before the multiply, `(bfloat)(scale·q + bias)` (B2:71–72), and `silu_mul_bf16` is the starting point's full-bfloat16 lowering shared by both branches (B2:82–90). Hard-coded constants are the model's fixed slot dimensions (768/384 widths, 12/24 output blocks, per-expert strides 36864/9216, 4-bit nibble dequant), not properties of the captured arrays. The kernels assume only what the Boundary guarantees — `inds` values in [0,60), flat row-major `[rows,4]` `inds` and `[rows,768]` `x`, contiguous weights — and make no assumption about expert order, duplicates, popularity, `x` distribution or prompt content: every pair is computed independently from its own `inds[pair]` (B0:23; B1:18), so skewed or repeated experts, near-tie ids on either side, and later prefill chunks all take the same path, with no value-based early exits. Residual, not a defect (carried from the attempt-1 check): `qmm_accum` reproduces `BlockMMA`'s 8-wide fragment dots with a single thread's serial adds in `BK=32` order (B2:66–73) rather than by construction with `simdgroup_multiply_accumulate` as attempt-2 does, so its equality rests on the G2 evidence (differ 0 at 127/1,016/2,048 rows over all 20 layers) plus the shared full-bfloat16 silu residual; since the per-output order is independent of row count, expert distribution and the block→threadgroup remapping (the only change from attempt-1), other row counts add no risk to it, but an unseen activation value cannot be ruled out from source alone.
+
+### attempt-4 (`muse-spark/round-2/kernels/experts/attempt-4`) — boundary-1 · 2026-11-04T03:58:04Z — **pass**
+
+Checked `block-0.metal` (B0), `block-1.metal` (B1) and `spec.json` against the Boundary above for what G2 cannot see. No defect found. Diff against attempt-1 confirms the only change is the decode gate/up interleave: `qvm_block`, `qmm_accum`, the prefill branch, the silu and the down product are byte-identical; the new `qvm_gate_up_pair` (B1:62–121) was checked in full.
+
+- **Row counts on each side of 60.** The branch is on the dispatch threshold itself, not the tested bracket: `prefill = x_shape[0] >= 60` (B0:22) is exactly `B = rows*4 >= 240 ⇔ B/E >= 4` at `E = 60`, so 33–59 rows stay on the `gather_qvm` arithmetic and 60–126 take the `gather_qmm_rhs` arithmetic, as the Boundary requires. The sort threshold (rows ≥ 16) is correctly ignored — the kernel is positional, `pair = threadgroup_position_in_grid.x`, `r = pair >> 2`, `e = inds[pair]` (B0:16,20–21), so reference-internal sorting cannot change its bits at 16–59 rows. Nothing else depends on the row count: the grid is `rows*2048` threads = `rows*4` groups of 512 (`spec.json:1`), one group per (row, slot) pair, with per-pair indices in range for any `rows >= 1` (`inds[pair]` of `rows*4`, `x[r*768+i]` with `i < 768`, `y[pair*768 + b*32 + j/lane]` with the offset `< 768`; B0:29–31,62,68,94,105) and index maxima inside the per-expert extents at any valid `e` (gate/up and down alike: `W` word `36863 < 36864`, scale/bias `9215 < 9216`; B0:34–35; B1:36,88,97,149). This covers untested 2–7, 9–31, 61–126, 128–1,015, 1,017–2,047 and >2,048 rows, and prefill chunks other than the first: each pair is computed independently (no offsets, no cross-pair grouping, no chunk state), and the per-output K order in both branches — strided `k = lane, lane+32, …` in decode (B1:82), contiguous `BK=32` tiles in prefill (B1:146–153) — is rows-independent, so chunk position and prompt length cannot change a row's arithmetic. A short later chunk of <60 rows correctly falls back to the `qvm` branch, matching the reference's per-call dispatch.
+- **Unwritten threadgroup reads.** None. `tg_x[768]` is written exactly once by `for (i = tid; i < 768; i += 512)` (B0:29–31) and barriered (B0:32) before any `qvm_gate_up_pair`/`qvm_block`/`qmm_accum` read of it (B0:47–49,61,67; B1:83). `tg_gate`/`tg_up[384]` are fully covered before the barrier at B0:71 and the silu reads at B0:76,82: in decode, simdgroups 0–11 each have lane 0 store their block's 32 gate and 32 up outputs (B0:44–55); in prefill, each lane stores one output, `b*32 + lane` (B0:59–68) — 12 blocks × 32 = 384 either way. `tg_h[384]` is written exactly once by tids 0–383 in the silu loop (B0:75–82) and barriered (B0:84) before the down reads (B0:91,104). The new helper zero-initialises both accumulators before accumulating (B1:78–81) and fully writes its private `w4g`/`w4u[4]` load buffers before reading them (B1:89–101); idle simdgroups (12–15 in gate/up; wave-2 `b >= 24` in down, B0:88–97,101–106) write nothing and their never-initialised `p`/`pu` is never stored — every store sits inside the same `simd < 12` / `lane == 0` / `b < 24` guard as the compute, and `qvm_block` re-zeroes `p` on entry (B1:27–29). Device-side, `y` is written at every output element in both branches (decode by lane 0 per block, B0:92–95; prefill per lane, B0:105) — 24 blocks × 32 = 768 per pair — and the fused kernel has no device-memory intermediate, so nothing uninitialised is read.
+- **Threadgroup memory vs the 32 KB limit.** Not close, unchanged from attempt-1. `tg_x[768] + tg_gate[384] + tg_up[384] + tg_h[384]` = 1,920 bfloat16 = 3,840 B (B0:24–27), 11.7% of the 32,768 B limit, rows-independent so it holds at every row count. The interleave's second 32-float accumulator `pu[32]` and second 4-word load buffer (B0:46; B1:89–101) are register-local, not threadgroup memory — an occupancy cost the builder's notes record, not a limit risk. Threads per threadgroup are 512 ≤ 1,024 (`spec.json:1`).
+- **Thread-timing dependence.** None found. All cross-thread sharing is ordered by `threadgroup_barrier` between write and read (B0:32,71,84), and all three barriers sit outside any lane- or simd-divergent control flow — `prefill` (B0:22) is uniform across the group, so every thread reaches each barrier. The interleave itself cannot reorder a block's bits with timing: for each strided `k` both blocks' loads are issued (B1:84–101), then gate's 32 adds run (B1:102–106), then up's (B1:107–111), into separate accumulators `pg`/`pu`, so each block's per-output add sequence is the fixed `k = lane, lane+32, …` order of `qvm_block` regardless of load scheduling, and the two fixed `simd_sum` trees run sequentially afterwards (B1:113–120). Both reductions are entered only under simd-uniform guards (`simd < 12` at B0:44,59,65; `b = v*16 + simd < 24` at B0:90,103), so a simdgroup always reduces wholly or skips wholly. Each threadgroup writes a disjoint `y` slice (unique `pair`; B0:94,105), each `tg_gate`/`tg_up`/`tg_h` element is written exactly once (previous bullet), `atomic_outputs` is false and no atomics are used (`spec.json:1`), and the prefill accumulation is a fixed-order serial `BK=32` loop in a single thread per output (B1:146–154).
+- **Captured-input assumptions.** None beyond the slot contract. The decode helper `qvm_block` and prefill helper `qmm_accum` are body-identical to attempt-1's proven copies (verified by diff; only the header comment and the inserted `qvm_gate_up_pair` differ in B1), keeping float32 dequant `x·(scale·q + bias)` with the strided-lane order and `simd_sum` (B1:30–50) and rounding every prefill weight to bfloat16 before the multiply, `(bfloat)(scale·q + bias)` (B1:151–152); the silu is the starting point's full-bfloat16 lowering shared by both branches (B0:73–82) and the down product still calls `qvm_block` verbatim (B0:91). In `qvm_gate_up_pair` each block keeps `qvm_block`'s exact terms — `x * (s0 * (by & 0x0f) + bias)` / `x * (s1 * (by & 0xf0) + bias)` with `s1 = scale/16` (B1:104–105,109–110) — reading the shared `tg_x[k]` once per `k` (B1:83), the same float value the sequential pair of calls read twice, so gate and up bits are attempt-1's by construction. Hard-coded constants are the model's fixed slot dimensions (768/384 widths, 12/24 output blocks, `G = 12/24`, `Ww = 48/96`, per-expert strides 36864/9216, 4-bit nibble dequant), not properties of the captured arrays. The kernel assumes only what the Boundary guarantees — `inds` values in [0,60), flat row-major `[rows,768]` `x` and `[rows,4]` `inds`, contiguous weights — and no property of the captured distributions: `e = inds[pair]` is used directly per pair (B0:21), so any expert order, duplicates, skewed popularity (including an expert absent or chosen by every row), near-tie ids on either side, and later prefill chunks all take the same path, with no value-based early exits. Residual, not a defect (carried from the attempt-1 check): `qmm_accum` reproduces `BlockMMA`'s 8-wide fragment dots with a single thread's serial adds in `BK=32` order (B1:146–154) rather than by construction with `simdgroup_multiply_accumulate` as attempt-2 does, so its equality rests on the G2 evidence (differ 0 at 127/1,016/2,048 rows over all 20 layers) plus the shared full-bfloat16 silu residual; since the prefill path is byte-identical to attempt-1's and the per-output order is independent of row count and expert distribution, other row counts add no risk to it, but an unseen activation value cannot be ruled out from source alone.
 
 ## Decision
 
