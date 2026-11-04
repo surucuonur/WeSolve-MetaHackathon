@@ -1,10 +1,10 @@
 # Hypothesis 3: routing prefill at compiled speed
 
 - **Owner:** lead
-- **Status:** hardening
-- **Version:** 10
-- **Updated:** 2026-11-04T18:30:28Z
-- **Next:** checker-3 re-checks after the Unverified fix; best is attempt-6
+- **Status:** candidate
+- **Version:** 11
+- **Updated:** 2026-11-04T18:31:55Z
+- **Next:** ready check, with hyp-1's combine attempt-2
 
 ## Inefficiency
 
@@ -291,3 +291,15 @@ checker-3, 2026-11-04T18:29:51Z — one defect (step 5, Unverified coverage, bel
 6. Failure ledger: recounted from all six `grade.json` files — every figure on L265-270 matches (attempt-1 same/same/slower at 8 wins, 2.7%; attempt-6 faster x3 28/27/25, same x3 13/16/19, within 0.7%, beats true; attempts 2/4 G1 fails at 960-vs-640 and 600-vs-576; attempt-3 same x3 14/15/9, slower x3; attempt-5 faster/same/same 24/10/16, slower x3 3/0/0, 1.44/2.52/3.50x). Attempt-6 framing honest: `diff -q` of block-0.metal, block-1.metal, spec.json between attempt-1 and attempt-6 is empty on all three; `diff -r` differs only in grade.json (the new run's verdict) and notes.md (the new write-up); notes confirm one grader run. No three-same-cause sequence triggers the approach-change rule (prefill-slower x3 have distinct causes — noise, re-read+copy, overhead; G1 x2, each already stating its next fix; the 640→576 cap refinement rests on the second G1 error as new measurement, not a rename). Attempt-1's line stands as a noise event per the non-reproduction. See observation (b) on the ledger's schema.
 
 Observations (non-blocking): (a) L99-100 quotes attempt-2's error with a single space and no trailing period; the file has "greater than  the maximum ... (640)." (double space, period). L164-165 keeps the double space, drops the period. Transcription nits, not speed claims. (b) The Failure ledger carries attempt-6's passing line though tracking.md scopes the ledger to losing attempts; it is clearly labelled as the one-run noise test (not a loss) and every figure recounts — honest record-keeping, schema-stretching placement.
+
+---
+checker-3, 2026-11-04T18:31:40Z — re-check after the Unverified fix (entry v10): `check: pass`. The step-5 defect is fixed: new L275–277 fold the boundary's full can't-see list into Unverified, item by item. All speed claims re-verified unchanged — v17 touched only the status block, Unverified, and Checks (`git show b92b4f1`).
+
+1. Measured, piece: pass — re-read `timing_us_per_layer` for attempts 1/3/5/6 this run; every triple, win count, verdict, phase pair and `beats_compiled` matches the entry (g1/g2 true, `rows_differ` 0). Builder, Inefficiency and Decision figures byte-unchanged since the first check.
+2. Measured, whole request: pass — still none claimed as measured; no `ready-verdict.json` under `muse-spark/round-3/` (only `.md` mentions), so no `check_ready.py --audit` applies; Decision L261 still labelled PREDICTION with basis.
+3. Predictions: pass — unchanged, labelled wherever made, counting only this slot's own effect.
+4. Combinations: pass — none claimed; composition still deferred to the ready check (now Unverified L280).
+5. Unverified: pass (defect fixed) — L275 carries hand-off exactness at untested sizes, sizes above 2,048, prefill beyond the first chunk (`check_sizes.py` not run noted); L276 carries other prompts, later decode steps, layers' drift, unseen exact 4th/5th ties, sigmoid-saturating magnitudes, whole-request noise at 1 request; L277 carries threadgroup memory (28,080 B note). L274 covers ungraded decode counts and the 33–126 band (backed by the boundary check's in-kind/empty-by-construction findings, L243–244); the 768/129/257 transitions are moot kernel-side since kernels never run above 32, with hand-off exactness carried at L275; unwritten-TG-reads/thread-timing were closed by the boundary check (L246–247), same standard as the first check. No free/neutral/zero cost language added.
+6. Failure ledger: pass — lines unchanged; figures re-matched to the `grade.json` files this run; no new attempts, no three-same-cause trigger.
+
+The earlier verdict above (1 defect, step 5) stands as the record of the first check; this re-check supersedes its outcome.

@@ -65,3 +65,5 @@
 2026-11-04T18:27:26Z | lead | v16: hyp-3 closing on attempt-6 (Decision), checker-3 next
 2026-11-04T18:30:08Z | checker-3 | checked hyp-3-routing-prefill: all speed claims + Decision verify, 1 defect (Unverified L272-277 omits can't-see items listed at L251); attempt-6 byte-identity confirmed, ledger recounts
 2026-11-04T18:30:47Z | lead | v17: Unverified fixed per checker-3 defect; re-check next
+2026-11-04T18:31:48Z | checker-3 | re-checked hyp-3-routing-prefill after Unverified fix: check: pass (step-5 defect fixed, L275-277 carry full can't-see list; all 6 steps re-run)
+2026-11-04T18:32:07Z | lead | v18: hyp-3 candidate (routing attempt-6, checker pass); ready check next
