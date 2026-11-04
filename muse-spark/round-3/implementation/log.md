@@ -31,3 +31,4 @@
 2026-11-04T18:09:55Z | boundary-3 | posted hyp-3-routing-prefill Boundary: delta on round-2 hyp-2 boundary, starting point attempt-4 G2-passing, two-phase bar, max_rows window 32-126 (no 60-row switch for routing)
 2026-11-04T18:10:26Z | checker-1 | checked hyp-1-combine-devolatilize: pass (all 6 steps; 2 non-blocking observations: L53 cross-run deltas diagnostic-only, L87 -35% decode-only)
 2026-11-04T18:10:28Z | lead | v8: experts-4 exact but 2.3x off (ledger, line ends); hyp-2 hardening (1-row fix), hyp-3 building
+2026-11-04T18:10:55Z | lead | v9: hyp-1 candidate (combine attempt-2, checker pass)

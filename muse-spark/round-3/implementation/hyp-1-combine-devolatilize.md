@@ -1,10 +1,10 @@
 # Hypothesis 1: combine without volatiles
 
 - **Owner:** lead
-- **Status:** hardening
-- **Version:** 6
-- **Updated:** 2026-11-04T18:07:45Z
-- **Next:** checker-1 verifies the close; best is attempt-2, no further kernel change worth making
+- **Status:** candidate
+- **Version:** 7
+- **Updated:** 2026-11-04T18:10:45Z
+- **Next:** ready check, once no hypothesis is building or hardening
 
 ## Inefficiency
 
