@@ -1,0 +1,250 @@
+{
+ "session": "01a1a345-d4c5-71e1-9493-145574a7033c",
+ "first": "2026-11-03T21:17:07.634317+00:00",
+ "last": "2026-11-03T22:32:54.426657+00:00",
+ "recorded_by": "Muse Code 1.4.14 (dec7d7497f)",
+ "agents": [
+  {
+   "session": "01a1a345-d4c5-71e1-9493-145574a7033c",
+   "agent": "lead",
+   "model_calls": 105
+  },
+  {
+   "session": "01a1a346-a288-7d42-a14e-73facde2200b",
+   "agent": "helper main/explorer-model/1",
+   "model_calls": 19
+  },
+  {
+   "session": "01a1a346-a4c0-7450-b5fd-167c1867b5f2",
+   "agent": "helper main/explorer-switch-layers/2",
+   "model_calls": 31
+  },
+  {
+   "session": "01a1a346-a70a-7c90-a157-5715720dc617",
+   "agent": "helper main/explorer-quantized-kernels/3",
+   "model_calls": 36
+  },
+  {
+   "session": "01a1a346-a974-7dd3-82b6-235e4a8df432",
+   "agent": "helper main/explorer-other-kernels/4",
+   "model_calls": 27
+  },
+  {
+   "session": "01a1a346-abfe-70f2-aab1-1f0514d2868b",
+   "agent": "helper main/explorer-vllm-metal/5",
+   "model_calls": 33
+  },
+  {
+   "session": "01a1a346-aecd-77a1-b2d5-b59cc204535d",
+   "agent": "helper main/explorer-grader/6",
+   "model_calls": 18
+  },
+  {
+   "session": "01a1a346-b1a9-72f1-8c84-fa26ed54ca98",
+   "agent": "helper main/explorer-findings/7",
+   "model_calls": 24
+  },
+  {
+   "session": "01a1a346-b3e3-7b03-a055-117ead4fe5d5",
+   "agent": "helper main/explorer-runs/8",
+   "model_calls": 15
+  },
+  {
+   "session": "01a1a348-ad3c-7e63-a68a-7dd5a561727e",
+   "agent": "helper main/verifier/9",
+   "model_calls": 42
+  },
+  {
+   "session": "01a1a353-7030-7ba0-8603-ac0280ac2a52",
+   "agent": "helper main/boundary-1/10",
+   "model_calls": 10
+  },
+  {
+   "session": "01a1a353-7280-74f1-a5d6-0080cdbf01fe",
+   "agent": "helper main/boundary-2/11",
+   "model_calls": 11
+  },
+  {
+   "session": "01a1a355-839e-7571-89d0-0fe61a26ed63",
+   "agent": "helper main/builder-1-a/12",
+   "model_calls": 124
+  },
+  {
+   "session": "01a1a355-864d-7393-b9b5-d8c8d8d977e9",
+   "agent": "helper main/builder-1-b/13",
+   "model_calls": 66
+  },
+  {
+   "session": "01a1a355-88f5-70f3-833d-b8c9385fca91",
+   "agent": "helper main/builder-1-c/14",
+   "model_calls": 63
+  },
+  {
+   "session": "01a1a355-8b5e-72d0-abfc-a03cdc5f4c4b",
+   "agent": "helper main/builder-2-a/15",
+   "model_calls": 15
+  },
+  {
+   "session": "01a1a355-8dc2-79a2-b061-7e7d322bdd11",
+   "agent": "helper main/builder-2-b/16",
+   "model_calls": 22
+  },
+  {
+   "session": "01a1a35b-185a-78d3-b8b6-81dd248fa958",
+   "agent": "helper main/boundary-2-check/17",
+   "model_calls": 7
+  },
+  {
+   "session": "01a1a360-83a5-7431-b844-0380635e846f",
+   "agent": "helper main/boundary-3/18",
+   "model_calls": 17
+  },
+  {
+   "session": "01a1a365-c8dc-71c2-9b9a-7b4a1ee1caae",
+   "agent": "helper main/builder-3-a/19",
+   "model_calls": 15
+  },
+  {
+   "session": "01a1a365-cb01-7822-934b-e4eb9561a403",
+   "agent": "helper main/builder-3-b/20",
+   "model_calls": 19
+  },
+  {
+   "session": "01a1a36b-2983-7870-87a6-9856f282608b",
+   "agent": "helper main/boundary-1-check/21",
+   "model_calls": 7
+  },
+  {
+   "session": "01a1a36b-2bc1-7540-b799-f35067b25b98",
+   "agent": "helper main/boundary-3-check/22",
+   "model_calls": 50
+  },
+  {
+   "session": "01a1a370-8da3-7ce3-88d3-eaf82a44b3e3",
+   "agent": "helper main/boundary-1-check3/23",
+   "model_calls": 7
+  },
+  {
+   "session": "01a1a386-b188-7303-8da7-4de4a84903d6",
+   "agent": "helper main/boundary-1-check1/24",
+   "model_calls": 9
+  },
+  {
+   "session": "01a1a386-b3ed-79a0-883e-21ffd2985bb7",
+   "agent": "helper main/builder-1-d/25",
+   "model_calls": 14
+  },
+  {
+   "session": "01a1a389-4343-7f90-8f57-c160baf99b73",
+   "agent": "helper main/boundary-1-check4/26",
+   "model_calls": 8
+  },
+  {
+   "session": "01a1a38b-1207-7180-8917-6c5dd2c4bdb6",
+   "agent": "reminder goal-reminder",
+   "model_calls": 1
+  },
+  {
+   "session": "01a1a38b-1247-7b32-bad2-7570c9c945de",
+   "agent": "reminder verify-reminder",
+   "model_calls": 1
+  }
+ ],
+ "model_calls_by_model": {
+  "muse-spark-1.3-contributor": 816
+ },
+ "tokens": {
+  "input_tokens": 86756831,
+  "output_tokens": 1036800,
+  "reasoning_tokens": 654759,
+  "cached_tokens": 83548033,
+  "cache_read_tokens": 83548033
+ },
+ "tool_calls_by_approval": {
+  "allow:policy": 1069,
+  "allow:llm_judge": 105,
+  "allow:self_mediated_network_approval": 12
+ },
+ "dropped": "Muse Code's instructions and context blocks, reminder prompts, encrypted reasoning and runtime bookkeeping",
+ "dropped_records": {
+  "approval_wait.effect.started": 21,
+  "approval_wait.effect.terminal": 21,
+  "async.owner.attempt_admitted": 26,
+  "command.invoked": 1,
+  "reminder prompt": 2,
+  "run.model.configured": 29,
+  "runtime.command_intake.received": 1,
+  "runtime.command_intake.session_name.received": 1,
+  "runtime.command_intake.settled": 2,
+  "runtime.retained_fact": 1,
+  "runtime.session": 2,
+  "runtime.session.accepted": 2222,
+  "runtime.session.automated_review_completed": 21,
+  "runtime.session.automated_review_started": 21,
+  "runtime.session.cancelled": 6,
+  "runtime.session.capture_selection": 29,
+  "runtime.session.completed": 2159,
+  "runtime.session.context_block_diagnostic": 296,
+  "runtime.session.context_block_updated": 7,
+  "runtime.session.decision_applied": 21,
+  "runtime.session.failed": 31,
+  "runtime.session.goal_usage_attribution": 2170,
+  "runtime.session.inbox_delivery_anomaly": 26,
+  "runtime.session.inbox_item_drained": 31,
+  "runtime.session.inbox_item_queued": 31,
+  "runtime.session.memory_reminder_child_session_linked": 85,
+  "runtime.session.metadata": 29,
+  "runtime.session.model_input_trace_recorded": 816,
+  "runtime.session.model_request_configured": 29,
+  "runtime.session.model_response_created": 817,
+  "runtime.session.output": 1271,
+  "runtime.session.proposed": 2244,
+  "runtime.session.provider_request_options_configured": 816,
+  "runtime.session.reasoning_committed": 576,
+  "runtime.session.reasoning_summary_delta": 814,
+  "runtime.session.rejected": 22,
+  "runtime.session.reminder_installed": 1,
+  "runtime.session.reminder_proposal": 85,
+  "runtime.session.reminder_reconciler_outcome": 85,
+  "runtime.session.requested": 21,
+  "runtime.session.resource_usage_sampled": 176,
+  "runtime.session.route_facts": 1,
+  "runtime.session.scheduled": 2222,
+  "runtime.session.side_effect_intent": 902,
+  "runtime.session.skill_read_observed": 2,
+  "runtime.session.skill_reminder_decision": 83,
+  "runtime.session.started": 2196,
+  "runtime.session.status": 2222,
+  "runtime.session.task.accepted": 1,
+  "runtime.session.task.completed": 1,
+  "runtime.session.task.proposed": 1,
+  "runtime.session.task.scheduled": 1,
+  "runtime.session.task.side_effect_intent": 1,
+  "runtime.session.task.started": 1,
+  "runtime.session.task_stream_linked": 2244,
+  "runtime.session.todo_snapshot_updated": 5,
+  "runtime.session.tool_delta": 672,
+  "runtime.session.tool_output_ref": 318,
+  "runtime.session_start.intake_v3": 1,
+  "runtime.user_intent.accepted": 1,
+  "runtime.user_intent.materialized": 1,
+  "session.end": 1,
+  "session.name.changed": 1,
+  "session.opened.observed": 1,
+  "session.resource_pressure.observed": 14,
+  "session.started": 1,
+  "session.startup_phases.observed": 1,
+  "session.workspace_branch.observed": 29,
+  "subagent.control.attempt_admitted": 26,
+  "subagent.control.child_session_bound": 26,
+  "subagent.control.result_ready": 26,
+  "subagent.control.resume_context_recorded": 26,
+  "subagent.control.runtime_observed": 26,
+  "subagent.control.spawn_accepted": 26,
+  "subagent.control.start_attested": 26,
+  "subagent.control.status_updated": 26,
+  "subagent.control.wait_parked": 43,
+  "tool_batch.effect.started": 1261,
+  "tool_batch.effect.terminal": 1261
+ }
+}
