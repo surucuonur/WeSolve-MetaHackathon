@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 2
-- **Updated:** 2026-11-04T17:55:21Z
-- **Next:** builder-2-a (max_rows hand-off), builder-2-b (vectorized per-pair scalar) and builder-2-c (grouped/tiled replica) grade their attempts
+- **Version:** 3
+- **Updated:** 2026-11-04T17:58:28Z
+- **Next:** boundary-2 checks attempt-1 (G2 pass); builder-2-b (attempt-2) and builder-2-c still building
 
 ## Inefficiency
 
@@ -139,7 +139,30 @@ the compiled maximum below 512 and fails G1 loudly
 
 ## Builders
 
-(none started)
+### builder-2-a — direction (a): the `max_rows` hand-off
+
+Copy the starting point's kernels verbatim (fused decode path +
+G2-exact scalar prefill branch as dead-code fallback) and hand
+prefill-sized inputs to the compiled reference with `max_rows: 59`
+(top of the boundary's 32–59 window: decode rows ≤ 32, plus 33–59
+which take the `qvm` decode path on both sides, stay on the
+candidate; MLX switches at 60).
+
+- **attempt-1** (`muse-spark/round-3/kernels/experts/attempt-1/`):
+  predicted 93.8 / 160.1 / 510.1 decode, = compiled prefill.
+  Measured (`grade.json`): G1 pass; G2 pass all six, differ 0.
+  Decode 1/8/32 rows: 96.9 / 168.9 / 554.7 vs compiled 86.6 /
+  238.2 / 883.4 — `slower` (5 wins) / `faster` (29) / `faster`
+  (29). Prefill 127/1,016/2,048 rows: 1053.5 / 4106.9 / 7557.0
+  vs compiled 1131.1 / 4133.5 / 7557.8 — `same` (19/15/16 wins)
+  at all three. `phases_vs_compiled` decode `slower`, prefill
+  `not slower`; `beats_compiled` false (only 1-row decode
+  misses). Saved ≈ 14,167/115,047/233,124 µs/layer vs the
+  starting point's prefill. Taught: the hand-off removes the
+  confirmed prefill cause in full at zero decode cost; decode
+  verdicts identical to the starting point's; prefill `same` is
+  the ceiling by construction — the next change belongs to hyp-4
+  (1-row decode), built on this attempt.
 
 ## Boundary checks
 

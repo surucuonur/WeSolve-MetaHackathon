@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 2
-- **Updated:** 2026-11-04T17:55:21Z
-- **Next:** builder-1-a (noinline barriers) and builder-1-b (register-resident decontraction) grade their attempts
+- **Version:** 3
+- **Updated:** 2026-11-04T17:58:28Z
+- **Next:** boundary-1 checks attempt-1 (G2 pass); builder-1-b still building attempt-2
 
 ## Inefficiency
 
@@ -46,7 +46,11 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory (`claude/m
 
 ## Builders
 
-(none started)
+### builder-1-a — direction (a): noinline device-function barriers
+
+Helpers `combine_mul` / `combine_add` (`__attribute__((noinline))`, one op each, in `header_block`) replace the seven `volatile float` barriers; calls in the body keep the exact fold `((p0+p1)+p2)+p3`, both bfloat16 roundings, grid and indexing. Values pass in registers, no thread-private memory traffic.
+
+- **attempt-1** (`muse-spark/round-3/kernels/combine/attempt-1`): G1 pass; G2 pass, differ 0 / max ULP 0.0 at all six sizes, first difference none. Predicted ≈ starting-point medians ±5% (45.7/47.9/64.6 decode, 62.8/226.5/273.0 prefill, `results/runs/2026-11-04-muse-round-2/grade-phases-combine-attempt-1.json`); measured (`grade.json`, µs/layer, reference / compiled / candidate, wins, verdict) — rows 1: 59.5/55.5/**46.8** (28, faster); rows 8: 69.6/56.8/**42.0** (28, faster); rows 32: 83.3/72.8/**49.2** (30, faster); prefill 127: 93.5/67.4/**44.2** (29, faster); prefill 1016: 437.2/278.3/**104.6** (30, faster); prefill 2048: 861.8/590.0/**188.0** (30, faster). `phases_vs_compiled` decode faster, prefill faster; `beats_compiled` true; no baseline. Taught: the piece timing sees part of the prize at prefill sizes — the volatiles' 56 B/output spill (5.5/43.7/88 MB per layer call, floors 33/265/535 µs) is material there, and the attempt recovers −18.6/−121.9/−85.0 µs of it; "~0 in the grader" holds at decode only (see `notes.md` and the note in `ineff-baseline-combine-1.md`). The vLLM step/prompt recovery is for the ready check.
 
 ## Boundary checks
 
