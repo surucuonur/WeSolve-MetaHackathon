@@ -1,0 +1,254 @@
+{
+ "muse-experts": {
+  "base": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x1024": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    }
+   }
+  },
+  "compiled-experts": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x1024": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    }
+   }
+  },
+  "g3": false
+ },
+ "muse-routing": {
+  "base": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x1024": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    }
+   }
+  },
+  "compiled-routing": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x1024": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    }
+   }
+  },
+  "g3": false
+ },
+ "muse-combine": {
+  "base": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x1024": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    }
+   }
+  },
+  "compiled-combine": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x1024": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    }
+   }
+  },
+  "g3": false
+ },
+ "muse-all": {
+  "base": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x1024": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "same"
+    }
+   }
+  },
+  "compiled-all": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x1024": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "same"
+    }
+   }
+  },
+  "g3": false
+ }
+}
