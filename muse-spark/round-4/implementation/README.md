@@ -15,6 +15,7 @@ Ranked item 6 (combine at its floor) opens no kernel hypothesis: exploration con
 ## Versions
 
 - v11 · 2026-11-04T22:07:00Z · checker-1 pass: hyp-1 is a candidate (experts attempt-1) · changed: hyp-1-experts-minrows v9
+- v14 · 2026-11-04T22:10:00Z · checker-2 pass: hyp-2 is a candidate (routing attempt-1); combine boundary check pass, checker-3 next · changed: hyp-2-routing-margin v7, hyp-3-combine-setcopy v2
 - v10 · 2026-11-04T22:05:00Z · hyp-1 and hyp-2 closing (Decisions on experts attempt-1, routing attempt-1), hyp-3 combine set-copy opened in boundary · changed: hyp-1-experts-minrows v8, hyp-2-routing-margin v4, hyp-3-combine-setcopy v1
 - v9 · 2026-11-04T22:04:30Z · hyp-1 checker defects fixed, re-check next · changed: hyp-1-experts-minrows v8
 - v8 · 2026-11-04T22:04:00Z · hyp-2 closing on routing attempt-1 · changed: hyp-2-routing-margin v4
