@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 4
-- **Updated:** 2026-11-04T18:03:53Z
-- **Next:** attempt-1 boundary pass; builder-2-b (attempt-2) and builder-2-c (attempt-3) still building
+- **Version:** 5
+- **Updated:** 2026-11-04T18:05:59Z
+- **Next:** builder-2-b (attempt-2) still building; builder-2-d fixes attempt-3's reserved word as attempt-4
 
 ## Inefficiency
 
@@ -164,6 +164,56 @@ candidate; MLX switches at 60).
   the ceiling by construction — the next change belongs to hyp-4
   (1-row decode), built on this attempt.
 
+### builder-2-c — direction (c): grouped/tiled prefill replica
+
+Four kernels: the starting point's fused body as a decode kernel
+(plus `if (prefill) return;`, output renamed `y_decode`), a
+counting-sort count kernel (pairs by expert, offsets once), a fused
+grouped prefill kernel (one 64-thread group per (expert, 16-pair
+tile): bfloat-rounded dequant shared across <= 16 rows, 8-wide frag
+MMA in BK=32 order, on-chip swiglu, positional stores), and an exact
+select kernel on `rows >= 60`. No `max_rows`.
+
+- **attempt-3** (`muse-spark/round-3/kernels/experts/attempt-3/`):
+  predicted 95 / 166 / 519 decode (`slower`/`faster`/`faster` vs
+  78.6 / 235.5 / 797.8) and 900 / 4,100 / 11,500 prefill (`faster`
+  everywhere vs 960.8 / 4,306.0 / 11,998.9); `beats_compiled`
+  false (1-row decode still misses, for hyp-4). Measured
+  (`grade.json`): G1 **fail** — `block-3.metal` declares
+  `uint half`, but `half` is a reserved Metal type name, so the
+  build fails with six parse errors. No G2, no timing; predictions
+  untested, not refuted. Taught: the reserved word is the only
+  defect reached; the next change is a rename (`half` -> `part`)
+  in a copied new attempt, then grade.
+
+### builder-2-b — direction (b): vectorized per-pair scalar
+
+One thread computes a weight word's 8 outputs with 8 accumulators
+(`qmm_accum8`), each output keeping the scalar branch's contiguous
+`BK=32` bfloat16-rounded-dequant order; packed 8 blocks per
+simdgroup (gate/up one wave of 2, down one wave of 3); fused decode
+path, dispatch, grid and `spec.json` byte-identical to the starting
+point, no `max_rows`.
+
+- **attempt-2** (`muse-spark/round-3/kernels/experts/attempt-2/`):
+  predicted decode 94 / 160 / 510, prefill 3,000 / 24,000 / 49,000
+  (~5× on 8× fewer issues + 8× overlap). Measured (`grade.json`):
+  G1 pass; G2 pass all six, differ 0. Decode 1/8/32 rows: 152.8 /
+  173.3 / 634.1 vs compiled 113.0 / 240.4 / 896.3 — `slower` (5)
+  / `faster` (28) / `faster` (24). Prefill 127/1,016/2,048 rows:
+  20,443.5 / 156,415.6 / 303,542.8 vs compiled 1,113.0 / 6,774.6
+  / 16,333.0 — `slower` (0 wins) at all three.
+  `phases_vs_compiled` decode `slower`, prefill `slower`;
+  `beats_compiled` false. Taught: widening across outputs without
+  unrolling across k buys nothing — each k step's FMAs depend on
+  that step's loads (in-order issue, serial depth still 768) and
+  384→48 threads/group removed the cross-thread latency hiding;
+  within-run vs-compiled 18.4/23.1/18.6× vs the starting point's
+  15.8/27.7/20.1× (this run's machine was much slower than the
+  basis run's, so absolute µs overstate the gap — see notes.md).
+  Next: keep the word-packing, unroll 4 k-steps × 8 outputs into
+  `p[0..31]`; if that fails, direction (b) is exhausted.
+
 ## Boundary checks
 
 ### attempt-1 — pass (boundary-2, 2026-11-04T17:59:14Z)
@@ -220,7 +270,7 @@ run the kernels.
 
 ## Failure ledger
 
-(none yet)
+- attempt-3 (grouped/tiled replica): G1 fail — `uint half` in block-3.metal, `half` is a reserved Metal type name; no G2, no timing. Cause: compile error, not a speed cause; fix is a rename in a copied attempt.
 
 ## Unverified
 

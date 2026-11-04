@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 4
-- **Updated:** 2026-11-04T18:03:53Z
-- **Next:** attempt-1 boundary pass; builder-1-b still building attempt-2
+- **Version:** 5
+- **Updated:** 2026-11-04T18:05:59Z
+- **Next:** boundary-1 checks attempt-2 (G2 pass); then pick best of attempt-1/2
 
 ## Inefficiency
 
@@ -51,6 +51,12 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory (`claude/m
 Helpers `combine_mul` / `combine_add` (`__attribute__((noinline))`, one op each, in `header_block`) replace the seven `volatile float` barriers; calls in the body keep the exact fold `((p0+p1)+p2)+p3`, both bfloat16 roundings, grid and indexing. Values pass in registers, no thread-private memory traffic.
 
 - **attempt-1** (`muse-spark/round-3/kernels/combine/attempt-1`): G1 pass; G2 pass, differ 0 / max ULP 0.0 at all six sizes, first difference none. Predicted ≈ starting-point medians ±5% (45.7/47.9/64.6 decode, 62.8/226.5/273.0 prefill, `results/runs/2026-11-04-muse-round-2/grade-phases-combine-attempt-1.json`); measured (`grade.json`, µs/layer, reference / compiled / candidate, wins, verdict) — rows 1: 59.5/55.5/**46.8** (28, faster); rows 8: 69.6/56.8/**42.0** (28, faster); rows 32: 83.3/72.8/**49.2** (30, faster); prefill 127: 93.5/67.4/**44.2** (29, faster); prefill 1016: 437.2/278.3/**104.6** (30, faster); prefill 2048: 861.8/590.0/**188.0** (30, faster). `phases_vs_compiled` decode faster, prefill faster; `beats_compiled` true; no baseline. Taught: the piece timing sees part of the prize at prefill sizes — the volatiles' 56 B/output spill (5.5/43.7/88 MB per layer call, floors 33/265/535 µs) is material there, and the attempt recovers −18.6/−121.9/−85.0 µs of it; "~0 in the grader" holds at decode only (see `notes.md` and the note in `ineff-baseline-combine-1.md`). The vLLM step/prompt recovery is for the ready check.
+
+### builder-1-b — direction (b): FP-contract-off pragma barrier
+
+Seven plain `float` locals keep the exact fold `((p0+p1)+p2)+p3` and both bfloat16 roundings; contraction is disabled by `#pragma STDC FP_CONTRACT OFF` + `#pragma clang fp contract(off)` in `header_block` (emitted before the kernel function, where FP-option pragmas take effect). No `volatile`, no helpers, no calls, no memory traffic; grid and indexing verbatim.
+
+- **attempt-2** (`muse-spark/round-3/kernels/combine/attempt-2`): G1 pass; G2 pass, differ 0 / max ULP 0.0 at all six sizes, first difference none. Predicted ≈ starting-point re-grade medians ±5% (45/47/63 decode, 61/220/265 prefill); measured (`grade.json`, µs/layer, reference / compiled / candidate, wins, verdict) — rows 1: 59.1/36.9/**31.8** (24, faster); rows 8: 45.1/41.1/**34.7** (27, faster); rows 32: 62.9/45.7/**32.7** (30, faster); prefill 127: 85.1/64.0/**38.2** (30, faster); prefill 1016: 419.6/281.8/**100.9** (30, faster); prefill 2048: 828.9/556.2/**198.0** (29, faster). `phases_vs_compiled` decode faster, prefill faster; `beats_compiled` true; no baseline. Taught: the pragma pair is a second, call-free contraction barrier — G2-proven bit-exact; and chained absolute medians drift ~35% run to run on identical code (compiled decode 36.9/41.1/45.7 here vs 55.5/56.8/72.8 in attempt-1's run), so only same-run paired verdicts are evidence — on that basis both directions agree (`faster` everywhere, large prefill margins; see `notes.md` and the note in `ineff-baseline-combine-1.md`). The vLLM step/prompt recovery is for the ready check.
 
 ## Boundary checks
 

@@ -15,3 +15,10 @@
 2026-11-04T17:59:39Z | boundary-1 | boundary-checked combine attempt-1: pass (all six can't-see probes; check_sizes not run, model-loading GPU job)
 2026-11-04T18:00:47Z | builder-2-c | claimed attempt-3 for hyp-2 direction (c) grouped/tiled prefill replica on round-2 attempt-7 (attempt-2 taken by builder-2-b)
 2026-11-04T18:04:05Z | lead | v4: both attempt-1 boundary checks pass
+2026-11-04T18:05:37Z | builder-2-c | graded attempt-3: G1 fail (Metal reserved word 'half' in block-3.metal), no G2/timing; recorded in notes.md, hyp-2 section, ineff-baseline-experts-1 note
+2026-11-04T18:05:37Z | builder-2-c | done: one attempt graded and recorded; next change is rename half->part in a copied new attempt
+2026-11-04T18:05:45Z | builder-1-b | graded muse-spark/round-3/kernels/combine/attempt-2: G1 pass, G2 pass all six sizes, faster everywhere (24-30/30), beats_compiled true
+2026-11-04T18:05:45Z | builder-1-b | done: pragma-barrier devolatilization recorded in notes.md, hyp-1 Builders, ineff-baseline-combine-1 notes; miss (>20% vs cross-run anchor) explained as machine-state drift of chained absolutes
+2026-11-04T18:06:14Z | builder-2-b | graded attempt-2: G1+G2 pass (differ 0 all six), decode slower/faster/faster, prefill slower x3, beats_compiled false — direction (b) buys nothing
+2026-11-04T18:06:14Z | builder-2-b | done: verdict in notes.md + hyp-2 section, miss analysis in notes.md + ineff-baseline-experts-1 note
+2026-11-04T18:06:25Z | lead | v5: combine-2 G2 pass, experts-3 G1 fail (ledger); boundary check + fix builder next

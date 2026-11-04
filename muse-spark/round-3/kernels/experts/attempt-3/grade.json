@@ -1,0 +1,7 @@
+{
+ "slot": "experts",
+ "g1": false,
+ "g2": false,
+ "beats_compiled": false,
+ "error": "RuntimeError: [metal::Device] Unable to build metal library from source\nmlx/backend/metal/kernels/utils.h:567:8: error: cannot combine with previous 'type-name' declaration specifier\n  uint half = thread_idx & 1u;\n       ^\nmlx/backend/metal/kernels/utils.h:567:13: error: expected unqualified-id\n  uint half = thread_idx & 1u;\n            ^\nmlx/backend/metal/kernels/utils.h:575:31: error: expected '(' for function-style cast or type construction\n  uint w_lo = W_e[base + half * 2u];\n                         ~~~~ ^\nmlx/backend/metal/kernels/utils.h:576:31: error: expected '(' for function-style cast or type construction\n  uint w_hi = W_e[base + half * 2u + 1u];\n                         ~~~~ ^\nmlx/backend/metal/kernels/utils.h:580:24: error: expected '(' for function-style cast or type construction\n    Ws[bi * 40u + half * 16u + 2u * j] =\n                  ~~~~ ^\nmlx/backend/metal/kernels/utils.h:582:24: error: expected '(' for function-style cast or type construction\n    Ws[bi * 40u + half * 16u + 2u * j + 1u] =\n                  ~~~~ ^"
+}
