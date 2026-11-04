@@ -202,3 +202,50 @@ is small (94.0 → 92.1); the remaining gap to compiled is the
 sequential down chain plus chained fixed cost. Next:
 interleave two down blocks per simdgroup. Full numbers in the
 attempt's `notes.md`.
+
+builder-1-f, 2026-11-04T04:07:03Z — round-2
+`kernels/experts/attempt-6` built that next step on attempt-5:
+same fused kernel, gate/up interleave, silu, scalar prefill,
+grids and rounding identical (`spec.json` byte-identical), decode
+down only changed to 12 interleaved pairs — one simdgroup
+computes blocks `2s`/`2s+1` in one merged K loop
+(`qvm_down_pair`, both blocks' loads before accumulating,
+separate accumulators, per-block `qvm_block` order and parallel
+lane stores kept). **G1 fail, G2 never evaluated:** `Thread
+group size (512) is greater than the maximum allowed threads
+per threadgroup (448)` — with threadgroup memory unchanged at
+3,840 B, the added third distinct 32-float thread array (down's
+`q` beside gate's `pu`) pushed the compiled pipeline's
+per-threadgroup register budget under the 512-thread launch.
+The merged-down arithmetic is untested, not refuted; the
+512-thread kernel has no headroom for a new accumulator array.
+Next: same merged loop with the second accumulator's storage
+shared across both phases (one kernel-scope array passed as
+gate/up's `pu` and down's second accumulator). Full analysis
+in the attempt's `notes.md`.
+
+builder-1-g, 2026-11-04T04:12:23Z — round-2
+`kernels/experts/attempt-7` did exactly that shared-storage
+retry on attempt-5: attempt-6's merged down loop verbatim
+(`qvm_down_pair`, 12 pairs in one wave, per-block order and
+parallel stores kept, `spec.json` byte-identical), but ONE
+kernel-scope `float q[32]` beside `p[32]` serves as gate/up's
+second accumulator and down's second accumulator (both scoped
+arrays deleted; phases disjoint behind two barriers, each
+helper re-zeroes both), restoring two distinct 32-float arrays
+at 512 threads and 3,840 B threadgroup memory. **G1 pass,
+G2 pass all six (differ 0):** the rename confirms attempt-6's
+448-thread pipeline limit was the third distinct array, not
+threadgroup memory or the merged arithmetic — headroom at 512
+threads is exactly two accumulators. Graded chained 93.8 /
+160.1 / 510.1 µs/layer vs compiled 74.8 / 236.5 / 792.7
+(`beats_compiled` false, 1-row only; attempt-5 other run
+92.1 / 162.0 / 534.8): the interleave is latency-neutral at
+1 row (+1.8% cross-run) but the new best at 32 rows
+(−4.6%, 138.8 vs 132.3 GB/s) via the removed down wave tail.
+Merging helps only where blocks were previously sequential
+phases (gate/up); down's blocks already overlapped across
+the 16-simdgroup wave, so at 4 groups the merge trades
+cross-simdgroup parallelism for in-step parallelism. The
+1-row remainder is `tg_x` load, silu, barriers and chained
+fixed cost. Full numbers in the attempt's `notes.md`.
