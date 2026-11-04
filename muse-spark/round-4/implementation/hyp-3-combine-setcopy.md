@@ -2,7 +2,7 @@
 
 - **Owner:** lead
 - **Status:** hardening
-- **Version:** 1
+- **Version:** 3
 - **Updated:** 2026-11-04T22:05:00Z
 - **Next:** boundary-3 writes the Boundary section
 
@@ -79,7 +79,9 @@ the ready check can time this slot in this round's set. Baseline
   starting point's run), judged by same-run verdicts — margins this
   run −7.8 / −15.0 / −26.4 decode and −23.0 / −189.0 / −388.4 prefill
   exceed the starting point's −5.1 / −6.4 / −13.0 and −25.8 / −180.9 /
-  −358.2. Taught: the copy reproduces the starting point's
+  −358.2 at five of six sizes (at prefill 127 rows this run's −23.0
+  µs/layer is smaller than the starting point's −25.8; the two runs
+  differ by machine drift, so cross-run margins are indicative only). Taught: the copy reproduces the starting point's
   exactness and compiled bar exactly; it removes no inefficiency
   inside the slot (the slot sits on its chained floor), and any set
   effect is measurable only by the ready check's `muse-all`, not by
@@ -106,16 +108,18 @@ G1+G2 pass (`muse-spark/round-4/kernels/combine/attempt-1/grade.json`: `g1` true
 
 ## Failure ledger
 
-## Failure ledger
-
 No graded attempt lost: attempt-1 passes G1, G2 and `beats_compiled`. Nothing to harden against.
 
 ## Unverified
 
 - Whether the pragma pair leaves any FMA in the compiled binary: G2 shows no contraction effect (differ 0 where the contracted kernel differed), but no AIR disassembly was available (no Metal toolchain in the grader environment); exactness rests on G2, not on inspecting the binary.
 - Row counts other than the six graded ones (any decode count 1–32, other prefill chunk sizes): correctness rests on the per-element, rows-independent construction, not on G2. Sizes above 2,048, prefill beyond the first seeded chunk, other lengths/distributions and mixed batches untested.
-- The set's whole-request behaviour (three-slot interaction at 8 requests; 1-request whole-request noise) is measured only by the ready check. Unwritten threadgroup reads: none by construction (no threadgroup memory), checked by hand in the boundary check. NaN-vs-NaN counts as equal in G2.
+- Byte-identity itself: G2 passes any other bit-exact kernel; only the `diff`/`cmp` of both blocks and `spec.json` (header pragmas included), hand-verified in the boundary check, proves this attempt is the starting point. Exactness of the pragma pair holds only where the graded toolchain honours `FP_CONTRACT OFF`; re-grade after any MLX/macOS/Xcode change.
+- The set's whole-request behaviour (three-slot interaction at 8 requests; 1-request whole-request noise) is measured only by the ready check. Unwritten threadgroup reads: none by construction (no threadgroup memory — 0 B, hand-counted; `slots.build` does not check it), and thread-timing dependence, which one equality run per layer cannot expose, were checked by hand in the boundary check (pass). NaN-vs-NaN counts as equal in G2.
 
 ## Checks
 
-*(checker-3 writes here before candidate.)*
+- **checker-3, 2026-11-04T22:11:16Z — check: fail** (defects below; do not close as `candidate` until fixed):
+  1. `muse-spark/round-4/implementation/hyp-3-combine-setcopy.md:115-117` — **Unverified** does not cover the boundary's *can't see* list at `muse-spark/round-4/implementation/hyp-3-combine-setcopy.md:42`. Covered: pragma FMA not disassembled (`:115`); row counts other than the six graded, sizes above 2,048 and prefill beyond the first seeded chunk (`:116`); the three-slot interaction and 1-request whole-request noise, and unwritten threadgroup reads as hand-checked (`:117`). Named nowhere in `:115-117`: byte-identity itself (G2 passes any other exact kernel; only the `diff` of both blocks and `spec.json`, header pragmas included, proves the copy — hand-verified at `:92`, not listed here); toolchain dependence of the `FP_CONTRACT OFF` pragmas (exactness holds only where the graded toolchain honours them; re-grade after any MLX/macOS/Xcode change — `:115` states only the missing AIR disassembly); threadgroup memory still unchecked by `slots.build` (0 B counted by hand at `:96`, not listed here); and thread-timing dependence, which one equality run per layer cannot expose (hand-proved at `:98`, not listed here). Mentions in the *Boundary* and *Boundary checks* sections do not substitute for the **Unverified** list.
+  2. `muse-spark/round-4/implementation/hyp-3-combine-setcopy.md:80-82` — the blanket margin comparison does not hold at every size: this run's margins `−7.8 / −15.0 / −26.4` decode and `−23.0 / −189.0 / −388.4` prefill µs/layer are said to exceed the starting point's `−5.1 / −6.4 / −13.0` and `−25.8 / −180.9 / −358.2`, but at prefill 127 rows the saving is smaller, not larger (`43.9 − 66.9 = −23.0` vs `38.2 − 64.0 = −25.8` µs/layer, from `muse-spark/round-4/kernels/combine/attempt-1/grade.json:60-65` and `muse-spark/round-3/kernels/combine/attempt-2/grade.json:60-65`). The other five sizes do exceed in magnitude; qualify the claim.
+- **Verified (no defect):** every measured piece number was found in its cited `grade.json` at the named size/key and the arithmetic redone. Starting point (`muse-spark/round-3/kernels/combine/attempt-2/grade.json`): G1/G2 true, differ 0 / max ULP 0.0 at all six sizes, candidate 31.8 / 34.7 / 32.7 vs compiled 36.9 / 41.1 / 45.7 decode and 38.2 / 100.9 / 198.0 vs 64.0 / 281.8 / 556.2 prefill µs/layer, `faster` at all six, phases decode/prefill `faster`, `beats_compiled` true; margins −5.1 / −6.4 / −13.0 and −25.8 / −180.9 / −358.2 µs/layer. Attempt-1 (`muse-spark/round-4/kernels/combine/attempt-1/grade.json`): G1/G2 true, differ 0 / max ULP 0.0 at all six; candidate 39.3 / 45.5 / 43.2 vs compiled 47.1 / 60.5 / 69.6 decode (reference 43.8 / 73.7 / 89.5, wins 25 / 25 / 30) and 43.9 / 95.1 / 178.8 vs 66.9 / 284.1 / 567.2 prefill (reference 91.0 / 425.8 / 924.1, wins 29 / 30 / 29), `faster` at all six, phases `faster`/`faster`, `beats_compiled` true, baseline `none` so no `beats_baseline`; margins −7.8 / −15.0 / −26.4 and −23.0 / −189.0 / −388.4 µs/layer. Traffic and drift arithmetic redo: 9,232 B/row at 200 GB/s = 0.05 / 0.37 / 1.48 µs decode and 5.9 / 46.9 / 94.5 µs prefill; candidate absolutes vs the starting-point anchor +24% / +31% / +32% decode and +15% / −6% / −10% prefill; same-run compiled bar vs the starting point's run +28% / +47% / +52% decode. Byte-identity spot-checked by `diff` against the starting point (clean, excluding `grade.json`/`notes.md`). *Decision* prediction (`:105`) is labelled PREDICTION with arithmetic shown and counts only this slot's own same-run effect: margins −7.8 / −15.0 / −26.4 µs/layer × 20 layers = −156 / −300 / −528 µs = −0.16 / −0.30 / −0.53 ms per decode step at 1 / 8 / 32 requests against the compiled reference; the set's whole-request change is explicitly left to the ready check and no combination number is summed from slots. No measured whole-request claim cites a grader file, timing run or arithmetic and no `ready-verdict.json` is cited, so no `check_ready.py --audit` was owed. No cost is called free, neutral or zero without a measurement (the “no longer free” at `:32` is a permission, and the 0 B threadgroup footprint at `:96` is hand-counted from the blocks, not a timing cost). **Failure ledger** (`:107-111`) recount from the grade files: attempt-1 is the only graded attempt in `muse-spark/round-4/kernels/combine/` and it passes G1, G2 and `beats_compiled`, so no graded attempt lost, no three-alike failure exists and no “approach change” entry is owed.
