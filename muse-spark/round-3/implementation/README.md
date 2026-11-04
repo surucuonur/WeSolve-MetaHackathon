@@ -1,6 +1,6 @@
 # Implementation: round 3
 
-**Version:** v9 · 2026-11-04T18:10:45Z · skill version 8
+**Version:** v10 · 2026-11-04T18:13:54Z · skill version 8
 
 ## Tracker
 
@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | `hyp-1-combine-devolatilize` | `combine` | `builder-1-a`, `builder-1-b` | 1: pass, pass, 46.8 / 42.0 / 49.2 (55.5 / 56.8 / 72.8); 2: pass, pass, 31.8 / 34.7 / 32.7 (36.9 / 41.1 / 45.7) | candidate |
 | `hyp-2-experts-prefill` | `experts` | `builder-2-a`, `builder-2-b`, `builder-2-c`, `builder-2-d`, `builder-2-e` | 1: pass, pass, 96.9 / 168.9 / 554.7 (86.6 / 238.2 / 883.4); 2: pass, pass, 152.8 / 173.3 / 634.1 (113.0 / 240.4 / 896.3); 3: fail (G1), —, —; 4: pass, pass, 122.2 / 206.4 / 584.7 (77.9 / 237.6 / 807.4) | hardening |
-| `hyp-3-routing-prefill` | `routing` | `builder-3-a`, `builder-3-b`, `builder-3-c` | — | building |
+| `hyp-3-routing-prefill` | `routing` | `builder-3-a`, `builder-3-b`, `builder-3-c` | 1: pass, pass, 103.6 / 129.9 / 126.5 (139.4 / 157.2 / 149.7) | building |
 
 The experts 1-row decode gap ([ineff-baseline-experts-2](../exploration/ineff-baseline-experts-2.md)) folds into hyp-2's hardening: the close rule needs `beats_compiled`, which needs the 1-row fix on attempt-1's line, so no separate hyp-4 opens.
 
@@ -16,6 +16,7 @@ Ranked decode item 1 (`ineff-g3-2`, the three-way interaction at 8 requests) is 
 
 ## Versions
 
+- v10 · 2026-11-04T18:13:54Z · routing attempt-1 graded (G2 pass, decode faster x3, prefill 2048 noise-slower); ledger · changed: hyp-3-routing-prefill v3
 - v9 · 2026-11-04T18:10:45Z · checker-1 pass: hyp-1 is a candidate (combine attempt-2) · changed: hyp-1-combine-devolatilize v7
 - v8 · 2026-11-04T18:10:09Z · experts attempt-4 graded (exact grouped path, prefill 2.3x off — replica line ends); hyp-2 hardening on attempt-1 (1-row fix folds in, no hyp-4), hyp-3 to building · changed: hyp-2-experts-prefill v7, hyp-3-routing-prefill v2
 - v7 · 2026-11-04T18:07:45Z · hyp-1 to hardening (attempt-2 best, Decision written, checker started), hyp-3 opened in boundary · changed: hyp-1-combine-devolatilize v6, hyp-3-routing-prefill v1

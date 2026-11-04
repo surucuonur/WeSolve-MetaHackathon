@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 2
-- **Updated:** 2026-11-04T18:10:09Z
-- **Next:** builder-3-a (max_rows hand-off), builder-3-b (GEMM-shaped sharing) and builder-3-c (narrower staged footprint) grade their attempts
+- **Version:** 3
+- **Updated:** 2026-11-04T18:13:54Z
+- **Next:** boundary-3 checks attempt-1 (G2 pass); builder-3-b and builder-3-c still building; re-grade decision after they return
 
 ## Inefficiency
 
@@ -48,7 +48,35 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory (`claude/m
 
 ## Builders
 
-(none started)
+### builder-3-a — direction (a): the `max_rows` hand-off
+
+Copy the starting point's kernels verbatim (staged scalar decode
+path + G2-exact split-K/regular branches as dead code above the
+hand-off) and hand every row count above decode to the compiled
+reference with `max_rows: 32` (bottom of the boundary's 32–126
+window: decode rows ≤ 32 stay on the candidate; routing has no
+60-row MLX switch, and the staged path's traffic floor alone
+exceeds compiled above decode sizes, so no measured win exists to
+preserve in 33–126 — the can't-see band empties by construction).
+
+- **attempt-1** (`muse-spark/round-3/kernels/routing/attempt-1/`):
+  predicted decode 49.8 / 113.5 / 121.3 (`faster` × 3) and prefill
+  = compiled (`same` × 3). Measured (`grade.json`): G1 pass; G2
+  pass all six, differ 0. Decode 1/8/32 rows: 103.6 / 129.9 /
+  126.5 vs compiled 139.4 / 157.2 / 149.7 — `faster` (25/28/25).
+  Prefill 127/1,016/2,048 rows: 91.3 / 229.3 / 299.7 vs compiled
+  95.1 / 228.4 / 291.7 — `same` (18) / `same` (18) / `slower`
+  (8). `phases_vs_compiled` decode `faster`, prefill `slower`;
+  `beats_compiled` false. Taught: the 2,048-row `slower` is
+  paired noise on identical code — above `max_rows` the candidate
+  IS the compiled reference (separate `mx.compile` instance,
+  `slots.py:331` vs `check_candidate.py:361`), medians within
+  2.7%, and only the last-timed size hit the 22-loss threshold
+  (see notes.md; prize genuinely banked). The 1-row absolute miss
+  (+108%) is machine-state drift — compiled moved +114% in the
+  same run, relative wins hold. Next: re-grade a byte-identical
+  copy under a new attempt number to confirm the noise event does
+  not reproduce; no kernel edit can move identical-code timing.
 
 ## Boundary checks
 
@@ -60,7 +88,7 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory (`claude/m
 
 ## Failure ledger
 
-(none yet)
+- attempt-1 (max_rows 32): G1+G2 pass, decode `faster` x3, prefill `same`/`same`/`slower` (2,048 rows: 8/30 wins, exactly the 22-loss threshold; candidate medians within 2.7% of compiled on literally identical code — paired noise, not a slowdown). Cause (suspected): noise on identical code; the builder's proposed next change is a re-grade of a byte-identical copy under a new number. Approach: hand-off (no kernel change can move identical-code timing).
 
 ## Unverified
 

@@ -32,3 +32,7 @@
 2026-11-04T18:10:26Z | checker-1 | checked hyp-1-combine-devolatilize: pass (all 6 steps; 2 non-blocking observations: L53 cross-run deltas diagnostic-only, L87 -35% decode-only)
 2026-11-04T18:10:28Z | lead | v8: experts-4 exact but 2.3x off (ledger, line ends); hyp-2 hardening (1-row fix), hyp-3 building
 2026-11-04T18:10:55Z | lead | v9: hyp-1 candidate (combine attempt-2, checker pass)
+2026-11-04T18:11:38Z | builder-3-a | claimed muse-spark/round-3/kernels/routing/attempt-1 for hyp-3 direction (a) max_rows hand-off on round-2 attempt-4
+2026-11-04T18:13:40Z | builder-3-a | graded attempt-1: G1+G2 pass, decode faster x3, prefill same/same/slower (2048: 8 wins on identical code — paired noise), beats_compiled false
+2026-11-04T18:13:40Z | builder-3-a | done: verdict in notes.md + hyp-3 section, noise/drift analysis in notes.md + ineff-baseline-routing-1 note; next is re-grade of byte-identical copy
+2026-11-04T18:14:04Z | lead | v10: routing-1 G2 pass, decode faster x3, 2048 noise-slower (ledger)
