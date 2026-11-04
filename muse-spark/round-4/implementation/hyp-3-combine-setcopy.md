@@ -2,7 +2,7 @@
 
 - **Owner:** lead
 - **Status:** dropped
-- **Version:** 10
+- **Version:** 5
 - **Updated:** 2026-11-04T22:05:00Z
 - **Next:** boundary-3 writes the Boundary section
 
