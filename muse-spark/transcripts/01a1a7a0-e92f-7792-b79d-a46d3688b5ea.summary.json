@@ -1,0 +1,275 @@
+{
+ "session": "01a1a7a0-e92f-7792-b79d-a46d3688b5ea",
+ "first": "2026-11-04T17:35:05.650266+00:00",
+ "last": "2026-11-04T19:00:32.567182+00:00",
+ "recorded_by": "Muse Code 1.4.14 (dec7d7497f)",
+ "agents": [
+  {
+   "session": "01a1a7a0-e92f-7792-b79d-a46d3688b5ea",
+   "agent": "lead",
+   "model_calls": 175
+  },
+  {
+   "session": "01a1a7a2-a792-78e3-84e2-fba64b17a911",
+   "agent": "helper main/explorer-baseline-experts/1",
+   "model_calls": 18
+  },
+  {
+   "session": "01a1a7a2-aa16-7792-8991-40d547cfe38f",
+   "agent": "helper main/explorer-baseline-routing/2",
+   "model_calls": 18
+  },
+  {
+   "session": "01a1a7a2-ac73-78d1-a0f6-4a02145eaf63",
+   "agent": "helper main/explorer-baseline-combine/3",
+   "model_calls": 24
+  },
+  {
+   "session": "01a1a7a2-aeb9-7873-aa88-da13851d6147",
+   "agent": "helper main/explorer-g3/4",
+   "model_calls": 19
+  },
+  {
+   "session": "01a1a7a2-b172-7b90-8e3b-85963b19f112",
+   "agent": "helper main/explorer-quantized-kernels/5",
+   "model_calls": 24
+  },
+  {
+   "session": "01a1a7a2-b3fc-7842-afcf-a9c73b45a94d",
+   "agent": "helper main/explorer-grader/6",
+   "model_calls": 13
+  },
+  {
+   "session": "01a1a7a2-b642-7233-9ba6-c2aabd960a3b",
+   "agent": "helper main/verifier/7",
+   "model_calls": 73
+  },
+  {
+   "session": "01a1a7b2-091d-7890-8fd1-7d7ba387ea58",
+   "agent": "helper main/boundary-1/8",
+   "model_calls": 15
+  },
+  {
+   "session": "01a1a7b2-0b55-7d73-ba92-edf29807faf4",
+   "agent": "helper main/boundary-2/9",
+   "model_calls": 7
+  },
+  {
+   "session": "01a1a7b3-dce3-7033-9a29-87b34dfadbf9",
+   "agent": "helper main/builder-1-a/10",
+   "model_calls": 17
+  },
+  {
+   "session": "01a1a7b3-df55-7de0-bdb9-f33fa29f3ec7",
+   "agent": "helper main/builder-1-b/11",
+   "model_calls": 22
+  },
+  {
+   "session": "01a1a7b3-e193-7cd3-bab6-ca589badd2b4",
+   "agent": "helper main/builder-2-a/12",
+   "model_calls": 15
+  },
+  {
+   "session": "01a1a7b3-e554-7452-aa2d-9f47af7cb64a",
+   "agent": "helper main/builder-2-b/13",
+   "model_calls": 21
+  },
+  {
+   "session": "01a1a7b3-e853-75f2-89a5-922960297787",
+   "agent": "helper main/builder-2-c/14",
+   "model_calls": 35
+  },
+  {
+   "session": "01a1a7b6-a1f4-71a2-9a9e-c86a84e2ca32",
+   "agent": "helper main/boundary-1-check/15",
+   "model_calls": 8
+  },
+  {
+   "session": "01a1a7b6-a43b-7992-b2f0-b2fd68271ef3",
+   "agent": "helper main/boundary-2-check/16",
+   "model_calls": 8
+  },
+  {
+   "session": "01a1a7be-0ef0-72f3-98ce-e9e0ee501921",
+   "agent": "helper main/boundary-1-check-2/17",
+   "model_calls": 7
+  },
+  {
+   "session": "01a1a7be-1139-7940-827f-bbb91c47c37a",
+   "agent": "helper main/builder-2-d/18",
+   "model_calls": 19
+  },
+  {
+   "session": "01a1a7bf-4fd1-7132-b434-1af735323048",
+   "agent": "helper main/checker-1/19",
+   "model_calls": 9
+  },
+  {
+   "session": "01a1a7bf-5233-7a21-ab9d-5fc2a0d4cb41",
+   "agent": "helper main/boundary-3/20",
+   "model_calls": 14
+  },
+  {
+   "session": "01a1a7c1-80f4-7581-9998-4f1d8436b99b",
+   "agent": "helper main/builder-2-e/21",
+   "model_calls": 19
+  },
+  {
+   "session": "01a1a7c1-8341-7370-bba4-936960a08292",
+   "agent": "helper main/builder-3-a/22",
+   "model_calls": 17
+  },
+  {
+   "session": "01a1a7c1-855c-7013-9e6d-605c2f85246f",
+   "agent": "helper main/builder-3-b/23",
+   "model_calls": 21
+  },
+  {
+   "session": "01a1a7c1-877a-7fb1-8cba-3712818b5125",
+   "agent": "helper main/builder-3-c/24",
+   "model_calls": 21
+  },
+  {
+   "session": "01a1a7c4-b840-7763-84db-6f1c0da44a43",
+   "agent": "helper main/boundary-3-check-1/25",
+   "model_calls": 10
+  },
+  {
+   "session": "01a1a7c8-d153-7c93-8552-edd73b9efc89",
+   "agent": "helper main/builder-3-d/26",
+   "model_calls": 30
+  },
+  {
+   "session": "01a1a7cc-52b5-79c3-9414-a13f2e00b28e",
+   "agent": "helper main/builder-3-e/27",
+   "model_calls": 14
+  },
+  {
+   "session": "01a1a7ce-d04f-7680-8996-4dd1067f68d0",
+   "agent": "helper main/builder-3-f/28",
+   "model_calls": 10
+  },
+  {
+   "session": "01a1a7d0-32a6-7da2-83f7-28cbbab492dc",
+   "agent": "helper main/boundary-3-check-6/29",
+   "model_calls": 7
+  },
+  {
+   "session": "01a1a7d0-f385-7953-9ee5-7e19ad7d454b",
+   "agent": "helper main/checker-3/30",
+   "model_calls": 17
+  },
+  {
+   "session": "01a1a7d4-00db-7240-8694-37e29f093680",
+   "agent": "helper main/checker-3-recheck/31",
+   "model_calls": 9
+  },
+  {
+   "session": "01a1a7ea-3ac6-7161-a7e5-617d0c90a990",
+   "agent": "helper main/checker-final/32",
+   "model_calls": 17
+  },
+  {
+   "session": "01a1a7ee-2e4f-7781-8e46-3965fc9b2fc1",
+   "agent": "helper main/checker-final-recheck/33",
+   "model_calls": 7
+  },
+  {
+   "session": "01a1a7ee-f6d5-73b3-a1f4-9e2b656137a0",
+   "agent": "reminder goal-reminder",
+   "model_calls": 1
+  },
+  {
+   "session": "01a1a7ee-f70e-7953-a8da-465f20047f30",
+   "agent": "reminder verify-reminder",
+   "model_calls": 1
+  }
+ ],
+ "model_calls_by_model": {
+  "muse-spark-1.3-contributor": 762
+ },
+ "tokens": {
+  "input_tokens": 83188901,
+  "output_tokens": 778023,
+  "reasoning_tokens": 426945,
+  "cached_tokens": 79498501,
+  "cache_read_tokens": 79498501
+ },
+ "tool_calls_by_approval": {
+  "allow:policy": 1106
+ },
+ "dropped": "Muse Code's instructions and context blocks, reminder prompts, encrypted reasoning and runtime bookkeeping",
+ "dropped_records": {
+  "async.owner.attempt_admitted": 33,
+  "reminder prompt": 2,
+  "run.model.configured": 36,
+  "runtime.command_intake.received": 1,
+  "runtime.command_intake.session_name.received": 1,
+  "runtime.command_intake.settled": 2,
+  "runtime.retained_fact": 1,
+  "runtime.session": 2,
+  "runtime.session.accepted": 2111,
+  "runtime.session.cancelled": 2,
+  "runtime.session.capture_selection": 36,
+  "runtime.session.completed": 2058,
+  "runtime.session.context_block_diagnostic": 373,
+  "runtime.session.context_block_updated": 7,
+  "runtime.session.failed": 18,
+  "runtime.session.goal_usage_attribution": 2046,
+  "runtime.session.inbox_delivery_anomaly": 33,
+  "runtime.session.inbox_item_drained": 38,
+  "runtime.session.inbox_item_queued": 35,
+  "runtime.session.memory_reminder_child_session_linked": 116,
+  "runtime.session.metadata": 36,
+  "runtime.session.model_input_trace_recorded": 762,
+  "runtime.session.model_request_configured": 36,
+  "runtime.session.model_response_created": 762,
+  "runtime.session.output": 1171,
+  "runtime.session.proposed": 2172,
+  "runtime.session.provider_request_options_configured": 762,
+  "runtime.session.reasoning_committed": 498,
+  "runtime.session.reasoning_summary_delta": 254,
+  "runtime.session.rejected": 61,
+  "runtime.session.reminder_installed": 1,
+  "runtime.session.reminder_proposal": 116,
+  "runtime.session.reminder_reconciler_outcome": 116,
+  "runtime.session.resource_usage_sampled": 148,
+  "runtime.session.route_facts": 1,
+  "runtime.session.scheduled": 2111,
+  "runtime.session.side_effect_intent": 878,
+  "runtime.session.skill_read_observed": 5,
+  "runtime.session.skill_reminder_decision": 114,
+  "runtime.session.started": 2078,
+  "runtime.session.status": 2052,
+  "runtime.session.task.accepted": 1,
+  "runtime.session.task.completed": 1,
+  "runtime.session.task.proposed": 1,
+  "runtime.session.task.scheduled": 1,
+  "runtime.session.task.side_effect_intent": 1,
+  "runtime.session.task.started": 1,
+  "runtime.session.task_stream_linked": 2172,
+  "runtime.session.todo_snapshot_updated": 4,
+  "runtime.session.tool_delta": 586,
+  "runtime.session.tool_output_ref": 285,
+  "runtime.session_start.intake_v3": 1,
+  "runtime.user_intent.accepted": 1,
+  "runtime.user_intent.materialized": 1,
+  "session.name.changed": 1,
+  "session.opened.observed": 1,
+  "session.resource_pressure.observed": 7,
+  "session.started": 1,
+  "session.startup_phases.observed": 1,
+  "session.workspace_branch.observed": 36,
+  "subagent.control.attempt_admitted": 33,
+  "subagent.control.child_session_bound": 33,
+  "subagent.control.result_ready": 33,
+  "subagent.control.resume_context_recorded": 33,
+  "subagent.control.runtime_observed": 33,
+  "subagent.control.spawn_accepted": 33,
+  "subagent.control.start_attested": 33,
+  "subagent.control.status_updated": 33,
+  "subagent.control.wait_parked": 20,
+  "tool_batch.effect.started": 1161,
+  "tool_batch.effect.terminal": 1161
+ }
+}
