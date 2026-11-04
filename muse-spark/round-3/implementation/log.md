@@ -26,3 +26,8 @@
 2026-11-04T18:07:07Z | builder-2-d | claimed attempt-4 (experts): copy of attempt-3 with half->part rename
 2026-11-04T18:07:17Z | boundary-1 | boundary-checked attempt-2 (hyp-1-combine-devolatilize): pass on all six can't-see items, appended to Boundary checks
 2026-11-04T18:08:08Z | lead | v7: hyp-1 hardening (attempt-2 best, Decision), hyp-3 opened; checker-1 + boundary-3 next
+2026-11-04T18:09:42Z | builder-2-d | graded attempt-4: G1+G2 pass (differ 0 all six), decode slower/faster/faster, prefill slower x3 (2.67/2.29/2.32x), beats_compiled false
+2026-11-04T18:09:42Z | builder-2-d | done: verdict in notes.md + hyp-2 section, miss analysis in notes.md + ineff-baseline-experts-1 note
+2026-11-04T18:09:55Z | boundary-3 | posted hyp-3-routing-prefill Boundary: delta on round-2 hyp-2 boundary, starting point attempt-4 G2-passing, two-phase bar, max_rows window 32-126 (no 60-row switch for routing)
+2026-11-04T18:10:26Z | checker-1 | checked hyp-1-combine-devolatilize: pass (all 6 steps; 2 non-blocking observations: L53 cross-run deltas diagnostic-only, L87 -35% decode-only)
+2026-11-04T18:10:28Z | lead | v8: experts-4 exact but 2.3x off (ledger, line ends); hyp-2 hardening (1-row fix), hyp-3 building

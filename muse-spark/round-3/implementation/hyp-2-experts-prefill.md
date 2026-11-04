@@ -1,10 +1,10 @@
 # Hypothesis 2: experts prefill at compiled speed
 
 - **Owner:** lead
-- **Status:** building
-- **Version:** 6
-- **Updated:** 2026-11-04T18:06:32Z
-- **Next:** builder-2-d fixes attempt-3's reserved word as attempt-4; best so far is attempt-1 (max_rows, prefill same x3)
+- **Status:** hardening
+- **Version:** 7
+- **Updated:** 2026-11-04T18:10:09Z
+- **Next:** builder-2-e fixes the 1-row decode gap on attempt-1 (keep max_rows 59, 8/32-row wins, prefill same)
 
 ## Inefficiency
 
@@ -214,6 +214,30 @@ point, no `max_rows`.
   Next: keep the word-packing, unroll 4 k-steps × 8 outputs into
   `p[0..31]`; if that fails, direction (b) is exhausted.
 
+### builder-2-d — direction (c) fix: attempt-3's reserved word renamed
+
+Copy of attempt-3 with the single prescribed fix: `half` -> `part`
+in `dequant_tile_4bit` (`block-3.metal`, 1 declaration + 4 uses);
+all other files byte-identical. No `max_rows`.
+
+- **attempt-4** (`muse-spark/round-3/kernels/experts/attempt-4/`):
+  predicted 95 / 166 / 519 decode, 900 / 4,100 / 11,500 prefill
+  (attempt-3's arithmetic, unchanged). Measured (`grade.json`):
+  G1 pass; G2 pass all six, differ 0. Decode 1/8/32 rows: 122.2 /
+  206.4 / 584.7 vs compiled 77.9 / 237.6 / 807.4 — `slower` (0) /
+  `faster` (29) / `faster` (29). Prefill 127/1,016/2,048 rows:
+  2,684.3 / 9,311.2 / 17,229.0 vs compiled 1,005.7 / 4,073.3 /
+  7,417.4 — `slower` (0 wins) at all three (2.67/2.29/2.32×).
+  `phases_vs_compiled` decode `slower`, prefill `slower`;
+  `beats_compiled` false. Taught: the grouped path is bit-exact
+  (frag-mapping suspect refuted) and 5.7/12.8/14.0× faster than
+  the starting point's prefill in cross-run absolutes, but ~3×
+  off the "compiled rate" prediction — candidate causes:
+  `x` gathered 12× per tile (`g`-outer nest), scalar-fed MMA at
+  64 threads/group, partial-tile padding. Decode overhead also
+  missed (+30/+44/+69 vs +3/+3/+4). Next: interchange to
+  `k`-outer/`g`-inner so each `x` tile loads once.
+
 ## Boundary checks
 
 ### attempt-1 — pass (boundary-2, 2026-11-04T17:59:14Z)
@@ -272,6 +296,7 @@ run the kernels.
 
 - attempt-3 (grouped/tiled replica): G1 fail — `uint half` in block-3.metal, `half` is a reserved Metal type name; no G2, no timing. Cause: compile error, not a speed cause; fix is a rename in a copied attempt.
 - attempt-2 (vectorized per-pair scalar): G1+G2 pass, prefill `slower` x3 (20,444/156,416/303,543 vs compiled 1,113/6,775/16,333; within-run ratios 18.4/23.1/18.6× vs starting point's 15.8/27.7/20.1× — no speedup). Cause: serial depth stayed 768 (no k-unrolling) while active threads fell 384→48/group, removing cross-thread latency hiding without shortening any chain. Approach: per-pair scalar widening.
+- attempt-4 (grouped/tiled replica, renamed): G1+G2 pass, prefill `slower` x3 (2,684/9,311/17,229 vs compiled 1,006/4,073/7,417; 2.67/2.29/2.32×) — bit-exact grouped path, 6–12× better than the scalar branch but still over 2× off. Cause: `x` gathered 12× per tile by the `g`-outer nest (prime suspect). Approach: grouped/tiled replica. Line ends: even a 2× nest fix leaves it behind attempt-1's `same`, and the 1-row decode gap blocks every experts attempt equally — hardening continues on attempt-1.
 
 ## Unverified
 
