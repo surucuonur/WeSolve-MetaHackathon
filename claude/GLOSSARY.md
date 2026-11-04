@@ -108,7 +108,7 @@ Meta's most capable model family, in preview; its standard variant runs on Meta'
 The higher-capability variant of Muse Wonder, available only in Muse Code with a subscription; not used in this project.
 
 **Muse agent**:
-The Meta model that chooses which pieces of the decode step to replace and writes their kernels, on the branch `muse-agent`: Muse Spark in round 1 and from round 3, Muse Wonder in round 2. It is never the model under study.
+The Meta model that chooses which pieces of the decode step to replace and writes their kernels, on the branch `muse-agent`: Muse Spark in rounds 1 and 3, Muse Wonder in round 2, Muse Wonder Full in round 4. It is never the model under study.
 _Avoid_: Muse (alone), Meta agent
 
 **Muse Code**:
@@ -141,12 +141,16 @@ An attempt that is faster than its bar in one phase, prefill or decode, and slow
 _Avoid_: speedup (for a change measured in one phase only)
 
 **Hand-off**:
-An attempt's choice to run the compiled reference instead of its own kernels above a row count it names, so prefill-sized inputs stay on MLX's code.
+An attempt's choice to run the compiled reference instead of its own kernels outside a range of row counts it names: above it, so prefill-sized inputs stay on MLX's code, and below it, so the smallest decode steps do. A size handed off is not timed against the compiled reference, since both run the same code.
 _Avoid_: fallback
 
 **Ready check**:
 The lead's in-round run of G3 over every candidate attempt at once, with its protocol fixed and its own log audited; only its passing verdict makes an attempt ready.
 _Avoid_: G3 (that is Claude's run after the round), end-to-end test
+
+**Set**:
+Candidates in different slots that pass the ready check together, and so are ready and go to G3 together, even where one fails alone.
+_Avoid_: pair, combination (for the ready ones)
 
 **Candidate**:
 An attempt that passes the grader's gates and its boundary check, with its claims checked, and waits for the ready check.

@@ -24,6 +24,11 @@ medians, so comparing medians alone would pass on noise. `beats_compiled`
 needs both phases, decode and prefill: faster at every size of one, slower
 at none of the other (claude/adr/0011-decode-and-prefill.md).
 
+A size whose inputs the attempt hands to the compiled reference (`max_rows`,
+`min_rows`) runs the bar's own code, so it is "handed off", not timed against
+it: a phase is faster when every size the kernels run is, and needs one such
+size (claude/adr/0015-sets-and-hand-off-below.md). G2 still checks it.
+
 --baseline times an earlier, already graded attempt in the same run and adds
 `beats_baseline`, judged the same way. From round 2 on, the bar is the
 previous round's final attempt for the slot
@@ -249,14 +254,16 @@ def judge(verdicts):
     """Each phase's verdict from its sizes' verdicts, and whether the candidate
     beats the bar: faster at every size of one phase, slower at no size of the other.
 
-    A phase is "faster" when every size is, "slower" when any size is, and
-    "not slower" otherwise.
+    Sizes "handed off" don't count. A phase is "faster" when every other size
+    is, "slower" when any is, "handed off" when none is left, and "not slower"
+    otherwise.
     """
     phases = {}
     for phase, prefix in PHASES.items():
-        sizes = [v for size, v in verdicts.items() if size.startswith(prefix)]
+        sizes = [v for size, v in verdicts.items() if size.startswith(prefix) and v != "handed off"]
         phases[phase] = (
-            "faster" if all(v == "faster" for v in sizes)
+            "handed off" if not sizes
+            else "faster" if all(v == "faster" for v in sizes)
             else "slower" if "slower" in sizes
             else "not slower"
         )
@@ -351,6 +358,10 @@ def main():
                 size = f"{kind} {layers[0]['x'].shape[0]}"
                 row = {"reference": 0.0}
                 times = {name: [0.0] * REPEATS for name in ("candidate", *bars)}
+                # A function that hands these rows off runs the compiled reference:
+                # it takes the compiled times instead of being timed again. own:
+                # whether a function ran code of its own in any part.
+                own = {name: False for name in times}
                 for part, fn in fns.items():
                     names = slots.SLOTS[part][0]
                     ref = slots.REFERENCE[part]
@@ -361,12 +372,23 @@ def main():
                     together = {"candidate": fn, "compiled": wrap(mx.compile(ref))}
                     if base:
                         together["baseline"] = base[part]
-                    paired = paired_times(list(together.values()), layers, names)
-                    for name, t in zip(together, paired):
+                    rows = layers[0][names[0]].shape[0]
+                    together = {
+                        name: f for name, f in together.items()
+                        if name == "compiled" or not f.hands_off(rows)
+                    }
+                    paired = dict(zip(together, paired_times(list(together.values()), layers, names)))
+                    for name in times:
+                        own[name] |= name != "compiled" and name in paired
+                        t = paired.get(name, paired["compiled"])
                         times[name] = [s + u for s, u in zip(times[name], t)]
                 del layers
                 row |= {name: statistics.median(t) for name, t in times.items()}
                 for bar in bars:
+                    if not (own["candidate"] or own[bar]):  # the same code on both sides
+                        verdicts[bar][size] = "handed off"
+                        row |= {f"vs_{bar}": "handed off"}
+                        continue
                     wins = sum(c < b for c, b in zip(times["candidate"], times[bar]))
                     verdicts[bar][size] = compare(wins)
                     row |= {f"wins_vs_{bar}": wins, f"vs_{bar}": verdicts[bar][size]}

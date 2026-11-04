@@ -306,7 +306,10 @@ def build(spec, sources, slot):
 
     With "max_rows" in the spec, inputs with more rows than that run the slot's
     reference under mx.compile instead of the kernels, so an attempt can keep
-    prompt-sized inputs on MLX's own code (claude/adr/0011-decode-and-prefill.md).
+    prompt-sized inputs on MLX's own code (claude/adr/0011-decode-and-prefill.md);
+    with "min_rows", so do inputs with fewer rows than that
+    (claude/adr/0015-sets-and-hand-off-below.md). The function's hands_off(rows)
+    says whether inputs of that many rows run the compiled reference.
     """
     slot_in, slot_out = SLOTS[slot]
     kernels = []
@@ -324,15 +327,20 @@ def build(spec, sources, slot):
     missing = set(slot_out) - set(spec["slot_outputs"])
     if missing:
         raise ValueError(f"slot_outputs is missing {sorted(missing)}")
-    max_rows = spec.get("max_rows")
-    if max_rows is not None:
-        if isinstance(max_rows, bool) or not isinstance(max_rows, int) or max_rows < 1:
-            raise ValueError(f"bad max_rows {max_rows!r}")
-        compiled = mx.compile(REFERENCE[slot])
+    min_rows, max_rows = spec.get("min_rows"), spec.get("max_rows")
+    for key, v in (("min_rows", min_rows), ("max_rows", max_rows)):
+        if v is not None and (isinstance(v, bool) or not isinstance(v, int) or v < 1):
+            raise ValueError(f"bad {key} {v!r}")
+    if min_rows is not None and max_rows is not None and min_rows > max_rows:
+        raise ValueError(f"min_rows {min_rows} is above max_rows {max_rows}: the kernels would never run")
+    compiled = mx.compile(REFERENCE[slot])
+
+    def hands_off(rows):
+        return (max_rows is not None and rows > max_rows) or (min_rows is not None and rows < min_rows)
 
     def run(**inputs):
         rows = inputs[slot_in[0]].shape[0]
-        if max_rows is not None and rows > max_rows:  # the compiled reference takes over
+        if hands_off(rows):  # the compiled reference takes over
             out = compiled(*[inputs[n] for n in slot_in])
             return dict(zip(slot_out, out if isinstance(out, (tuple, list)) else [out]))
         env = dict(inputs)
@@ -356,6 +364,7 @@ def build(spec, sources, slot):
             env.update(zip([o["name"] for o in k["outputs"]], outs))
         return {name: env[src] for name, src in spec["slot_outputs"].items()}
 
+    run.hands_off = hands_off
     return run
 
 

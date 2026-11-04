@@ -170,8 +170,10 @@ List one or two targets, in the order you work on them.
 - **`source_block` and `header_block`** are the numbers of your `block-N.metal` files.
 - **Kernels run in list order.** A kernel's `inputs` may name slot inputs or outputs of earlier kernels.
 - **`slot_outputs`** maps each output of the slot to the kernel output that provides it.
-- **`max_rows`** (optional, an integer of at least 1): inputs with more rows than this skip your kernels and run the slot's reference under `mx.compile`. Use it to keep prefill-sized inputs on MLX's own code when your kernels are built for decode sizes; MLX switches its own experts kernel at 60 rows. The hand-off is graded like the rest: bit-exact, and timed at the prefill sizes.
-- **For `routing+combine`,** `spec.json` holds two specs, each in the format above for its own slot, `max_rows` included: `{"routing": {"kernels": [...], "slot_outputs": {...}}, "combine": {"kernels": [...], "slot_outputs": {...}}}`. The original experts and shared expert run between the two parts. The grader tests each part on its own, and the combine part receives the reference routing weights.
+- **`max_rows`** (optional, an integer of at least 1): inputs with more rows than this skip your kernels and run the slot's reference under `mx.compile`. Use it to keep prefill-sized inputs on MLX's own code when your kernels are built for decode sizes; MLX switches its own experts kernel at 60 rows.
+- **`min_rows`** (optional, from round 4; an integer of at least 1, at most `max_rows` when both are given): inputs with fewer rows than this run the compiled reference too, so your kernels run only from `min_rows` to `max_rows`. Use it when your kernels lose at the smallest decode sizes, such as 1 row ([ADR 0015](adr/0015-sets-and-hand-off-below.md)). G3 times whole requests: with 1 request every decode step has 1 row, so an attempt that hands off 1 row runs MLX's own code for the whole 1-request workload, and can pass G3 only in a set whose other kernels are faster there.
+- **A hand-off is checked like the rest:** bit-exact at every G2 size. The piece timing reports a size it hands off as `handed off` instead of timing it (*The piece timing*, below).
+- **For `routing+combine`,** `spec.json` holds two specs, each in the format above for its own slot, `max_rows` and `min_rows` included: `{"routing": {"kernels": [...], "slot_outputs": {...}}, "combine": {"kernels": [...], "slot_outputs": {...}}}`. The original experts and shared expert run between the two parts. The grader tests each part on its own, and the combine part receives the reference routing weights.
 - **Shape and grid entries** are integers, or products of integers and the names `rows`, `D`, `E`, `K` and `H`, such as `"rows*32"`. Nothing else is evaluated.
 - **dtypes** are `float32`, `bfloat16`, `float16`, `uint32` or `int32`.
 - **Template values** are one of those dtypes, an integer or a boolean.
@@ -201,15 +203,18 @@ The pass criteria were fixed before the first round. From round 2, G2 is exact a
 
    **From round 3, the same G3 runs inside the round too:** the lead's **ready check**, `bench/grader/check_ready.py`, with every candidate in one call. It also requires the same greedy tokens, and audits its own log. Only its passing verdict makes an attempt `ready`; Claude's G3 after the round decides. The skill says when the lead runs it ([ADR 0013](adr/0013-measure-what-you-claim.md)).
 
+   **From round 4, a set:** with more than one candidate, the ready check and G3 also time them all together (`muse-all`). When that passes, the candidates are ready together as a set, even where one fails alone, and G3 judges the set as one submission ([ADR 0015](adr/0015-sets-and-hand-off-below.md)).
+
 **What the grader prints for an attempt** (JSON):
 - `g1` false and the compiler's error message;
 - or the correctness results per size: for routing, the rows that differ; for combine and experts, the elements that differ and the largest gap in units in the last place; with the first example;
-- or, when the attempt is correct, `timing_us_per_layer` per size: its time per call next to the original's and the compiled reference's, its wins against the compiled reference and the verdict (`faster`, `same` or `slower`); then `phases_vs_compiled` and `beats_compiled`.
+- or, when the attempt is correct, `timing_us_per_layer` per size: its time per call next to the original's and the compiled reference's, its wins against the compiled reference and the verdict (`faster`, `same`, `slower`, or `handed off` for a size your spec hands to the compiled reference); then `phases_vs_compiled` and `beats_compiled`.
 
 **The piece timing** runs the slot at the six G2 sizes: the 20 layers' captured decode inputs at 1, 8 and 32 rows, and the 20 layers' first prefill chunk at 127, 1,016 and 2,048 rows. Each layer's call waits for the previous one's output, as in the model: one small kernel links them, the same for every function timed. Without that wait, the GPU overlaps the 20 calls and hides how long one takes; in round 1, an experts kernel 29% faster on overlapped calls was 66% slower on chained ones at 1 row.
 - **Paired repeats.** Your attempt and the compiled reference run in alternating order, 30 times.
 - **Per size:** your attempt is `faster` when it wins at least 22 of the 30 pairs, `slower` when it loses at least 22, and `same` otherwise. Medians alone would pass on noise: the same kernel timed twice differs by up to 5%.
-- **Per phase:** decode (1, 8, 32 rows) and prefill (127, 1,016, 2,048 rows) are each `faster` when every size is, `slower` when any size is, and `not slower` otherwise.
+- **Handed off** (from round 4): a size whose inputs your spec hands to the compiled reference (`max_rows`, `min_rows`) runs the bar's own code, so it is not timed against it. Its verdict is `handed off`, and your attempt's time there is the compiled reference's.
+- **Per phase:** decode (1, 8, 32 rows) and prefill (127, 1,016, 2,048 rows) are each `faster` when every size it doesn't hand off is, and at least one isn't handed off; `slower` when any size is; `handed off` when all are; and `not slower` otherwise.
 - **`beats_compiled`** is true when one phase is `faster` and neither is `slower`.
 
 It is a guide; the ready check in the round, and Claude's G3 after it, decide.

@@ -7,7 +7,7 @@ description: Run one round of the Muse agent on the MobileMoE-S kernels as a swa
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. Committed on main and tagged `muse-code-era` before the first Muse Code session; each later version is committed before the round that uses it. [Who made what](../../../PROVENANCE.md).*
 
-**Skill version 8.** This file, the role cards and tracking.md are versioned together; [CHANGELOG.md](CHANGELOG.md) lists every version. Each round records the version it ran (see *Versions* in tracking.md).
+**Skill version 9.** This file, the role cards and tracking.md are versioned together; [CHANGELOG.md](CHANGELOG.md) lists every version. Each round records the version it ran (see *Versions* in tracking.md).
 
 You are the **lead** of a Muse Code session in your own worktree on the branch `muse-agent`. The first prompt names the Meta model you run as, the name your commit subjects start with, and the co-author line every commit ends with. `claude/muse-agent-brief.md` fixes the task, the slots, the tools and limits, the grader command and the pass criteria (G1, G2). Four ADRs change it in five ways:
 
@@ -17,7 +17,7 @@ You are the **lead** of a Muse Code session in your own worktree on the branch `
 4. **Files** (ADR 0007, [ADR 0009](../../../claude/adr/0009-rounds-build-on-each-other.md)). Each round writes in its own **round folder**: round 1 at the top of `muse-spark/`, round N from 2 on in `muse-spark/round-<N>/`. It holds `exploration/` and `implementation/`, the round's shared documents, which replace `strategy.md`; `kernels/<slot-folder>/attempt-<M>/`; and `summary.md`. tracking.md writes it `<round>/`.
 5. **Rounds build on each other** (ADR 0009). A finished round's files are frozen: read them and cite them, and the hooks refuse any change to them. From round 2 on, a slot may have a **baseline**: the best attempt so far that passes the current G2 and that Claude's G3 accepted: against the unchanged model and the compiled reference, faster in one phase, decode or prefill, and slower in neither ([ADR 0011](../../../claude/adr/0011-decode-and-prefill.md)). A new attempt must beat it in the same grader run. A slot without one has a **starting point** instead: an earlier attempt to build from, which Claude's measurement names, with what kept it from being a baseline.
 
-The rest of the brief stands. The goal: kernels that make whole requests faster. In the grader they pass G1 and G2 and have `beats_compiled` true, faster in one phase, decode or prefill, and slower in neither (ADR 0011), and where the slot has a baseline `beats_baseline` true too, because they remove a cause you can name. Then the **ready check**, the same G3 Claude runs after the round, run by you inside it, must pass them before they are `ready` ([ADR 0013](../../../claude/adr/0013-measure-what-you-claim.md)). A faster decode step bought with a slower prefill is no improvement, and a claim no one measured is no result. An attempt built for decode sizes may hand prefill-sized inputs to the compiled reference with `max_rows` (the brief's launch spec). The Muse agent was Muse Spark in round 1 and Muse Wonder in round 2 ([ADR 0008](../../../claude/adr/0008-muse-wonder.md)), and is Muse Spark's contributor model again from round 3 ([ADR 0012](../../../claude/adr/0012-muse-spark-contributor-unattended.md)); the first prompt names the model you run as, and documents from earlier rounds say the model of their round. No one approves your tool calls during the round, so the rules here are yours to keep.
+The rest of the brief stands. The goal: kernels that make whole requests faster. In the grader they pass G1 and G2 and have `beats_compiled` true, faster in one phase, decode or prefill, and slower in neither (ADR 0011), and where the slot has a baseline `beats_baseline` true too, because they remove a cause you can name. Then the **ready check**, the same G3 Claude runs after the round, run by you inside it, must pass them before they are `ready` ([ADR 0013](../../../claude/adr/0013-measure-what-you-claim.md)). A faster decode step bought with a slower prefill is no improvement, and a claim no one measured is no result. An attempt may hand the inputs outside a row range it names to the compiled reference: those above `max_rows`, such as prefill-sized ones, and from round 4 those below `min_rows`, such as the 1-row decode step (the brief's launch spec, [ADR 0015](../../../claude/adr/0015-sets-and-hand-off-below.md)). The Muse agent was Muse Spark in round 1, Muse Wonder in round 2 ([ADR 0008](../../../claude/adr/0008-muse-wonder.md)) and Muse Spark's contributor model in round 3 ([ADR 0012](../../../claude/adr/0012-muse-spark-contributor-unattended.md)), and is Muse Wonder Full in round 4, the last round ([ADR 0014](../../../claude/adr/0014-muse-wonder-full-last-round.md)); the first prompt names the model you run as, and documents from earlier rounds say the model of their round. No one approves your tool calls during the round, so the rules here are yours to keep.
 
 ## The swarm
 
@@ -78,7 +78,7 @@ Commit it as exploration v1. **Done** when every slot has its baseline or starti
 
 ### 2. Exploration
 
-1. **Set up the folder.** Write `<round>/exploration/README.md` with a heading, its version line (v1, with skill version 8), the tracker (one row per territory) and `## Versions`, and an empty `log.md`.
+1. **Set up the folder.** Write `<round>/exploration/README.md` with a heading, its version line (v1, with skill version 9), the tracker (one row per territory) and `## Versions`, and an empty `log.md`.
 2. **Start the explorers and the verifier,** all at once.
    - **Round 1** starts with these territories:
 
@@ -151,7 +151,10 @@ Then open the next-ranked inefficiency.
 ```
 
 It times the candidates in vLLM exactly as Claude's G3 will after the round, each alone and, with more than one, all together, then audits its own log and writes `ready-verdict.json`. It takes about 10 to 15 minutes per slot, more for an attempt with a slow prefill, and waits its turn for the GPU. Commit its folder at the next checkpoint.
-- **Exit 0 or 1: a verdict, and it stands.** A candidate whose `muse-<slot>` passes becomes `ready`; one that fails goes back to `hardening` with the failure in its ledger, or to `dropped`. Cite the file either way. With more than one candidate, submitting them together needs `muse-all` to pass; if some pass alone and `muse-all` fails, a second check may take only those.
+- **Exit 0 or 1: a verdict, and it stands.** Cite the file.
+  - **A set** ([ADR 0015](../../../claude/adr/0015-sets-and-hand-off-below.md)). With more than one candidate, when `muse-all` passes, all of them are `ready` together as a set, even where one fails alone. A set goes to G3 whole: all its attempts, or none.
+  - **Alone.** Otherwise, a candidate whose `muse-<slot>` passes becomes `ready` on its own; one that fails goes back to `hardening` with the failure in its ledger, or to `dropped`. If some pass alone and `muse-all` fails, a second check may take only those.
+  - An attempt that hands off 1 row (`min_rows`) runs MLX's own code for the whole 1-request workload, so it passes the ready check only in a set whose other kernels are faster with 1 request.
 - **Exit 2: no verdict.** The run stopped or broke the protocol; run it again in a new folder.
 - **At most two ready checks per round.**
 
@@ -159,7 +162,7 @@ It times the candidates in vLLM exactly as Claude's G3 will after the round, eac
 
 ### 5. Finish
 
-1. **The implementation README:** the final tracker, one paragraph per hypothesis, and a **Ready to test** section. It names the attempt per slot that goes to Claude's G3: a `ready` attempt, the baseline kept, or the reference. For the `ready` ones it shows the ready check's measured change in the four workloads (the decode step, the prompt time and the whole request, against the unchanged model and the compiled reference), citing `ready-verdict.json`, with your earlier prediction beside it, labelled PREDICTION, and the **Unverified** list. Nothing else in it is an end-to-end number.
+1. **The implementation README:** the final tracker, one paragraph per hypothesis, and a **Ready to test** section. It names the attempt per slot that goes to Claude's G3: a `ready` attempt, the baseline kept, or the reference, and says which `ready` attempts go together as a set. For the `ready` ones it shows the ready check's measured change in the four workloads (the decode step, the prompt time and the whole request, against the unchanged model and the compiled reference; for a set, its `muse-all`), citing `ready-verdict.json`, with your earlier prediction beside it, labelled PREDICTION, and the **Unverified** list. Nothing else in it is an end-to-end number.
 2. **The exploration README:** add *What building taught*, the analysis corrected by what the attempts showed.
 3. **`<round>/summary.md`:** a `## Round N` section with:
    - the model, the skill version this round ran, and the final versions of both READMEs;

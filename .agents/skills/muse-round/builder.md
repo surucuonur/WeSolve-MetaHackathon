@@ -22,7 +22,7 @@ First read:
    - what changed since the attempt it builds on (the baseline counts), or that it is the first in your direction; from round 2 on, a starting point that fails G2 counts too;
    - which inefficiency it removes, and how;
    - the predicted µs per layer at the six sizes, decode (1, 8, 32 rows) and prefill (127, 1,016, 2,048 rows), with the arithmetic; from round 2 on, against the baseline's where the slot has one;
-   - with `max_rows`, the row count and why: the sizes above it run the compiled reference;
+   - with `max_rows` or `min_rows`, each row count and why: the sizes above `max_rows` and below `min_rows` run the compiled reference, and the grader reports them `handed off`;
    - what the attempt leaves unmeasured, for the hypothesis entry's **Unverified** list.
    
    Make one main change, the simplest kernel that removes the cause, and stay inside the boundary.

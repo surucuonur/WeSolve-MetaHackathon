@@ -30,7 +30,7 @@ Every shared document carries a version number, so a reader knows which version 
 **Phase versions.** Each README opens with its version line:
 
 ```markdown
-**Version:** v5 · 2026-11-04T09:40Z · skill version 8
+**Version:** v5 · 2026-11-04T09:40Z · skill version 9
 ```
 
 - **Who raises it:** the lead, at every checkpoint, and each version is exactly one commit.

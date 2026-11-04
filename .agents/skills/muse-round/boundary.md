@@ -23,7 +23,8 @@ The lead sends you each attempt that passed G2. Check it against the boundary fo
 - use of threadgroup memory close to the limit;
 - results that depend on thread timing;
 - any assumption about the captured inputs that real inputs may break;
-- with `max_rows`: that every decode step, up to 32 rows, stays at or below it, and, for experts, on which side of MLX's own switch at 60 rows the hand-off sits.
+- with `max_rows`: that every decode step, up to 32 rows, stays at or below it, and, for experts, on which side of MLX's own switch at 60 rows the hand-off sits;
+- with `min_rows`: which decode sizes run the compiled reference, and that with 1 request (1 row per step) the slot then runs MLX's own code for the whole request.
 
 Append the result to the entry's **Boundary checks**: `pass`, or each defect with the file and line. Log it and return.
 
