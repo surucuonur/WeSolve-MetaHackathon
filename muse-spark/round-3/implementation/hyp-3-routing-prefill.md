@@ -1,10 +1,10 @@
 # Hypothesis 3: routing prefill at compiled speed
 
 - **Owner:** lead
-- **Status:** candidate
-- **Version:** 11
-- **Updated:** 2026-11-04T18:31:55Z
-- **Next:** ready check, with hyp-1's combine attempt-2
+- **Status:** dropped
+- **Version:** 12
+- **Updated:** 2026-11-04T18:53:18Z
+- **Next:** none — slot keeps the reference; attempt-6 stands as the next round's starting point
 
 ## Inefficiency
 
@@ -260,6 +260,8 @@ Best attempt: `muse-spark/round-3/kernels/routing/attempt-6` (byte-identical to 
 
 Predicted change in whole requests (PREDICTION — stands beside the ready check's measured value once it runs): the decode step keeps the starting point's measured G3 (byte-identical decode path: −0.47/−0.43/−0.54 ms/step at 1/8/32 requests in vLLM); prompt time returns from 1.07–1.10× slower to compiled parity, recovering the +3.3/+19.1/+77.7/+662.5 ms prompt excess at 1×128/8×128/32×128/32×1024; whole-request throughput rises everywhere the decode win already shows (the −3.5% at 32×1024 was the prompt excess). Basis: [ineff-g3-3.md](../exploration/ineff-g3-3.md) prompt excess table and the prefill-piece composition rule (within ~15% where measurable).
 
+Ready-check outcome ([ready-verdict.json](../checks/ready-1/ready-verdict.json)): `muse-routing` FAILS (vs base pass — decode `faster`, request `faster`; vs compiled-routing fail — every phase `not slower`, none `slower`; same tokens true). Measured decode medians vs base: −0.39/−0.31/−0.59/−0.48 ms; vs compiled-routing the 8×128 ranges overlap (14.208 [14.199–14.451] vs 14.409 [14.312–14.584]), so G3's faster-in-every-workload bar fails. Dropped: the decode path is byte-identical to round-2 attempt-4 (which passed G3 in its run) and above `max_rows` the candidate IS the compiled reference — no kernel change can tighten paired spread on this code. The slot keeps the reference.
+
 ## Failure ledger
 
 - attempt-1 (max_rows 32): G1+G2 pass, decode `faster` x3, prefill `same`/`same`/`slower` (2,048 rows: 8/30 wins, exactly the 22-loss threshold; candidate medians within 2.7% of compiled on literally identical code — paired noise, not a slowdown). Cause (suspected): noise on identical code; the builder's proposed next change is a re-grade of a byte-identical copy under a new number. Approach: hand-off (no kernel change can move identical-code timing).
@@ -268,6 +270,7 @@ Predicted change in whole requests (PREDICTION — stands beside the ready check
 - attempt-3 (drop `parts` where partitions = 1, two-kernel split at rows = 768): G1+G2 pass, decode `same` × 3 (66.1/96.1/109.5 vs 64.7/95.4/103.9; 14/15/9 wins — the ~2–3 µs copy launch flips `faster` to `same`), prefill `slower` × 3 (266.0/1,098.3/2,097.3 vs 96.9/235.3/299.7 — the traffic re-read dominates; shape residual removal consistent with −15%/−17% but drift-confounded). Cause: per-row re-read untouched plus copy-launch wiring cost at decode. Approach: narrower staged footprint. (Declined: the proposed `--baseline` re-grade — this round has no baselines, so no `--baseline` runs.)
 - attempt-4 (GEMM-shaped sharing, 10 rows/group): G1 fail — 600 threads/group against a pipeline max of 576 (the cap moved with the kernel: attempt-2's recompile reported 640); no G2, no timing. Cause: compile error (register allocation shifting the pipeline cap ~11% under recompilation, inferred). Fix: 8 rows/group (480 threads) in a copied attempt — inside round-1 attempt-2's proven-passing band.
 - attempt-5 (GEMM-shaped sharing, 8 rows/group): G1+G2 pass — first direction-(b) kernel to run, and exact. Decode `faster`/`same`/`same` (72.6/123.3/111.9 vs 76.2/120.4/107.7; 24/10/16 wins), prefill `slower` × 3 (147.3/561.6/1,052.7 vs 102.1/222.6/300.8; 3/0/0 wins — 1.44/2.52/3.50×). Cause: per-group overhead ~4× the model (~3.2 vs ~0.8 µs/group — barriers or occupancy serialization, inferred); sharing itself works (0.65×/0.43×/0.42× the staged-path anchor). Approach: GEMM-shaped sharing. Line ends: two gaps away (prefill 1.4–3.5× plus decode `same`→`faster` at 8/32), while attempt-1 is one noise-test away — hardening continues on attempt-1.
+- ready-1 `muse-routing`: fail vs compiled-routing (pass vs base) — decode `not slower` on the 8×128 range overlap, prompt and request `not slower`, no phase `slower` anywhere, same tokens. Cause: paired spread on code identical to a G3-passing kernel (decode) and to the compiled reference (prefill); no change available. Hypothesis dropped.
 
 ## Unverified
 

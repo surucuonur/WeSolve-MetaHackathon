@@ -1,10 +1,10 @@
 # Hypothesis 1: combine without volatiles
 
 - **Owner:** lead
-- **Status:** candidate
-- **Version:** 7
-- **Updated:** 2026-11-04T18:10:45Z
-- **Next:** ready check, once no hypothesis is building or hardening
+- **Status:** dropped
+- **Version:** 8
+- **Updated:** 2026-11-04T18:53:18Z
+- **Next:** none — slot keeps the reference; attempt-2 stands as the next round's starting point
 
 ## Inefficiency
 
@@ -88,9 +88,11 @@ Best attempt: `muse-spark/round-3/kernels/combine/attempt-2` (direction b: plain
 
 Predicted change in whole requests (PREDICTION — stands beside the ready check's measured value once it runs): decode step recovers the twin swing, returning to ≈ −0.51/−0.71/−0.39 ms/step vs the unchanged model (≈0 claimed at 1 request, within noise; ≈ −0.5 ms at 8, ≈ −1.4 ms at 32), net vs the compiled reference −0.2/−0.4/−0.1 ms/step (verifier-corrected); prompt recovery of order 1 s on 32×128 combine-including prompts (the looser half — no round-1 prefill twin exists). Basis: [ineff-baseline-combine-1.md](../exploration/ineff-baseline-combine-1.md) twin swing +0.142/+0.508/+1.441 ms with ±0.1 ms control.
 
+Ready-check outcome ([ready-verdict.json](../checks/ready-1/ready-verdict.json)): `muse-combine` FAILS (vs base fail, vs compiled-combine fail; every phase `not slower`, none `slower`; same tokens true). Measured decode medians vs base: −0.53/−0.59/−0.44/−0.26 ms at 1×128/8×128/32×128/32×1024 — every median favors the candidate, but the 1×128 range [4.861–5.892] overlaps base [5.430–5.713] on one 5.892 rep, so G3's faster-in-every-workload bar fails. Dropped: a spread-overlap failure on a minimal exact kernel names no cause and no change — the kernel is 7 plain ops with no traffic, no branch and no size dependence, and the medians show the volatiles' cost is gone (the starting point measured +1.05 ms at 32 requests; this measures −0.44 ms). The slot keeps the reference.
+
 ## Failure ledger
 
-(none — both graded attempts pass every gate)
+- ready-1 `muse-combine`: fail vs base and vs compiled-combine — decode `not slower` (1×128 range overlap on one outlier rep), prompt and request `not slower`, no phase `slower` anywhere, same tokens. Cause: paired spread, not kernel work; no change available. Hypothesis dropped.
 
 ## Unverified
 

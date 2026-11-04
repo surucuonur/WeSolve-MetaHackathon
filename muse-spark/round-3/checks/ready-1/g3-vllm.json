@@ -1,0 +1,191 @@
+{
+ "muse-routing": {
+  "base": {
+   "pass": true,
+   "phases": {
+    "decode": "faster",
+    "prompt": "not slower",
+    "request": "faster"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "8x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x1024": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    }
+   }
+  },
+  "compiled-routing": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "32x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x1024": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    }
+   }
+  },
+  "g3": false
+ },
+ "muse-combine": {
+  "base": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "faster",
+     "prompt": "faster",
+     "request": "faster"
+    },
+    "32x128": {
+     "decode": "faster",
+     "prompt": "faster",
+     "request": "faster"
+    },
+    "32x1024": {
+     "decode": "faster",
+     "prompt": "faster",
+     "request": "faster"
+    }
+   }
+  },
+  "compiled-combine": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x128": {
+     "decode": "same",
+     "prompt": "faster",
+     "request": "faster"
+    },
+    "32x1024": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    }
+   }
+  },
+  "g3": false
+ },
+ "muse-all": {
+  "base": {
+   "pass": true,
+   "phases": {
+    "decode": "faster",
+    "prompt": "not slower",
+    "request": "faster"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "8x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x128": {
+     "decode": "faster",
+     "prompt": "faster",
+     "request": "faster"
+    },
+    "32x1024": {
+     "decode": "faster",
+     "prompt": "faster",
+     "request": "faster"
+    }
+   }
+  },
+  "compiled-all": {
+   "pass": true,
+   "phases": {
+    "decode": "faster",
+    "prompt": "not slower",
+    "request": "faster"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "8x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x1024": {
+     "decode": "faster",
+     "prompt": "faster",
+     "request": "faster"
+    }
+   }
+  },
+  "g3": true
+ }
+}

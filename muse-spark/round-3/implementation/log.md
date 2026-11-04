@@ -67,3 +67,4 @@
 2026-11-04T18:30:47Z | lead | v17: Unverified fixed per checker-3 defect; re-check next
 2026-11-04T18:31:48Z | checker-3 | re-checked hyp-3-routing-prefill after Unverified fix: check: pass (step-5 defect fixed, L275-277 carry full can't-see list; all 6 steps re-run)
 2026-11-04T18:32:07Z | lead | v18: hyp-3 candidate (routing attempt-6, checker pass); ready check next
+2026-11-04T18:53:47Z | lead | v19: ready-1 recorded (exit 1, verdict stands); hyp-1 + hyp-3 dropped
