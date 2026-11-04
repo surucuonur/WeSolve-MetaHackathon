@@ -1,0 +1,7 @@
+{
+ "slot": "routing",
+ "g1": false,
+ "g2": false,
+ "beats_compiled": false,
+ "error": "ValueError: Thread group size (960) is greater than  the maximum allowed threads per threadgroup (640)."
+}

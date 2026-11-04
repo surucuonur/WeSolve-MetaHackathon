@@ -1,10 +1,10 @@
 # Hypothesis 2: experts prefill at compiled speed
 
 - **Owner:** lead
-- **Status:** hardening
-- **Version:** 7
-- **Updated:** 2026-11-04T18:10:09Z
-- **Next:** builder-2-e fixes the 1-row decode gap on attempt-1 (keep max_rows 59, 8/32-row wins, prefill same)
+- **Status:** dropped
+- **Version:** 8
+- **Updated:** 2026-11-04T18:18:10Z
+- **Next:** none — slot keeps the reference; attempt-1 (max_rows 59) is the next round's starting point
 
 ## Inefficiency
 
@@ -238,6 +238,34 @@ all other files byte-identical. No `max_rows`.
   missed (+30/+44/+69 vs +3/+3/+4). Next: interchange to
   `k`-outer/`g`-inner so each `x` tile loads once.
 
+### builder-2-e — direction (e): reference-shaped unfused 1-row path
+
+Four kernels on attempt-1, `max_rows: 59` kept: K0 gate/up+silu (48
+fixed groups x 128 threads, one per (pair, block), -> `h_small`),
+K1 down (96 groups x 128, -> `y_small`), K2 attempt-1's fused kernel
+plus a uniform early return at rows == 1 and `y` stores renamed to
+`y_fused`, K3 exact select-copy to `y`. Rows == 1 runs K0/K1;
+every other count runs K2. Every per-block accumulation order kept
+(same k sequence, terms, simd_sum trees, four bfloat16 points).
+
+- **attempt-5** (`muse-spark/round-3/kernels/experts/attempt-5/`):
+  predicted 68 / 176 / 562 decode (`faster` x3), = compiled prefill
+  (`same` x3), `beats_compiled` true. Measured (`grade.json`): G1
+  pass; G2 pass all six, differ 0. Decode 1/8/32 rows: 234.3 /
+  252.7 / 560.4 vs compiled 118.4 / 291.7 / 802.4 — `slower` (0) /
+  `faster` (25) / `faster` (30). Prefill 127/1,016/2,048 rows:
+  967.2 / 3952.1 / 7362.5 vs compiled 968.0 / 3950.5 / 7358.5 —
+  `same` (16/14/14) at all three. `phases_vs_compiled` decode
+  `slower`, prefill `not slower`; `beats_compiled` false. Taught:
+  the regrouping is bit-exact and keeps the 8/32-row wins and
+  prefill `same`, but 1-row scores 1.98x compiled (0/30) vs fused
+  1.12x — unfused work + 5 dispatches cost ~+100 us over the fused
+  chain (dispatch ~+18 us at this run's ~6 us/dispatch reference-vs-
+  compiled price; the rest is per-group setup x144 vs amortized x4,
+  prime suspect). Reference-shaped is not reference-priced outside
+  one mx.compile dispatch. Next: do not build on attempt-5; bank
+  attempt-1 — the 1-row gap looks structural (see notes.md).
+
 ## Boundary checks
 
 ### attempt-1 — pass (boundary-2, 2026-11-04T17:59:14Z)
@@ -290,13 +318,14 @@ run the kernels.
 
 ## Decision
 
-(none yet)
+Dropped: no experts attempt has `beats_compiled`, and no further change with a mechanism can be named. The prefill prize is fully banked by attempt-1 (`max_rows` 59: prefill `same` × 3, G1+G2 pass, boundary pass, decode wins at 8/32 rows) — but decode at 1 row misses (96.9 vs 86.6, 5/30 wins), so `beats_compiled` is false and the attempt cannot close as a candidate. The 1-row gap now survives two approaches: six fused exact packings plateaued at 92–110 µs/layer (round 2), and the reference-shaped unfused path (attempt-5) came out nearly 2× worse (234.3 vs 118.4, 0/30 wins) — the reference's speed comes from one `mx.compile` dispatch, not just its shape. Per the approach rule, the next attempt would need a third approach; none exists in the spec surface (there is no hand-off below a row count, only `max_rows` above it). The slot keeps the reference. Durable gains: the `max_rows`-59 design (bit-exact, prefill `same`) and the bit-exact grouped prefill path (attempt-4, 2.3× off) stand as the next round's starting material.
 
 ## Failure ledger
 
 - attempt-3 (grouped/tiled replica): G1 fail — `uint half` in block-3.metal, `half` is a reserved Metal type name; no G2, no timing. Cause: compile error, not a speed cause; fix is a rename in a copied attempt.
 - attempt-2 (vectorized per-pair scalar): G1+G2 pass, prefill `slower` x3 (20,444/156,416/303,543 vs compiled 1,113/6,775/16,333; within-run ratios 18.4/23.1/18.6× vs starting point's 15.8/27.7/20.1× — no speedup). Cause: serial depth stayed 768 (no k-unrolling) while active threads fell 384→48/group, removing cross-thread latency hiding without shortening any chain. Approach: per-pair scalar widening.
 - attempt-4 (grouped/tiled replica, renamed): G1+G2 pass, prefill `slower` x3 (2,684/9,311/17,229 vs compiled 1,006/4,073/7,417; 2.67/2.29/2.32×) — bit-exact grouped path, 6–12× better than the scalar branch but still over 2× off. Cause: `x` gathered 12× per tile by the `g`-outer nest (prime suspect). Approach: grouped/tiled replica. Line ends: even a 2× nest fix leaves it behind attempt-1's `same`, and the 1-row decode gap blocks every experts attempt equally — hardening continues on attempt-1.
+- attempt-5 (reference-shaped unfused 1-row path on attempt-1): G1+G2 pass, decode 1-row 234.3 vs 118.4 (0/30 wins, `slower`) — nearly 2× worse than the fused chain; 8/32-row wins and prefill `same` × 3 kept. Cause: ~+100 µs over fused — ~18 µs from 5 dispatches vs 2 plus per-group setup × 144 groups vs amortized × 4. Approach: unfused regrouping (genuine approach change from fused packing — and it lost worse). No third approach exists; hypothesis dropped.
 
 ## Unverified
 

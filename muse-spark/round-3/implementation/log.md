@@ -36,3 +36,12 @@
 2026-11-04T18:13:40Z | builder-3-a | graded attempt-1: G1+G2 pass, decode faster x3, prefill same/same/slower (2048: 8 wins on identical code — paired noise), beats_compiled false
 2026-11-04T18:13:40Z | builder-3-a | done: verdict in notes.md + hyp-3 section, noise/drift analysis in notes.md + ineff-baseline-routing-1 note; next is re-grade of byte-identical copy
 2026-11-04T18:14:04Z | lead | v10: routing-1 G2 pass, decode faster x3, 2048 noise-slower (ledger)
+2026-11-04T18:14:11Z | builder-2-e | claimed attempt-5 (experts) for hyp-2 direction (e): reference-shaped unfused 1-row path on attempt-1
+2026-11-04T18:14:37Z | builder-3-b | claimed muse-spark/round-3/kernels/routing/attempt-2 for hyp-3 direction (b) GEMM-shaped prefill sharing on round-2 attempt-4
+2026-11-04T18:15:06Z | boundary-3 | boundary check attempt-1: pass — max_rows 32 holds every decode step at or below it, kernels byte-identical, 33-126 band empty, no unwritten TG reads or timing dependence; 2048-row slower is identical-code noise, not a defect
+2026-11-04T18:15:24Z | builder-3-c | claimed routing attempt (hyp-3 direction c: drop parts where partitions=1 via two-kernel split)
+2026-11-04T18:16:56Z | builder-2-e | graded attempt-5: G1+G2 pass (differ 0 all six), decode slower/faster/faster (1-row 234.3 vs 118.4, 0 wins), prefill same x3, beats_compiled false — unfused 1-row path slower than fused
+2026-11-04T18:16:56Z | builder-2-e | done: verdict in notes.md + hyp-2 section, miss analysis in notes.md + ineff-baseline-experts-2 note; next is bank attempt-1, gap looks structural
+2026-11-04T18:17:45Z | builder-3-b | graded attempt-2: G1 fail (threadgroup 960 > pipeline max 640), no G2/timing; recorded in notes.md, hyp-3 section, ineff-baseline-routing-1 note
+2026-11-04T18:17:45Z | builder-3-b | done: one attempt graded and recorded; next change is 10-rows-per-group (600 threads) copy in a new attempt
+2026-11-04T18:18:33Z | lead | v11: hyp-2 dropped (slot keeps reference); routing-2 G1 fail (ledger), routing-1 boundary pass

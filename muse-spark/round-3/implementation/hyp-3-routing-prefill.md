@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 3
-- **Updated:** 2026-11-04T18:13:54Z
-- **Next:** boundary-3 checks attempt-1 (G2 pass); builder-3-b and builder-3-c still building; re-grade decision after they return
+- **Version:** 4
+- **Updated:** 2026-11-04T18:18:10Z
+- **Next:** attempt-1 boundary pass; builder-3-c (attempt-3) still building; builder-3-d fixes attempt-2's threadgroup size as attempt-4
 
 ## Inefficiency
 
@@ -78,9 +78,52 @@ preserve in 33–126 — the can't-see band empties by construction).
   copy under a new attempt number to confirm the noise event does
   not reproduce; no kernel edit can move identical-code timing.
 
+### builder-3-b — direction (b): GEMM-shaped prefill kernel sharing `w_router`
+
+Two kernels behind a size branch. Kernel 0 is the starting point
+verbatim plus `if (rows > 32) return;` (outputs renamed `inds0` /
+`weights0`), so decode rows stay on the winning staged path bit for
+bit. Kernel 1 is new: grid `rows*60`, threadgroup 960 — one threadgroup
+spans 16 rows with one thread per (row, expert), staging each
+`w_router` K-chunk once per 16 rows with attempt-4's exact coalesced
+`float4` mapping (24,576 B threadgroup); per-row accumulation orders
+copied op-for-op (split-K partition partials in registers, folded in
+partition order; single serial sum above 768 rows), verbatim sigmoid,
+strictly-greater top-4 and left-fold normalise; at rows ≤ 32 it only
+copies kernel 0's outputs. Predicted 53 / 117 / 124 / 50 / 148 / 267
+µs/layer (decode = attempt-4 + 3 µs copy launch; prefill = 16x-cut
+traffic floors + barrier/wave allowances — thin at 2,048 rows, where
+the chained timing decides).
+
+- **attempt-2** (`muse-spark/round-3/kernels/routing/attempt-2/`):
+  G1 fail, no G2, no timing (`grade.json`: `Thread group size (960)
+  is greater than the maximum allowed threads per threadgroup (640)`).
+  Taught: the brief's 1,024-thread cap is the device max — Metal
+  derives each pipeline's actual cap from the kernel's resource use
+  (here 640, likely register-bound by the `part[16]` partials; the
+  GEMM direction itself is unrefuted, the kernel never ran). Next: a
+  copied new attempt with 10 rows per threadgroup (600 threads, grid
+  stays `rows*60`, 60 still divides the group size so no bounds
+  checks); re-derived prefill floors ~13 / ~102 / ~205 µs (see
+  notes.md).
+
 ## Boundary checks
 
-(none yet)
+### attempt-1 — pass (boundary-3, 2026-11-04T18:14:51Z)
+
+G1+G2 pass (`grade.json`: 0 rows differing at all six sizes). Kernels byte-identical to the starting point (`diff` of `block-0.metal` and `block-1.metal` against `muse-spark/round-2/kernels/routing/attempt-4/` empty); `spec.json` is the starting point's plus `"max_rows": 32` (JSON int, not bool — `slots.build` would raise otherwise, `bench/grader/slots.py:327-331`). Per the boundary, exactness at kernel-visible counts is inherited and this check verifies the hand-off, not the arithmetic. Checked against `muse-spark/round-3/kernels/routing/attempt-1/`:
+
+- **Every decode step stays at or below `max_rows`.** `run()` hands off iff `rows > max_rows` (`bench/grader/slots.py:335`); a decode step has 1–32 rows (brief:26), all ≤ 32, so every decode step runs the staged scalar path. `max_rows = 32` sits at the bottom of the boundary's 32–126 window.
+- **No MLX 60-row switch for this slot.** Routing's reference regimes change at `rows = 1` and `rows = 768` only; the 60-row change is the experts slot's. No side-of-switch analysis needed; all graded prefill sizes (127/1,016/2,048) hand to compiled.
+- **Ungraded decode counts 2–7, 9–31:** same path in-kind as graded 8/32, not merely the same branch. The `rows`-only formula (`block-0.metal:60-70`) gives `tm = 1`, `ratio = 24`, `partitions = 32`, `base_iters = 1` for every `rows` in 2–32 — the graded 8 and 32 run this exact configuration. `rows == 1` GEMV is itself graded. No ungraded decode count reaches a new configuration.
+- **The 33–126 band is empty by construction.** Every count above 32 hands to `mx.compile(ref_routing)` through the attempt's own dispatch, in graded and chunked-prefill serving alike; no piece verdict is missing anywhere the kernels run. The split-K-for-33–768 and single-accumulator branches are dead code at every reachable kernel count, kept verbatim.
+- **Threadgroup memory:** unchanged 28,080 B of 32 KB (85.7%, `block-0.metal:15,22-25`), threadgroup 256 ≤ 1,024. Close to the limit but inherited from the G2-passing starting point, and no fix direction stages more — flag stands as a note, not a defect.
+- **No unwritten threadgroup reads:** `xpad` pad slots (`c*17+16`) are never read (both readers index chunk offsets ≤ 15: `:28-29,42-45,111-114`); all 60 `scores` written on both branches (`:52-54,121-127`) before the sigmoid barrier (`:129`); every `parts[p*64+e]` read at `:123-124` was zeroed (`:30-32`) and every partition's chunks accumulated exactly once (`:95-119`); every `wsh` index read at `:114` is written by the staging loop (`:81-93`, `kv*4+j` covers `k` 0–15).
+- **No thread-timing dependence:** barriers separate every staging/compute/consume phase (`:33,94,119,129,137`); the thread-0 top-4 scan and weights fold run after the final barrier (`:139-174`).
+- **No new input assumptions:** dispatch, grids, shapes, dtypes and the strictly-greater tie rule with emitted-order fold are untouched; above `max_rows` the attempt runs the compiled reference whose six-size exactness was verified 2026-11-04.
+- **The 2,048-row `slower` (8/30 wins) is not a boundary defect.** Above `max_rows` the candidate IS the compiled reference (separate `mx.compile` instance); medians within 2.7% on identical code, inside the brief's 5% same-kernel band. Verdict-level noise, already in the failure ledger.
+
+Still unverified (inherited can't-see items, for **Unverified**): hand-off exactness above `max_rows` at untested sizes (compiled-vs-reference beyond the six graded); sizes above 2,048; prefill beyond the first seeded-random chunk; other prompts, later decode steps, layers' drift, unseen exact 4th/5th ties; score magnitudes saturating the sigmoid differently; whole-request noise at 1 request. `check_sizes.py` not run (boundary tooling, not a gate; nothing kernel-visible left ungraded below the hand-off).
 
 ## Decision
 
@@ -89,6 +132,7 @@ preserve in 33–126 — the can't-see band empties by construction).
 ## Failure ledger
 
 - attempt-1 (max_rows 32): G1+G2 pass, decode `faster` x3, prefill `same`/`same`/`slower` (2,048 rows: 8/30 wins, exactly the 22-loss threshold; candidate medians within 2.7% of compiled on literally identical code — paired noise, not a slowdown). Cause (suspected): noise on identical code; the builder's proposed next change is a re-grade of a byte-identical copy under a new number. Approach: hand-off (no kernel change can move identical-code timing).
+- attempt-2 (GEMM-shaped sharing, 16 rows/group): G1 fail — kernel 1 asks 960 threads/group (16 rows × 60 experts), pipeline max is 640; no G2, no timing. Cause: compile error (threadgroup size), not a speed cause; fix is 10 rows/group (600 threads) in a copied attempt.
 
 ## Unverified
 
