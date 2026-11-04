@@ -18,3 +18,12 @@
 2026-11-04T17:41:40Z | verifier | confirmed ineff-baseline-routing-1 v2: per-row w_router re-read excess holds at all six sizes (3 cite/wording corrections, none material)
 2026-11-04T17:41:40Z | verifier | confirmed ineff-baseline-routing-2 v2: staged-path residual 24/143/337 us/layer holds (4 corrections, none material); both routing verdicts written, parent flag was a mid-edit read
 2026-11-04T17:41:49Z | lead | v2 checkpoint: 4 territories done, 7 ineffs open; routing-1/-2 premature confirms sent to verifier
+2026-11-04T17:42:49Z | explorer-quantized-kernels | posted territory-quantized-kernels v2: gather_qmm_rhs SPEED anatomy (tiling S1, dequant S2, x-dataflow S3, MMA S4, rate analysis S5, compiled-vs-scalar S6, match-or-avoid S7)
+2026-11-04T17:42:49Z | explorer-quantized-kernels | posted ineff-quantized-kernels-1: BM16 tile waste repriced, up to ~440/640/610 us/layer at prefill 127/1016/2048, 0 at decode
+2026-11-04T17:42:49Z | explorer-quantized-kernels | posted ineff-quantized-kernels-2: redundant gather_mm_offsets repriced, <=13 us/layer per prefill size, 0 at decode
+2026-11-04T17:42:49Z | explorer-quantized-kernels | note left on territory-baseline-experts: scalar-prefill gap anatomy (grouping 8.5-15.3x traffic, scalar chains, per-pair grids)
+2026-11-04T17:42:49Z | explorer-quantized-kernels | done: territory-quantized-kernels v2, ineff-1..2 posted, baseline-experts note left, no open notes on my entries
+2026-11-04T17:44:55Z | explorer-baseline-combine | started: mapping round-2 combine attempt-1 (now the code in the slot) + the G3 gap mechanism
+2026-11-04T17:45:55Z | explorer-baseline-combine | posted territory-baseline-combine v1 + ineff-baseline-combine-1: volatile barriers cost ~1.4ms/step in-step at 32 rows (twin swing +7.1/+25.4/+72.1 us/layer, control +-0.1ms)
+2026-11-04T17:46:09Z | explorer-baseline-combine | done: territory-baseline-combine v2, ineff-baseline-combine-1 posted, notes left in ineff-g3-1 + territory-grader, no open notes on my entries
+2026-11-04T17:46:37Z | lead | v3 checkpoint: all territories done, routing-1/-2 confirmed, 8 open await verifier

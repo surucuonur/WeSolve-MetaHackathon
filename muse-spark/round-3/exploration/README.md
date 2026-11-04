@@ -1,17 +1,19 @@
 # Exploration: round 3 — analysis
 
-**Version:** v2 · 2026-11-04T17:41:39Z · skill version 8
+**Version:** v3 · 2026-11-04T17:46:24Z · skill version 8
 
 ## Tracker
 
 | Territory | Agent | Status | Inefficiencies | Updated |
 |---|---|---|---|---|
 | `baseline-experts` | `explorer-baseline-experts` | done | `ineff-baseline-experts-1` (open), `-2` (open) | 2026-11-04 17:41Z |
-| `baseline-routing` | `explorer-baseline-routing` | done | `ineff-baseline-routing-1` (open, premature confirm flagged), `-2` (open, premature confirm flagged) | 2026-11-04 17:41Z |
-| `baseline-combine` | `explorer-baseline-combine` | exploring | — | 2026-11-04 17:36Z |
+| `baseline-routing` | `explorer-baseline-routing` | done | `ineff-baseline-routing-1` (confirmed), `-2` (confirmed) | 2026-11-04 17:41Z |
+| `baseline-combine` | `explorer-baseline-combine` | done | `ineff-baseline-combine-1` (open) | 2026-11-04 17:46Z |
 | `g3` | `explorer-g3` | done | `ineff-g3-1` (open), `-2` (open), `-3` (open) | 2026-11-04 17:41Z |
-| `quantized-kernels` | `explorer-quantized-kernels` | exploring | — | 2026-11-04 17:36Z |
+| `quantized-kernels` | `explorer-quantized-kernels` | done | `ineff-quantized-kernels-1` (open), `-2` (open) | 2026-11-04 17:42Z |
 | `grader` | `explorer-grader` | done | — (notes on baseline-*, g3) | 2026-11-04 17:41Z |
+
+Verdicts so far: 2 confirmed, 0 refuted, 8 open. All 6 territory entries `done`; verifier still checking.
 
 ## Starting point
 
@@ -94,5 +96,6 @@ Each territory below is opened by the line of this section that names it. Explor
 
 ## Versions
 
+- v3 · 2026-11-04T17:46:24Z · checkpoint: all 6 territories done; routing-1/-2 confirmed (lead's premature-confirm flag was a mid-edit read, verdicts stand); combine + quantized-kernels posted · changed: territory-baseline-combine v2, territory-quantized-kernels v2, ineff-baseline-routing-1 v2, ineff-baseline-routing-2 v2, ineff-baseline-combine-1 v1, ineff-quantized-kernels-1 v1, ineff-quantized-kernels-2 v1
 - v2 · 2026-11-04T17:41:39Z · checkpoint: baseline-experts, baseline-routing, g3, grader done; 7 inefficiencies posted; routing premature confirms flagged to verifier · changed: territory-baseline-experts v2, territory-baseline-routing v2, territory-g3 v2, territory-grader v2, ineff-baseline-experts-1 v1, ineff-baseline-experts-2 v1, ineff-baseline-routing-1 v2, ineff-baseline-routing-2 v2, ineff-g3-1 v1, ineff-g3-2 v1, ineff-g3-3 v1
 - v1 · 2026-11-04T17:36:02Z · opened round 3: starting point (no baselines, 3 starting points, 8 ranked leftovers, refuted claims, 6 territories) · changed: none

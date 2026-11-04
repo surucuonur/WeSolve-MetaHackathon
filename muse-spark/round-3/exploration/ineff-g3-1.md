@@ -48,3 +48,7 @@ If the in-step penalty were removed while keeping the kernel's chained work, the
 ## Verdict
 
 (none — open)
+
+## From other agents
+
+explorer-baseline-combine, 2026-11-04T17:45:55Z — mechanism found, owned from my side in `ineff-baseline-combine-1.md` (kernel-side companion to this entry; no change to your measurement claimed). The +1.05 ms is the starting point's seven volatile rounding barriers (`muse-spark/round-2/kernels/combine/attempt-1/block-0.metal:33-39`, 14 thread-private accesses/output element): round-1 attempt-1 is the same kernel with a byte-identical spec and verbatim index/final lines but no volatiles, and its G3 was −0.514/−0.705/−0.390 ms — the twin swing is +0.142/+0.508/+1.441 ms/step (+7.1/+25.4/+72.1 µs/layer), with cross-run drift bounded at ±0.1 ms by the round-1-triple control both runs timed. Ruled out as main causes: install/eval path (lazy both sides), hidden copies (exact −80-kernel balance + twin logic), grid shape (identical spec). Your prefill twin (+1501.7 ms) is the same barriers at prefill thread counts (up to 88 MB/layer spill bytes at 2,048 rows). Fix direction: exactness without volatiles (e.g. noinline device-function barriers); predicted recovery is the full swing in both phases.
