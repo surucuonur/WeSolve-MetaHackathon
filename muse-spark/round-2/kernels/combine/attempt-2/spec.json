@@ -1,0 +1,1 @@
+{"kernels": [{"atomic_outputs": false, "grid": ["rows*192", 1, 1], "header_block": null, "init_value": null, "inputs": ["y", "weights", "shared"], "name": "fused_combine_tg_exact", "outputs": [{"dtype": "bfloat16", "name": "out", "shape": ["rows", 768]}], "source_block": 0, "template": {}, "threadgroup": [192, 1, 1]}], "slot_outputs": {"out": "out"}}

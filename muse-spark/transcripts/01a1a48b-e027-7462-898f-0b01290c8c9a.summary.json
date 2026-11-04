@@ -1,0 +1,291 @@
+{
+ "session": "01a1a48b-e027-7462-898f-0b01290c8c9a",
+ "first": "2026-11-04T03:13:15.476829+00:00",
+ "last": "2026-11-04T04:16:38.675731+00:00",
+ "recorded_by": "Muse Code 1.4.14 (dec7d7497f)",
+ "agents": [
+  {
+   "session": "01a1a48b-e027-7462-898f-0b01290c8c9a",
+   "agent": "lead",
+   "model_calls": 172
+  },
+  {
+   "session": "01a1a48d-ad9e-7b13-a109-0bbcf03af6cc",
+   "agent": "helper main/explorer-baseline-experts/1",
+   "model_calls": 37
+  },
+  {
+   "session": "01a1a48d-b058-7530-9ced-b06bea74cd46",
+   "agent": "helper main/explorer-baseline-routing/2",
+   "model_calls": 31
+  },
+  {
+   "session": "01a1a48d-b2bb-7a20-a7ff-13ffc45b8a89",
+   "agent": "helper main/explorer-baseline-combine/3",
+   "model_calls": 24
+  },
+  {
+   "session": "01a1a48d-b555-7d53-a7ff-61f98d652b45",
+   "agent": "helper main/explorer-g3/4",
+   "model_calls": 23
+  },
+  {
+   "session": "01a1a48d-b87d-7a93-aba6-b3d13baff35a",
+   "agent": "helper main/explorer-quantized-kernels/5",
+   "model_calls": 65
+  },
+  {
+   "session": "01a1a48d-bc62-7482-a0b8-01f58430ac11",
+   "agent": "helper main/explorer-grader/6",
+   "model_calls": 25
+  },
+  {
+   "session": "01a1a48d-c02a-7ab1-9d42-83885b75169f",
+   "agent": "helper main/verifier/7",
+   "model_calls": 91
+  },
+  {
+   "session": "01a1a49b-1459-7f22-9976-836f556eb117",
+   "agent": "helper main/boundary-1/8",
+   "model_calls": 11
+  },
+  {
+   "session": "01a1a49b-16c1-7d93-be19-b6812e8cfd84",
+   "agent": "helper main/boundary-2/9",
+   "model_calls": 14
+  },
+  {
+   "session": "01a1a49d-b7bc-7d30-87be-252bc467ce11",
+   "agent": "helper main/builder-1-a/10",
+   "model_calls": 30
+  },
+  {
+   "session": "01a1a49d-ba2b-7052-8d9f-e4a2d2fd1533",
+   "agent": "helper main/builder-1-b/11",
+   "model_calls": 23
+  },
+  {
+   "session": "01a1a49d-bc76-76d3-9c02-3abe11b5ec07",
+   "agent": "helper main/builder-2-a/12",
+   "model_calls": 41
+  },
+  {
+   "session": "01a1a49d-beb8-7cc1-b80a-abf79c2a27a9",
+   "agent": "helper main/builder-2-b/13",
+   "model_calls": 24
+  },
+  {
+   "session": "01a1a4a7-b6cd-7f82-a4f0-25893ba719e8",
+   "agent": "helper main/boundary-1/14",
+   "model_calls": 19
+  },
+  {
+   "session": "01a1a4a7-b90d-71b0-a4c8-0fb153d9e1eb",
+   "agent": "helper main/boundary-1/15",
+   "model_calls": 12
+  },
+  {
+   "session": "01a1a4a7-bb6e-7bd1-b289-7b4c241740eb",
+   "agent": "helper main/boundary-2/16",
+   "model_calls": 23
+  },
+  {
+   "session": "01a1a4ad-608f-7800-ac5a-a1d3dc7f6f5a",
+   "agent": "helper main/builder-1-c/17",
+   "model_calls": 22
+  },
+  {
+   "session": "01a1a4ad-6308-7ba2-9858-bbce05ca4451",
+   "agent": "helper main/builder-2-c/18",
+   "model_calls": 17
+  },
+  {
+   "session": "01a1a4b0-c999-7941-9c18-11466f14b365",
+   "agent": "helper main/boundary-1/19",
+   "model_calls": 9
+  },
+  {
+   "session": "01a1a4b0-cbd3-7bd1-9378-45c4e1bdada9",
+   "agent": "helper main/boundary-2/20",
+   "model_calls": 8
+  },
+  {
+   "session": "01a1a4b0-ce76-73c2-925a-d19adc7da706",
+   "agent": "helper main/builder-1-d/21",
+   "model_calls": 26
+  },
+  {
+   "session": "01a1a4b0-d0e1-7432-9639-706dfda775dd",
+   "agent": "helper main/builder-2-d/22",
+   "model_calls": 20
+  },
+  {
+   "session": "01a1a4b0-fe66-7740-9935-e75f6376ddf9",
+   "agent": "helper main/boundary-3/23",
+   "model_calls": 14
+  },
+  {
+   "session": "01a1a4b3-e213-7872-81e2-da2c541b6c03",
+   "agent": "helper main/boundary-2/24",
+   "model_calls": 9
+  },
+  {
+   "session": "01a1a4b3-e45c-7e53-9e1d-a90e5cb53531",
+   "agent": "helper main/boundary-1/25",
+   "model_calls": 10
+  },
+  {
+   "session": "01a1a4b3-e73f-7e81-a7a8-d1761b6d946c",
+   "agent": "helper main/builder-3-a/26",
+   "model_calls": 27
+  },
+  {
+   "session": "01a1a4b3-ea39-7121-8f27-bee901e56201",
+   "agent": "helper main/builder-3-b/27",
+   "model_calls": 32
+  },
+  {
+   "session": "01a1a4b7-ee4f-7f33-831b-405cd7d11418",
+   "agent": "helper main/boundary-3/28",
+   "model_calls": 16
+  },
+  {
+   "session": "01a1a4b7-f0ab-7812-9bf0-bc6c222b6501",
+   "agent": "helper main/boundary-3/29",
+   "model_calls": 10
+  },
+  {
+   "session": "01a1a4b7-f308-7ee3-b260-427e0c7f5a69",
+   "agent": "helper main/builder-1-e/30",
+   "model_calls": 22
+  },
+  {
+   "session": "01a1a4ba-f27d-7630-9ea9-c36b62a80ca0",
+   "agent": "helper main/boundary-1/31",
+   "model_calls": 10
+  },
+  {
+   "session": "01a1a4ba-f4de-7e10-a92a-e5dd9ea3bf01",
+   "agent": "helper main/builder-1-f/32",
+   "model_calls": 27
+  },
+  {
+   "session": "01a1a4bf-8819-76e0-9e7b-c1da68ac5697",
+   "agent": "helper main/builder-1-g/33",
+   "model_calls": 29
+  },
+  {
+   "session": "01a1a4c3-1066-7962-95e0-d670a0a497ed",
+   "agent": "helper main/boundary-1/34",
+   "model_calls": 8
+  },
+  {
+   "session": "01a1a4c5-a10b-7ce3-94e7-a3e89109e6b6",
+   "agent": "reminder goal-reminder",
+   "model_calls": 1
+  },
+  {
+   "session": "01a1a4c5-a14c-7e52-a8b6-0b9f9d707075",
+   "agent": "reminder verify-reminder",
+   "model_calls": 1
+  }
+ ],
+ "model_calls_by_model": {
+  "muse-wonder-1.0": 981,
+  "muse-spark-1.3": 2
+ },
+ "tokens": {
+  "input_tokens": 125640500,
+  "output_tokens": 767827,
+  "reasoning_tokens": 359250,
+  "cached_tokens": 121144448,
+  "cache_read_tokens": 121144448
+ },
+ "tool_calls_by_approval": {
+  "allow:policy": 1151,
+  "allow:llm_judge": 144,
+  "allow:self_mediated_network_approval": 10,
+  "allow:approved": 2
+ },
+ "dropped": "Muse Code's instructions and context blocks, reminder prompts, encrypted reasoning and runtime bookkeeping",
+ "dropped_records": {
+  "approval_wait.effect.started": 13,
+  "approval_wait.effect.terminal": 13,
+  "async.owner.attempt_admitted": 34,
+  "command.invoked": 1,
+  "reminder prompt": 2,
+  "run.model.configured": 37,
+  "runtime.command_intake.received": 1,
+  "runtime.command_intake.session_name.received": 1,
+  "runtime.command_intake.settled": 2,
+  "runtime.retained_fact": 1,
+  "runtime.session": 2,
+  "runtime.session.accepted": 2527,
+  "runtime.session.automated_review_completed": 13,
+  "runtime.session.automated_review_started": 13,
+  "runtime.session.cancelled": 1,
+  "runtime.session.capture_selection": 37,
+  "runtime.session.completed": 2481,
+  "runtime.session.context_block_diagnostic": 384,
+  "runtime.session.context_block_updated": 1,
+  "runtime.session.decision_applied": 13,
+  "runtime.session.failed": 11,
+  "runtime.session.goal_usage_attribution": 2463,
+  "runtime.session.inbox_delivery_anomaly": 34,
+  "runtime.session.inbox_item_drained": 1031,
+  "runtime.session.inbox_item_queued": 1031,
+  "runtime.session.memory_reminder_child_session_linked": 102,
+  "runtime.session.metadata": 37,
+  "runtime.session.model_input_trace_recorded": 983,
+  "runtime.session.model_request_configured": 37,
+  "runtime.session.model_response_created": 983,
+  "runtime.session.output": 1375,
+  "runtime.session.proposed": 2603,
+  "runtime.session.provider_request_options_configured": 983,
+  "runtime.session.reasoning_committed": 625,
+  "runtime.session.reasoning_summary_delta": 472,
+  "runtime.session.rejected": 76,
+  "runtime.session.reminder_proposal": 102,
+  "runtime.session.reminder_reconciler_outcome": 102,
+  "runtime.session.requested": 13,
+  "runtime.session.resource_usage_sampled": 149,
+  "runtime.session.route_facts": 1,
+  "runtime.session.scheduled": 2527,
+  "runtime.session.side_effect_intent": 1085,
+  "runtime.session.skill_read_observed": 1,
+  "runtime.session.skill_reminder_decision": 100,
+  "runtime.session.started": 2493,
+  "runtime.session.status": 2599,
+  "runtime.session.task.accepted": 1,
+  "runtime.session.task.completed": 1,
+  "runtime.session.task.proposed": 1,
+  "runtime.session.task.scheduled": 1,
+  "runtime.session.task.side_effect_intent": 1,
+  "runtime.session.task.started": 1,
+  "runtime.session.task_stream_linked": 2603,
+  "runtime.session.todo_snapshot_updated": 6,
+  "runtime.session.tool_delta": 3196,
+  "runtime.session.tool_output_ref": 240,
+  "runtime.session_start.intake_v3": 1,
+  "runtime.user_intent.accepted": 1,
+  "runtime.user_intent.materialized": 1,
+  "session.end": 1,
+  "session.name.changed": 1,
+  "session.opened.observed": 1,
+  "session.resource_pressure.observed": 4,
+  "session.started": 1,
+  "session.startup_phases.observed": 1,
+  "session.workspace_branch.observed": 37,
+  "subagent.control.attempt_admitted": 34,
+  "subagent.control.child_session_bound": 34,
+  "subagent.control.result_ready": 34,
+  "subagent.control.resume_context_recorded": 34,
+  "subagent.control.runtime_observed": 34,
+  "subagent.control.spawn_accepted": 34,
+  "subagent.control.start_attested": 34,
+  "subagent.control.status_updated": 34,
+  "subagent.control.wait_parked": 22,
+  "tool_batch.effect.started": 1366,
+  "tool_batch.effect.terminal": 1366
+ }
+}
