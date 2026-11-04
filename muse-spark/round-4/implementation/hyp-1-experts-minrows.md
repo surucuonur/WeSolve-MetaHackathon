@@ -2,7 +2,7 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 3
+- **Version:** 4
 - **Updated:** 2026-11-04T21:49:10Z
 - **Next:** builders grading
 
@@ -248,9 +248,61 @@ fails G1 loudly. A pure `spec.json` hand-off change touches none of this.
   this slot runs MLX's own code everywhere, so G3 passes only
   inside a faster set (see **Unverified**).
 
+### builder-1-b — direction (b): same 1-row hand-off with narrower kernel window (`min_rows: 2`, `max_rows: 32`)
+
+- **Attempt:** `muse-spark/round-4/kernels/experts/attempt-2` —
+  `block-0.metal` / `block-1.metal` byte-identical to the starting
+  point `muse-spark/round-3/kernels/experts/attempt-1` (MD5
+  `a1e95fc49844f714afd1a1e377967dae` / `631e710f5dd343427667a2270a166e6d`,
+  `diff` clean); `spec.json` = starting point's plus `"min_rows": 2`
+  with `"max_rows"` narrowed 59 → 32. Kernels run 2–32 rows; 1 row,
+  the ungraded 33–59 band and all prefill sizes hand off. Full
+  detail in the attempt's `notes.md`.
+- **Predicted µs/layer** (from the starting point's grade run;
+  handed-off = that run's compiled, kernel-run = its candidate):
+  1 row 86.6 `handed off`; 8 rows 168.9 `faster` (saving
+  238.2 − 168.9 = 69.3); 32 rows 554.7 `faster` (883.4 − 554.7 =
+  328.7); prefill 127 / 1,016 / 2,048: 1,131.1 / 4,133.5 / 7,557.8
+  `handed off`. G1 pass, G2 differ 0, `beats_compiled` true.
+- **Measured** (`grade.json` in the attempt folder; candidate vs
+  reference vs compiled): **G1 pass; G2 pass, differ 0 /
+  max_ulp 0.0 at all six sizes, no first difference.** 1 row
+  76.1 / 79.2 / 76.1 (`handed off`); 8 rows 170.5 / 237.2 / 236.8
+  (`faster`, 30 wins); 32 rows 538.1 / 809.1 / 823.2 (`faster`,
+  30 wins); prefill 127: 991.6 / 1,043.8 / 991.6 (`handed off`);
+  1,016: 3,998.9 / 4,090.0 / 3,998.9 (`handed off`); 2,048:
+  7,441.5 / 7,440.4 / 7,441.5 (`handed off`).
+  `phases_vs_compiled`: decode `faster`, prefill `handed off`.
+  **`beats_compiled` true.** Baseline `none` — no `beats_baseline`.
+  Margins this run 66.3 / 285.1 µs/layer (236.8 − 170.5,
+  823.2 − 538.1); graded verdicts match direction (a)'s
+  (attempt-1) in kind, as predicted — the 33–59 difference is
+  ungraded.
+- **Miss:** none over 20% — measured vs predicted −12.1% (1 row),
+  +0.9% (8), −3.0% (32), −12.3% / −3.3% / −1.5% (prefill). Level
+  is run noise (compiled bar 76.1 / 236.8 / 823.2 this run vs
+  86.6 / 238.2 / 883.4 in the starting point's run); handed-off
+  sizes equal compiled exactly by construction; kernel sizes run
+  byte-identical kernels.
+- **Taught:** narrowing the window to 2–32 rows costs nothing at
+  any graded size and flips `beats_compiled` false → true exactly
+  as direction (a) does; the 33–59 band's hand-off cost stays
+  unmeasured by the piece timing. Unproven remains whole-request:
+  with 1 request this slot runs MLX's own code everywhere, so G3
+  passes only inside a faster set (see **Unverified**).
+
 ## Boundary checks
 
-*(boundary-1 appends here for each attempt that passed G2.)*
+### attempt-1 — pass (boundary-1, 2026-11-04T21:54:05Z)
+
+G1+G2 pass (`grade.json`: differ 0 / max_ulp 0.0 at all six sizes; `beats_compiled` true, decode `faster`, prefill `handed off`). Kernels verified byte-identical to the starting point `muse-spark/round-3/kernels/experts/attempt-1` (`diff` clean; MD5 `block-0.metal` `a1e95fc49844f714afd1a1e377967dae`, `block-1.metal` `631e710f5dd343427667a2270a166e6d`); `spec.json` differs by one added key `"min_rows": 2` (`spec.json:50`), `"max_rows": 59` kept (`spec.json:46`), both ints (not bools), `min_rows <= max_rows`, accepted by `bench/grader/slots.py:330-339`.
+
+- **Row counts other than the graded ones, each side of 60.** `hands_off(rows)` is `(rows > 59) or (rows < 2)` (`bench/grader/slots.py:338-339`), dispatch on `inputs[slot_in[0]].shape[0]` (`:342`). Kernel-visible rows are exactly 2–59: every decode count 2–32 runs the kernels (grid `rows*2048`, `spec.json:5-9`; 512 threads/group, `:39-43`), and any count 60+ — prefill chunks of 60, 61, any size above 2,048 — hands off to the compiled reference (`bench/grader/slots.py:343-345`). 59 is the last `gather_qvm` count and the kernel's own dispatch `prefill = x_shape[0] >= 60` (`block-0.metal:22`) is false for every kernel-visible count, so the scalar `qmm_accum` prefill branch (`block-1.metal:206-230`; `block-0.metal:59-71,103-112`) is unreachable dead fallback; 60 is the first handed-off count and exactly MLX's first `gather_qmm_rhs` count. A prefill chunk of 33–59 rows runs the kernels on the same `qvm` arithmetic the reference uses below 60. Kernel work is per-pair with no cross-row interaction (`r = pair >> 2`, `e = inds[pair]`, `block-0.metal:20-21`), so the 8/32-row G2 verdict extends by construction to decode 2–7, 9–31 and to 33–59; speed at those ungraded kernel-run counts (2–7, 9–31, 33–59) is unmeasured by the piece timing — noted, not a defect.
+- **Hand-offs (`min_rows: 2`, `max_rows: 59`).** `rows < 2` is exactly `rows == 1` (`rows` ≥ 1): 1-row decode runs the compiled reference, so with 1 request every decode step (1 row per step, all 20 layers, every step) runs MLX's own code for the whole request, and the 1-request prefill above 59 rows hands off too — this slot contributes no speed change at 1 request and can pass G3 only inside a faster set (whole-request fact; the piece timing shows it only as `handed off` at 1 row, `grade.json` 73.9 = compiled 73.9). Decode up to 32 stays on the kernel except the intended 1-row exception: 2–32 all run the fused path, `max_rows: 59` keeps the top hand-off below MLX's 60-row switch (`gather_qvm` below, `gather_qmm_rhs` at/above), so no kernel-run row ever needs `qmm` arithmetic. Handed-off sizes equal compiled exactly by construction (1,026.6 / 4,013.4 / 7,412.5 = compiled at 127 / 1,016 / 2,048 rows).
+- **Unwritten threadgroup reads: none.** `tg_x[768]` is fully covered by the strided loop (`block-0.metal:29-31`, 512 threads cover 0–767) before the barrier at `:32`; `tg_gate`/`tg_up[384]` are fully covered in both branches by the 12 active simdgroups writing distinct `b*32+lane` (decode `:51-58`, prefill `:61-71`) before the barrier at `:73`; `tg_h[384]` is fully covered by the strided silu loop (`:77-85`) before the barrier at `:86`. Every read follows its phase's barrier; idle lanes/simdgroups write nothing that is read unwritten.
+- **Threadgroup memory far from the limit.** 3,840 B (`tg_x[768] + tg_gate[384] + tg_up[384] + tg_h[384]` bfloat16, `block-0.metal:24-27`) vs the 32 KB ceiling (~11.7%); 512 threads/group vs the 1,024 count, and the inherited pipeline ceiling is unchanged — exactly two distinct 32-float thread arrays `p`, `q` (`block-0.metal:42-43`), so the round-2 attempt-6 G1 failure mode (a third array dropping the compiled maximum below 512) does not recur.
+- **No thread-timing dependence.** All cross-thread sharing passes through unconditional `threadgroup_barrier`s (`block-0.metal:32,73,86` — outside every divergent branch, so all threads converge); `y` slices are disjoint per (pair, simdgroup, lane) (`:100-101,108-109`); no atomics (`"atomic_outputs": false`, `spec.json:4`); `simd_sum` reductions are fixed trees (`block-1.metal:120-127,187-194`). The shared kernel-scope `q[32]` is thread-private storage, and each helper re-zeroes both accumulators on entry (`block-1.metal:85-88,152-155`), so the gate/up → down reuse is timing-independent.
+- **No captured-input assumptions.** The attempt adds no input-dependent logic beyond `rows` read from `x_shape[0]` (`block-0.metal:22`), the same value the grader's dispatch reads (`bench/grader/slots.py:342`) and `hands_off` receives. `inds` flows through untouched and `y[r,j]` stays positional in `inds` order; expert ids are used only as offsets (`eW`/`eS`, `block-0.metal:34-35`), with no assumption that ids are distinct, sorted or drawn from the captured distribution, and no branching on `x` values, expert ids, or any fixed row count (1/8/32 appear nowhere in the kernels).
 
 ## Decision
 
