@@ -1,8 +1,8 @@
 # Hypothesis 2: widen the routing decode margin
 
 - **Owner:** lead
-- **Status:** building
-- **Version:** 3
+- **Status:** hardening
+- **Version:** 4
 - **Updated:** 2026-11-04T21:49:10Z
 - **Next:** builders grading
 
@@ -154,15 +154,22 @@ unchanged (256 threads, 28,080 B; registers only).
 
 ## Decision
 
-*(lead writes at close.)*
+**Best attempt: `muse-spark/round-4/kernels/routing/attempt-1`** (direction b: dead `parts[]` zeroing removed by first-touch initialisation, everything else byte-identical to the starting point, `max_rows: 32`). It passes G1, G2 (0 rows differ at all six sizes) and its boundary check (`pass`), with `beats_compiled` true: decode `faster` at all three sizes (58.5 / 136.9 / 74.7 vs compiled 86.1 / 157.3 / 92.1 µs per layer, 30 / 26 / 30 wins), prefill `handed off`. Direction (a) (attempt-2, `w_router` shared across 4 rows) is bit-exact and passes, but its 32-row margin narrowed to 8.3 µs/layer against the starting point's ~19.7 — sharing cost more partition parallelism than the re-read was worth at decode sizes. The hardening attempt-3 (tail-group feeding on attempt-1) is bit-exact, passes its boundary check, and is `faster` everywhere, but its margins (16.9 / 11.6 / 13.0 µs/layer in its run) do not widen attempt-1's (27.6 / 20.4 / 17.4 in its run); chained absolutes drift between runs, and on same-run margins — the only transferable basis — no attempt beats attempt-1 at all three sizes. No further single change is named: the two priced pools (`ineff-baseline-routing-1`, `-2`) have each had their simplest exact attack, and both remaining ideas are the other direction's, already graded.
+
+**Predicted change in whole requests (PREDICTION):** from attempt-1's same-run margins × 20 layers, about −0.55 / −0.41 / −0.35 ms per decode step at 1 / 8 / 32 requests against the compiled reference, prompts unchanged (`max_rows: 32` hand-off). This replaces the starting point's contribution to the pair; whether the pair's 32×1024 gap (~0.17 ms/step short, `ineff-g3-1`) closes is measured only by the ready check, in the set.
 
 ## Failure ledger
 
-*(lead keeps: each graded attempt that lost, the size or phase, its named cause, its approach.)*
+## Failure ledger
+
+No graded attempt lost a gate: attempts 1, 2 and 3 all pass G1, G2 and `beats_compiled`. Two lost the *margin* comparison that is this hypothesis's bar, recorded here so no one retries them blind: attempt-2 (direction a, sharing) — 32-row margin 8.3 vs ~19.7 µs/layer for the starting point, cause: lost partition parallelism outweighs the re-read saving at decode sizes; attempt-3 (hardening, tail-group feeding) — margins 16.9 / 11.6 / 13.0, no widening over attempt-1, cause: the tail third's idle threads were not on the critical path. Neither is a three-alike failure; no approach-change obligation arises.
 
 ## Unverified
 
-*(starts from the boundary's can't-see list.)*
+- Ungraded decode counts 2–7 and 9–31: speed unmeasured, correctness rests on the rows-independent scalar construction the boundary check traced, not on G2.
+- Whether attempt-1's margin over the starting point is real: the two were graded in different runs and chained absolutes drift up to ~35–46% between runs on this machine; only the ready check (same-run, whole-request) settles the 32×1024 question.
+- The exact `max_rows` bound: the grader reports prefill `handed off` for any `max_rows` in 32–59 here; only reading `spec.json` (32, plain int) distinguishes them. Boundary check verified by reading the spec.
+- Sizes above 2,048 rows, prefill beyond the first seeded chunk, other lengths/distributions and mixed batches untested. Unwritten threadgroup reads and thread-timing dependence checked by hand (pass), not by the grader. NaN-vs-NaN counts as equal in G2.
 
 ## Checks
 
