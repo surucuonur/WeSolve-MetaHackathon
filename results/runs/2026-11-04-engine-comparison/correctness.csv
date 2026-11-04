@@ -1,0 +1,9 @@
+version,label,same_tokens_1_request,same_tokens_32_requests
+base,Unchanged engine,yes,yes
+compiled-3,"MLX references, compiled",yes,yes
+compiled-routing,"Routing reference, compiled",yes,yes
+round1,Round 1: all three kernels,yes,no
+round2-submitted,Round 2 submission: routing + combine,yes,yes
+muse-routing,Round 2: routing only,yes,yes
+round2-routing+experts-a7,Round 2: routing + experts attempt-7,yes,yes
+round2-all-three,Round 2: routing + combine + experts attempt-7,yes,yes

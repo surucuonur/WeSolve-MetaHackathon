@@ -33,9 +33,10 @@ A Meta model working in Muse Code, Meta's own coding agent, works as a swarm of 
 - From round 2 the grader asks for bit-exact outputs at decode and prefill sizes, and chains the layers when timing ([ADR 0010](claude/adr/0010-exact-at-every-size.md)).
 
 **Round 2, measured** ([claude/findings/muse-round-2.md](claude/findings/muse-round-2.md)): Muse Wonder's kernels are bit-exact with MLX's at every size tested, and leave the model's tokens unchanged.
-- **The routing kernel** passes every rule: it shortens the vLLM decode step by 0.43 to 0.54 ms (2 to 9%) at 1, 8 and 32 requests.
-- **The combine kernel** slows the step with 32 requests, so the submitted pair gains 13% with 1 request and loses 2% with 32.
-- **An experts kernel round 2 didn't submit** is 17.5% faster with 32 requests and 5% slower with 1.
+- **The routing kernel** passes every rule: it shortens the vLLM decode step by 0.43 to 0.54 ms (2 to 9%) at 1, 8 and 32 requests. It processes prompts 7–10% slower, though, so over whole requests it gains 10% with 1 request and loses 3.5% with 32 requests of 1,024-token prompts.
+- **The combine kernel** slows the decode step with 32 requests, so the submitted pair gains 16% in throughput with 1 request and loses 3–4% with 32.
+- **An experts kernel round 2 didn't submit** shortens the decode step by up to 19%, but processes prompts 7 to 15 times slower, so whole requests lose 10–83% of their throughput.
+- **Compiling MLX's own code for the three slots**, with no new kernel, raises throughput by 0.6–12% in every workload, which no Muse version does yet.
 
 ## How Meta's models are used
 

@@ -19,7 +19,7 @@ This is Claude's independent measurement, on main after merging round 2 (`4033ca
 
 G3 timed each kernel alone, the submission, experts attempt-7 added to it, round 1's three kernels and the compiled references, all in the same run. A last run timed every pairing of round 2's three kernels, to find where they interfere.
 
-**Where everything is.** The raw data is in [results/runs/2026-11-04-muse-round-2/](../../results/runs/2026-11-04-muse-round-2/), with the pairings in [results/runs/2026-11-04-muse-round-2-pairs/](../../results/runs/2026-11-04-muse-round-2-pairs/). The scripts are:
+**Where everything is.** The raw data is in [results/runs/2026-11-04-muse-round-2/](../../results/runs/2026-11-04-muse-round-2/), with the pairings in [results/runs/2026-11-04-muse-round-2-pairs/](../../results/runs/2026-11-04-muse-round-2-pairs/) and the whole-request comparison in [results/runs/2026-11-04-engine-comparison/](../../results/runs/2026-11-04-engine-comparison/). The scripts are:
 - `bench/grader/check_candidate.py`, the grader;
 - `bench/grader/check_sizes.py`, G2's checks at the extra row counts;
 - `bench/grader/time_candidates.py`, the end-to-end check and G3.
@@ -34,10 +34,10 @@ G3 timed each kernel alone, the submission, experts attempt-7 added to it, round
   - end to end, where the model's greedy tokens are identical in plain MLX and in vLLM, at 1 and 32 requests, for every round-2 variant.
 
   Round 1's kernels, timed in the same runs as a control, still change the tokens with 32 requests.
-- **routing attempt-4 passes G3 everywhere.** It is faster than both the unchanged model and the compiled reference at 1, 8 and 32 requests, in both engines. In vLLM it saves 0.47, 0.43 and 0.54 ms per step (8.7%, 3.0% and 1.8%). It is the project's first Muse kernel that passes every rule.
+- **routing attempt-4 passes G3 everywhere.** It is faster than both the unchanged model and the compiled reference at 1, 8 and 32 requests, in both engines. In vLLM it saves 0.47, 0.43 and 0.54 ms per step (8.7%, 3.0% and 1.8%). It is the project's first Muse kernel that passes every rule. Over whole requests its gain is smaller, since it processes prompts 7–10% slower: throughput rises 10.2% with 1 request and 1.8% with 8, is flat with 32 and falls 3.5% with 32 requests of 1,024-token prompts ([section 6](#6-whole-requests-prompts-and-throughput)).
 - **combine attempt-1 fails G3.** The grader timed it faster than the compiled reference at every row count. In the model it is slower than the unchanged step with 32 requests (+1.05 ms in vLLM, +1.17 ms in plain MLX), and no faster than the compiled reference with 8.
 - **The submission (routing + combine), in vLLM:** −0.73 ms (−13%) with 1 request, −0.74 ms (−5%) with 8, **+0.53 ms (+2%) with 32**, against a prediction of −0.84 ms at each. combine's slowdown outweighs routing's saving with 32 requests.
-- **experts attempt-7, not submitted, is the largest gain measured so far:** −5.35 ms (−17.5%) per step with 32 requests and −1.22 ms (−8.4%) with 8 in vLLM. With 1 request it is slower: +0.29 ms (+5.4%). That matches the reason round 2 dropped it.
+- **experts attempt-7, not submitted, makes the decode step faster and whole requests much slower.** Per decode step in vLLM: −5.35 ms (−17.5%) with 32 requests, −1.22 ms (−8.4%) with 8, and +0.29 ms (+5.4%) with 1, which is why round 2 dropped it. But it processes prompts 6.6 to 14.5 times slower than the unchanged engine, so whole requests lose 10% to 83% of their throughput ([section 6](#6-whole-requests-prompts-and-throughput)). G3 times only decode steps, and this went unseen until the comparison in section 6.
 - **All three slots replaced at once lose time with 8 requests,** as in round 1, although every pair of kernels adds up as expected. With 8 requests in plain MLX, the three alone save 1.87 ms together, and all three installed cost 0.94 ms ([section 4](#4-where-the-kernels-interfere)).
 - **Against round 1,** in the same runs, round 2's submission is faster at 1 and 8 requests (−0.73 against +0.92 ms, and −0.74 against +0.13 ms) and slower at 32 (+0.53 against −1.85 ms), with identical tokens where round 1's change them.
 - **The process held.** Round 2 ran the grader exactly once per attempt: 13 runs for 13 attempts (experts 7, routing 4, combine 2). Round 1 ran it 29 times for experts' 4.
@@ -125,9 +125,26 @@ A separate plain MLX run timed round 2's three kernels in every combination, eac
 - **Every pair comes within 0.5 ms of its parts' sum.**
 - **All three together, with 8 requests, are 2.8 ms slower than their parts.** It is the only case that misses by much.
 - **Round 1 did the same.** Its three kernels, with 8 requests, came out at +0.88 ms in plain MLX against −1.95 ms for the parts ([round 1](muse-round-1.md#3-g3-the-decode-step)). Two different sets of kernels show it, so the cause is likely in how the step runs with all three slots replaced at that size, not in one kernel. It is not explained.
-- **The fastest exact combination measured** is routing attempt-4 with experts attempt-7, in plain MLX: −20% with 32 requests, −10% with 8 and −6% with 1. experts attempt-7 still fails G3 on its own with 1 request, and this combination was not timed in vLLM.
+- **The fastest decode step with exact output** is routing attempt-4 with experts attempt-7: −20% with 32 requests, −10% with 8 and −6% with 1 in plain MLX, and −18.8% with 32 requests in vLLM (section 6). Over whole requests it is the slowest version measured, because of experts attempt-7's prompt processing.
 
-## 5. How round 2 worked
+## 6. Whole requests: prompts and throughput
+
+A last vLLM run (`results/runs/2026-11-04-engine-comparison/`, tables built by `bench/grader/engine_table.py`) timed eight versions of the engine at four workloads: 1, 8 and 32 requests with 128-token prompts, and 32 requests with 1,024-token prompts. Besides the decode step it recorded the time until every prompt was processed and each run's whole time, as generated tokens per second. Every version but round 1's kept the tokens identical. Throughput change against the unchanged engine (prompt time as a multiple of the unchanged engine's in brackets):
+
+| Version | 1 × 128 | 8 × 128 | 32 × 128 | 32 × 1,024 |
+|---|---|---|---|---|
+| compiled references, all three slots | +11.9% (1.04×) | +3.1% (0.99×) | +0.6% (0.98×) | +0.9% (0.98×) |
+| round 2: routing attempt-4 | +10.2% (1.07×) | +1.8% (1.09×) | +0.3% (1.10×) | −3.5% (1.10×) |
+| round 2 submission: routing + combine | +15.9% (1.11×) | +2.1% (1.09×) | −2.7% (1.08×) | −4.1% (1.09×) |
+| round 2: routing + experts attempt-7 | −10.0% (6.63×) | −37.5% (14.50×) | −48.0% (12.50×) | −82.5% (13.09×) |
+| round 2: all three with experts attempt-7 | −10.7% (6.75×) | −43.0% (14.33×) | −53.7% (14.37×) | −83.3% (13.66×) |
+| round 1: all three (changes the output) | −13.3% (1.60×) | −9.6% (2.30×) | −8.1% (2.30×) | −33.6% (2.32×) |
+
+- **Compiling MLX's own code for the three slots,** with no new kernel, gains in every workload, 0.6% to 11.9%. No Muse version does that.
+- **Round 2's kernels are slower than MLX's when processing prompts,** in every slot measured: routing alone by 7–10%, routing with combine by 8–11%, and experts attempt-7 by 6.6 to 14.5 times. Every prompt chunk here has at least 128 rows, so it runs experts attempt-7's path for 60 rows and more, which copies `gather_qmm_rhs`'s rounding but not its speed.
+- **The grader checks the kernels' output at prompt sizes, and G3 times only decode steps,** so neither saw this. Its decode-step figures in sections 1 to 4 stand; they describe one part of a request.
+
+## 7. How round 2 worked
 
 - **Time:** 63 minutes; the lead and 34 helpers; 983 model calls. 981 were `muse-wonder-1.0`, and 2 were Muse Code's reminder agents on `muse-spark-1.3` (`muse-spark/transcripts/01a1a48b-e027-7462-898f-0b01290c8c9a.summary.json`).
 - **Tokens:** 125.6M input, of which 121.1M were cached, and 0.77M output. At Muse Wonder's prices that is about $58: $18 uncached input, $24 cached input and $15 output. It would be about $65 if the 0.36M reasoning tokens are billed on top of the output.
@@ -143,9 +160,10 @@ A separate plain MLX run timed round 2's three kernels in every combination, eac
 |---|---|---|---|
 | `routing` | `muse-spark/round-2/kernels/routing/attempt-4` | | Passes G2 at every size tested and G3 everywhere. A new attempt must beat it in the same grader run (`--baseline`). |
 | `combine` | none | `muse-spark/round-2/kernels/combine/attempt-1` | Bit-exact, but slower than the unchanged model with 32 requests in G3, for a reason the grader doesn't show. |
-| `experts` | none | `muse-spark/round-2/kernels/experts/attempt-7` | Bit-exact, and −17.5% with 32 requests, but slower than the unchanged model with 1 request. |
+| `experts` | none | `muse-spark/round-2/kernels/experts/attempt-7` | Bit-exact, and −17.5% per decode step with 32 requests, but slower with 1 request, and 6.6 to 14.5 times slower at processing prompts (section 6). |
 
 **What round 3 has to find out,** in Claude's reading of these results:
 1. **experts with 1 row.** attempt-7 keeps its 8- and 32-row speed and loses at 1 row, as every fused design in round 2 did (92 to 110 µs per layer chained, against 73 to 87 for the compiled reference, in round 2's runs). Round 2's summary suggests copying the reference's unfused structure exactly for small row counts.
 2. **Why combine attempt-1 costs 1 ms in the step with 32 requests** and not in the grader.
 3. **Why all three slots replaced at once lose 2.8 ms with 8 requests,** when every pair adds up (section 4).
+4. **Prompt-processing speed.** experts attempt-7's path from 60 rows is 6.6 to 14.5 times slower than MLX's, and routing's and combine's are 7–11% slower (section 6). A kernel has to be fast at prompt sizes too, and the grader should time them there before round 3, as G3 should time whole requests.

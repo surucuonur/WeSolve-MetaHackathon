@@ -160,7 +160,12 @@ def main():
         help="another set of attempts to time, outside muse-all",
     )
     ap.add_argument("--tokens", type=int, default=256, help="output tokens per run")
+    ap.add_argument(
+        "--settings", default="1x128,8x128,32x128", metavar="ROWSxPROMPT,...",
+        help="request counts and prompt lengths to time (G3: the default)",
+    )
     args = ap.parse_args()
+    settings = [tuple(int(n) for n in s.split("x")) for s in args.settings.split(",")]
     taken = [p for slot, _ in args.attempts for p in parts(slot)]
     if len(taken) != len(set(taken)):
         ap.error(f"two attempts replace the same part: {sorted(taken)}")
@@ -189,7 +194,8 @@ def main():
             max_model_len=2048,
             max_num_seqs=32,
             max_num_batched_tokens=2048,
-            kv_cache_memory_bytes=512 << 20,  # 32 rows x 384 tokens need 240 MiB
+            # 32 rows x 384 tokens need 240 MiB; 32 x 1,280 need 800 MiB
+            kv_cache_memory_bytes=(1 << 30) if max(p for _, p in settings) > 128 else 512 << 20,
             enable_prefix_caching=False,
             generation_config="vllm",
         )
@@ -198,7 +204,7 @@ def main():
         variants = Variants(args.attempts, args.variant)
         checks = rf.vllm_checks(llm, variants)
 
-    rf.time_variants(args.engine, variants, checks, run, log)
+    rf.time_variants(args.engine, variants, checks, run, log, settings)
 
 
 if __name__ == "__main__":

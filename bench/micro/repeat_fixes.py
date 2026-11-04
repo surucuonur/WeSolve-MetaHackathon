@@ -33,6 +33,7 @@ import random
 import re
 import statistics
 import tempfile
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -273,8 +274,17 @@ def main():
     time_variants(args.engine, variants, checks, run, log)
 
 
-def time_variants(engine, variants, checks, run, log):
-    """Log the checks, then time every variant at SETTINGS in shuffled repeats."""
+def prompt_ms():
+    """The last run's time from its first forward pass to its first one with no
+    prompt tokens left: until every prompt was processed (vLLM's steps only)."""
+    steps = [m for m, _ in bd.REC.steps if "t" in m]
+    done = next((m["t"] for m in steps if m.get("prefill") == 0), None)
+    return (done - steps[0]["t"]) * 1e3 if steps and done is not None else None
+
+
+def time_variants(engine, variants, checks, run, log, settings=SETTINGS):
+    """Log the checks, then time every variant at *settings* (rows, prompt tokens)
+    in shuffled repeats. Each run also records its wall time and prompt_ms()."""
     with log.open("a") as f:
         for (name, rows), c in checks.items():
             f.write(
@@ -288,7 +298,7 @@ def time_variants(engine, variants, checks, run, log):
 
     plan = []
     for rep in range(REPEATS):
-        block = [(v, r, p) for v in variants.names for r, p in SETTINGS]
+        block = [(v, r, p) for v in variants.names for r, p in settings]
         random.Random(100 + rep).shuffle(block)
         plan += [(rep, *b) for b in block]
     bd.REC.mode = "bare"
@@ -296,10 +306,14 @@ def time_variants(engine, variants, checks, run, log):
         variants.apply(name)
         bd.REC.reset(rows)
         before = bd.machine()
+        t0 = time.perf_counter()
         run(rows, prompt, rows * 10000 + prompt)
+        wall = (time.perf_counter() - t0) * 1e3
         record = bd.summarize()
         del record["spans"]
         record.update(
+            wall_ms=wall,
+            prompt_ms=prompt_ms(),
             kind="run",
             engine=engine,
             variant=name,
@@ -312,7 +326,7 @@ def time_variants(engine, variants, checks, run, log):
         with log.open("a") as f:
             f.write(json.dumps(record) + "\n")
         print(
-            f"{engine} rep{rep} {name:>11} rows {rows:2d}: "
+            f"{engine} rep{rep} {name:>11} rows {rows:2d} prompt {prompt}: "
             f"{record['period_median_ms']:7.3f} ms/step",
             flush=True,
         )
@@ -320,7 +334,7 @@ def time_variants(engine, variants, checks, run, log):
 
     print(f"\n{engine}: median step ms over {REPEATS} repeats (change against base)")
     runs = [json.loads(line) for line in log.read_text().splitlines()]
-    for rows, prompt in SETTINGS:
+    for rows, prompt in settings:
         base = None
         for name in variants.names:
             meds = [
@@ -329,6 +343,7 @@ def time_variants(engine, variants, checks, run, log):
                 if r["kind"] == "run"
                 and r["variant"] == name
                 and r["rows"] == rows
+                and r["prompt"] == prompt
                 and r["engine"] == engine
             ]
             med = statistics.median(meds)
@@ -339,7 +354,8 @@ def time_variants(engine, variants, checks, run, log):
                 else f" ({med - base:+.3f} ms, {(med / base - 1) * 100:+.1f}%)"
             )
             print(
-                f"  rows {rows:2d} {name:>11}: {med:7.3f} [{min(meds):.3f}-{max(meds):.3f}]{change}"
+                f"  rows {rows:2d} prompt {prompt:4d} {name:>11}: "
+                f"{med:7.3f} [{min(meds):.3f}-{max(meds):.3f}]{change}"
             )
 
 
