@@ -1,0 +1,173 @@
+# Hypothesis 3: fused combine kernel
+
+- **Owner:** lead
+- **Status:** ready
+- **Version:** 4
+- **Updated:** 2026-11-03T22:35:00Z
+- **Next:** none — attempt-1 goes to G3
+
+## Inefficiency
+
+Slot `combine`. One entry:
+
+- `ineff-model-2` (rank 5, mean 4.3% of step): each layer's weighting launches 5 kernels (bf16→fp32 cast, multiply, sum, fp32→bf16 cast, add shared) costing 0.61 ms at 1 row and 0.33 ms at 32 rows for ~6 MB of activations. Fusion to 1 kernel/layer saves 0.47 / 0.30 / 0.19 ms at 1/8/32 rows.
+
+Design: one Metal kernel per layer that weights the 4 experts' bf16 outputs by the fp32 weights, sums in fp32, rounds once to bf16, and adds the shared expert. G2: every element within 2 bf16 ULP (floor at 0.001). Note the piece-harness lesson from hyp-2: the fused-kernel floor is ~24 µs/layer, not 6.81 µs — predict against the harness, and G3 decides the real saving.
+
+## Boundary
+
+*written by boundary-3, 2026-11-03T22:05Z*
+
+### Inputs and outputs
+
+Source: the brief's combine table (`claude/muse-agent-brief.md:49-62`) and `bench/grader/slots.py:19-32,51-52`. All arrays row-contiguous (brief:24). The harness flattens the port's lead dims, so the slot sees flat rows (slots.py:107,116).
+
+| | Name | Shape at 1 / 8 / 32 rows | Dtype | Layout |
+|---|---|---|---|---|
+| input | `y` | [1,4,768] / [8,4,768] / [32,4,768] | bfloat16 | the 4 experts' outputs, in `inds` order (brief:53) |
+| input | `weights` | [1,4] / [8,4] / [32,4] | float32 | `weights[r,j]` belongs to `y[r,j,:]` |
+| input | `shared` | [1,768] / [8,768] / [32,768] | bfloat16 | the shared expert's output |
+| output | `out` | [1,768] / [8,768] / [32,768] | bfloat16 | `(y * weights[..., None]).sum(axis=-2).astype(bfloat16) + shared` |
+
+### Before and after in `MoE.__call__`
+
+Source: `third_party/mlx-lm/mlx_lm/models/mobilemoe.py:217-232` and the split harness `bench/grader/slots.py:105-119`.
+
+- **Before (1), the experts call:** `y = self.experts(x, inds)` (`mobilemoe.py:230`) produces `y` in `inds` order (brief:53). From rows ≥ 16 `SwitchGLU` sorts pairs by expert internally and unscatters the result (`switch_layers.py:181`), but that is invisible here: `y[..., j, :]` always corresponds to `weights[..., j]` positionally, whatever per-row order routing emitted.
+- **Before (2), routing weights:** `scores` normalized (`+1e-20` guard) and scaled × 2.5 in float32 (`mobilemoe.py:226-228`, `slots.py:48`). Reference values are non-negative and sum to 2.5 per row, but a fused end-to-end model may feed anything finite — the kernel must treat `weights` as arbitrary finite float32.
+- **Before (3), the shared expert:** `self.shared_expert(x)` (`mobilemoe.py:232`), a dense int4 `MLP(dim=768, hidden=1536)` (`mobilemoe.py:215,131-139`), computed on the same `x` as the routed path, outside all slots — a slot kernel may not change it.
+- **After:** the residual add `h + feed_forward(...)` in `DecoderLayer.__call__` (`mobilemoe.py:258`), a bf16 add on `[rows,1,768]`, then the next layer. It expects `out` exactly as the reference value below, within G2.
+
+Checklist (per `tracking.md`) for each neighbour:
+
+- **Producer `SwitchGLU(x, inds)`.** Callers: `MoE.__call__` (`mobilemoe.py:230`). Callees: `gather_qmm` per product plus internal sort/unsort from rows ≥ 16 (`switch_layers.py:176-199`) — all upstream of the slot. Data: `y` [rows,4,768] bf16. Neighbours: routing before it; this slot after. Cost: the experts slot (hyp-1), untouched. Invariants: positional pairing — column `j` of `y` pairs with `weights[j]` as given; the slot must not re-sort or re-pick experts.
+- **Producer routing-weights chain.** Callers: `MoE.__call__` (`mobilemoe.py:226-228`). Callees: none into the slot — it only supplies `weights`. Data: `weights` [rows,4] f32. Neighbours: top-4 selection before (untouched). Cost: the routing slot (hyp-2, ready), untouched. Invariants: no range assumption beyond finite float32.
+- **Producer shared-expert MLP.** Callers: `MoE.__call__` (`mobilemoe.py:232`). Callees: 3 quantized matmuls + one fused silu-mul (`tables.md:141-144`: 4 kernels/layer, 80/step). Data: `shared` [rows,768] bf16. Neighbours: inside the slot boundary as input, outside all slots as computation. Cost: knock-out 0.51 ms @1, 2.90 ms @32 (`step-breakdown.md:172,213`), untouched. Invariants: bf16 values; the slot reads them as-is.
+- **Consumer residual add.** Callers: `DecoderLayer.__call__` (`mobilemoe.py:258`). Callees: none (plain bf16 add). Data: `out` [rows,768] bf16. Neighbours: next layer's input_norm after. Cost: outside the slot. Invariants: `out` bit-compatible with the reference within G2 — the residual add amplifies nothing, but end-to-end greedy tokens (brief:185) feel any drift.
+
+### What must stay identical
+
+- **Rounding points:** the reference (`slots.py:51-52`, brief:61) casts `y` bf16→fp32 (exact), multiplies by the fp32 weights and sums the 4 terms in fp32, rounds the sum once to bf16 (the `.astype`), then adds `shared` in bf16. Today that is 5 kernels/layer: `copy_v`, broadcast `binary_g` multiply, strided-small `col_reduce_small` sum, `copy_v`, `binary_vv` add (`territory-other-kernels.md` checklist G, `tables.md:140`). The two bf16 roundings — the astype and the add — are the contract: a kernel that merges them (e.g. adding `shared` in fp32 and rounding once) changes the reference arithmetic and is acceptable only if every element still lands within 2 bf16 ULP at every row count and every input. Boundary checks will probe any such move beyond the captured inputs.
+- **Tie rule:** no selection happens in this slot, so the 4th/5th within-1e-6 tie freedom (brief:183) belongs to routing only. Combine must pair `weights[r,j]` with `y[r,j,:]` strictly positionally — no re-sorting, re-picking, or re-normalizing experts.
+- **Allowed reorderings:** the summation order of the 4 (row, j) products per output element is free within the 2-ULP tolerance, as is any thread/layout decomposition. Nothing else may move: shapes, dtypes, the fp32 accumulation, the single astype before `+ shared`, and the positional `weights[j]` ↔ `y[j]` pairing all stay.
+
+### What the grader checks, and what it can't see
+
+- **G1** compiles the Metal and runs it on the captured inputs at 1, 8 and 32 rows (brief:181, `check_candidate.py:206`).
+- **G2 combine** checks exact shape [rows,768] and bf16 dtype, and every element within 2 bf16 ULP of the reference with the ULP floored at |r| = 0.001 (`check_candidate.py:44-47,96-109`); `pass` iff all 20 layers pass (`check_candidate.py:133-138,192-197`). Inputs are captured from all 20 layers of one real decode step per row count (`slots.py:137-171`). In a `routing+combine` candidate each part is checked on its own and combine receives the captured reference weights, never the candidate's (brief:171, `check_candidate.py:96-98,181-187`). Piece timing (median of 30 × all-20-layers eval ÷ 20) must beat `mx.compile(ref_combine)` at all three row counts to stop the slot (brief:193,195, `check_candidate.py:209-226`).
+- **What it can't see:** row counts other than 1, 8 and 32 — a decode step can have any row count from 1 to 32 (brief:24); inputs other than the captured ones (other prompts, later decode steps, non-reference weights from a fused routing kernel); threadgroup-memory use near the 32 KB limit (`slots.build` enforces only the 1024-thread cap, `slots.py:275`); results that depend on thread timing; the end-to-end greedy-token check (24 tokens at 1 and 32 requests, plain MLX and vLLM) and G3 full-step timing, which the team runs after merging (brief:185-186,195). Boundary checks will probe exactly these.
+
+### The GPU limits
+
+At most 1,024 threads per threadgroup and 32 KB of threadgroup memory (brief:98); `grid` counts threads, not threadgroups (brief:175). Hardware: Apple M1 Pro, 16 cores, SIMD width 32, `bfloat` available in Metal (brief:99).
+
+## Builders
+
+### builder-3-a — direction (a): single kernel, thread-per-output grid
+
+- **attempt-1** (`muse-spark/kernels/combine/attempt-1`): one thread per
+  output element, grid rows×768, threadgroup 256; each thread weights 4 bf16
+  values in fp32, rounds once, adds shared. Predicted 24 / 24 / 25, measured
+  **17.2 / 17.0 / 18.5** µs per layer at 1/8/32 rows (compiled 22.9 / 26.2 /
+  28.0). G1 pass, G2 pass (0 bad, max ULP 0.0/2.0/1.0). Beats compiled at all
+  three row counts — stops the slot per the brief rule. Taught: the hyp-2
+  ~24 µs "floor" was routing-specific (barriers + serial scan); a barrier-free
+  streaming kernel's floor is ~17 µs (see notes.md).
+
+### builder-3-b — direction (b): single kernel, threadgroup-per-row with staged weights/shared
+
+- **attempt-2** (`muse-spark/kernels/combine/attempt-2`): one threadgroup
+  (192 threads) per row; weights + shared staged to ~3.1 KB threadgroup
+  memory with vectorized u64 loads, y streamed with vectorized u64 loads,
+  fp32 weight+sum (j = 0..3), `bfloat(acc)` + single-rounding bf16 add.
+  Predicted 21 / 19 / 20, measured **17.9 / 16.1 / 18.1** µs per layer at
+  1/8/32 rows vs compiled 20.9 / 23.0 / 27.9 (reference 24.8 / 24.0 /
+  43.3). G1 pass, G2 pass (0 bad, max ULP 0.0 / 2.0 / 1.0, worst case the
+  8-row 2-ULP touch — identical margins to attempt-1). Beats compiled at
+  all rows. Taught: staging + one barrier cost nothing measurable vs
+  direction (a) — both sit on the ~17 µs dispatch floor; first grading
+  failed G2 on a 96-vs-192 u64/expert stride bug, fixed before the
+  verdict (see notes.md). Slot already stopped at attempt-1; this is the
+  direction-(b) datapoint, attempt-1 stays the pick.
+
+## Boundary checks
+
+*checked by boundary-3, 2026-11-03T22:11Z. Verdict: both attempts **pass** —
+no defects. The 8-row 2.0-ULP touch is compiler FMA contraction, identified
+and validated below; it saturates at 2.0 ULP on realistic inputs.*
+
+### attempt-1 (`muse-spark/kernels/combine/attempt-1`) — pass
+
+- **Row counts 1–32:** grid is `rows*768` threads, threadgroup 256
+  (`spec.json:1`); `rows*768/256 = 3*rows` groups exactly for every integer
+  row count, and `row = idx/768, d = idx - row*768` (`block-0.metal:12-14`)
+  is exact for all `idx`. No row-dependent branches or constants. Max index
+  `31*3072+767+2304 = 98303 < 32*3072` (`block-0.metal:17-23`); 256 threads
+  ≤ 1024.
+- **Threadgroup memory:** none used — no unwritten reads possible, 0 B of
+  32 KB.
+- **Thread timing:** threads are fully independent (no threadgroup memory,
+  no atomics, disjoint outputs) — the result is deterministic.
+- **Input assumptions:** none. Weights are used as arbitrary f32 with no
+  range/sum/nonneg assumption (`block-0.metal:20-23`); `weights[r,j]` pairs
+  with `y[r,j,:]` strictly positionally; both bf16 rounding points are kept
+  (`bfloat(acc)` then the bf16 `+ shared`, `block-0.metal:25`).
+
+### attempt-2 (`muse-spark/kernels/combine/attempt-2`) — pass
+
+- **Row counts 1–32:** grid `rows*192`, threadgroup 192 (`spec.json:1`) is
+  exactly `rows` groups for every row count; `row = threadgroup id`
+  (`block-0.metal:14`), each thread owns outputs `tid*4..tid*4+3`. All
+  loops/bounds are row-independent constants. 192 threads ≤ 1024.
+- **Unwritten reads:** none. `wsh[0..3]` is written by `tid < 4` and
+  `shsh[0..767]` by all 192 threads (disjoint `tid*4` quads) before the
+  single barrier (`block-0.metal:20-35`); all reads (`block-0.metal:37-40,62-65`)
+  come after it. The barrier is unconditional and reached by every thread
+  (the `tid<4` branch holds only a write).
+- **Near the limit:** `4*4 + 768*4 = 3088 B`, 9.4% of 32 KB.
+- **Thread timing:** all sharing is barrier-guarded disjoint writes plus
+  read-only broadcast — deterministic.
+- **Input assumptions:** none. Weights arbitrary f32, positional pairing
+  (expert-`j` u64 block with `wj`, `block-0.metal:52-58`), both rounding
+  points kept (`block-0.metal:62-65`); `bfloat(shsh[…])` is exact because
+  `shsh` holds exact bf16 values, so the add is identical to attempt-1's.
+  u64 loads are aligned and exact: shared row base `row*1536 B`, y row base
+  `row*6144 B` (both 8-B aligned for all rows), sizes exactly 192/768 u64 —
+  no overread (`block-0.metal:27-28,47,53`). Bit-exactness of the staging
+  is corroborated by the identical G2 fingerprints (0.0/2.0/1.0) of both
+  attempts: any staging error would move the touch.
+
+### The 2.0-ULP touch (both attempts): FMA contraction, not a defect
+
+CPU emulation (pure numpy, no GPU/model; bf16 RNE validated 0/20006 vs an
+exact rational oracle) of candidate-vs-reference on all 629,760 captured
+elements:
+
+- The reference is the pure mul-then-add chain: MLX v0.32.4
+  `col_reduce_small` computes `op(new, totals) = new + totals`
+  (`reduce_col.h`), and with the (32,4,1) strided-small dispatch
+  (`reduce.cpp`, `threadgroup_y = min(8, …, 4) = 4`) each element lands on
+  its own thread, so the reference association is the linear chain —
+  bit-identical to an uncontracted candidate (IEEE add commutes).
+- The Metal compiler FP-contracts the candidate's mul+add chain into FMA:
+  the FMA-chain evaluation reproduces the grader fingerprint **exactly**,
+  (0.0, 2.0, 1.0) at 1/8/32 rows, in two contraction shapes; all 120 pure
+  mul association trees give ≤1.0 on rows8 with zero fingerprint matches —
+  ruling out sum order as the source.
+- Realistic risk: 0 bad elements in 20M triplet-resampled captured elements
+  (true y/weights/shared joint distribution) for the FMA evaluations and
+  trees alike; max exactly 2.0. Exceedance needs adversarially constructed
+  cancellation (`shared ≈ −acc` to <2%): max 8.0 there, a construction
+  absent from real data. The brief's G2 note (brief:184) budgets exactly
+  this class of difference, and the remaining gates (captured-only G2,
+  greedy-token end-to-end, G3 timing) are insensitive to it.
+
+Optional, not required: if the team wants nonzero margin at rows8, qualify
+the accumulator `precise` (inhibits FMA contraction) and re-grade; both
+attempts pass the gates as they stand.
+
+## Decision
+
+Best: `muse-spark/kernels/combine/attempt-1` (builder-3-a, thread-per-output). Why: beats compiled at all three row counts by the wider relative margin (17.2 / 17.0 / 18.5 vs 22.9 / 26.2 / 28.0: −25 / −35 / −34%, against attempt-2's −14 / −30 / −35%); simpler (no threadgroup memory, fully independent threads); builder-3-b concedes it stays the pick. Both pass G1, G2 and boundary checks. No hardening round: both kernels sit on the ~17 µs/layer dispatch floor, flat across row counts with traffic ≤1.4 µs — no speed change worth making. The 8-row 2.0-ULP touch is FMA contraction, proven max exactly 2.0 on realistic inputs with zero exceedances (only adversarial `shared ≈ −acc` cancellation exceeds it); boundary-3's optional `precise`-accumulator margin-buy is noted for a later round, not worth a re-grade now. G3 should show: a faster step at all three concurrencies. Knock-out basis predicts −0.47 / −0.30 / −0.19 ms/step; the piece timing shows −0.10 / −0.10 / −0.24 ms/step ((22.4−17.2), (22.1−17.0), (30.7−18.5) µs/layer × 20 layers); the truth is between and G3 decides.
+
+## From other agents
