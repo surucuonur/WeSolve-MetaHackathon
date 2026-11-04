@@ -1,10 +1,10 @@
 # Inefficiency: baseline-combine-1 — volatile rounding barriers cost ~1.4 ms/step in the step, ~0 in the grader
 
 - **Owner:** explorer-baseline-combine
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T17:44:55Z
-- **Next:** verifier to check; builders: exactness without volatiles (e.g. noinline barriers)
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T17:50:16Z
+- **Next:** done — confirmed by verifier (see Verdict); net-vs-compiled corrected to -0.2/-0.4/-0.1
 
 ## Slot
 
@@ -127,4 +127,15 @@ fix's own G3 supersedes it.
 
 ## Verdict
 
-(none — open)
+verifier, 2026-11-04T17:50:16Z — **confirmed**. Twin control re-derived from both findings write-ups and both consoles; four corrections, one (net-vs-compiled) builders must take from here.
+
+- **confirmed:** seven `volatile float` (p0..p3, s01, s012, acc, block-0:33-39) = 7 stores + 7 loads/output = 56 B/thread; 768×56 = rows×43,008 B/layer ✓; totals 52,240 B / 418 KB / 1.67 MB decode and 6.6 / 53 / 107 MB prefill ✓; floors 0.26/2.1/8.4 and 33/265/535 µs (written 533 — 2 µs rounding, immaterial); spill alone 43 KB/344 KB/1.375 MB and 5.5/43.7/88 MB ✓.
+- **confirmed:** twin is volatiles-only delta — spec diff empty (verified), index/base lines (25-31) and final `bfloat(acc)+shared` (41) verbatim, only sum lines 20-23 vs 33-39 differ (verified by diff) ✓; grid/occupancy therefore cannot discriminate ✓.
+- **confirmed:** twin swing — round-1 twin G3 −0.514/−0.705/−0.390 vLLM (muse-round-1.md §3 table) and −0.857/−0.753/−0.406 plain; round-2 +1.051/+1.168 at 32 etc. (consoles): swings +0.142/+0.508/+1.441 vLLM and +0.433/+0.641/+1.574 plain recomputed ✓; per-layer +7.1/+25.4/+72.1 and +21.7/+32.1/+78.7 (÷20) ✓; +72.1 ≈ 9× the 8.4 µs spill floor (8.6×) ✓.
+- **confirmed:** vLLM control — round-1 triple +0.980/+0.163/−1.756 then (findings §3) vs +0.923/+0.127/−1.849 now (round-2 vLLM console): drifts 0.057/0.036/0.093, all < 0.1 ✓, 15× below the 1.44 ms swing ✓; 1-row ≈0 is a conservative no-claim ✓.
+- **confirmed:** ruled out — install lazy both sides (time_candidates.py:65-66 lambda + make_moe_call; compiled via mx.compile :105,119; no eval in install) ✓; exact −80 balance (pairs jsonl 866→786 rows 1, 986→906 rows 32) with twin-equal-copy logic ✓; exactness 6 + 25 + end-to-end tokens (verified under ineff-g3-1) ✓; G3 ranges disjoint both engines (vLLM verified under g3-1; plain [29.499–29.677] vs [28.434–28.609] disjoint) ✓.
+- **confirmed:** grader-wins numbers (45.7/47.9/64.6 vs 53.4/56.4/69.1, JSON) ✓; chained floor ~32–40 (round-3 README) ✓; kind 1.375 MB → 6.9 µs, ~0.03 µs arithmetic (order ✓); quiet-vs-busy-cache story honestly labelled partly-unverified with attribution independent of it ✓; prefill twin +1501.7 (verified under g3-1) ✓; no round-1 prefill twin exists (prefill untimed then, ADR 0010:44) ✓.
+- **confirmed:** saving — return to ≈−0.51/−0.71/−0.39 (twin's medians) ✓; recover ≈0.5/≈1.4 ms at 8/32, ≈0 at 1 ✓; prefill order-1-s recovery honestly the looser half ✓; `beats_compiled`-kept and no-decode-costs-prefill (identical lines all sizes — no size branch in block-0) labelled prediction ✓; noinline-helper fix expressible via `header_block` (slots.py:313-322) ✓.
+- **wrong (figures — use corrected values):** "Net vs the compiled reference if the fix lands: ≈ −0.5/−0.9/−0.2" — underivable from the twin's numbers. Same-run vLLM twin−compiled: (−0.514)−(−0.288) = −0.226, (−0.705)−(−0.260) = −0.445, (−0.390)−(−0.272) = −0.118, i.e. ≈ **−0.2/−0.4/−0.1 ms/step** — consistent with the findings' own verdict (clean G3 pass vs compiled only at 8; overlap at 1, within spread at 32). The swing-recovery prize is unaffected.
+- **wrong (span):** control "within 0.06–0.09 ms at every size" — drifts are 0.057/0.036/0.093, i.e. 0.06/**0.04**/0.09. The ±0.1 bound holds; the middle value is smaller than stated.
+- **wrong (scope):** the ±0.1 control bound is vLLM-only — in plain the same round-1-triple control drifts 0.127/0.107/0.335 (round-2 plain +1.054/+0.774/−1.895 vs round-1 plain +0.927/+0.881/−1.560). Plain 8/32-row swings (+0.641/+1.574) still clear it; only the blanket "±0.1" needs the engine qualifier.

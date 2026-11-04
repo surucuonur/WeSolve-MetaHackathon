@@ -1,19 +1,19 @@
 # Exploration: round 3 — analysis
 
-**Version:** v3 · 2026-11-04T17:46:24Z · skill version 8
+**Version:** v4 · 2026-11-04T17:52:03Z · skill version 8
 
 ## Tracker
 
 | Territory | Agent | Status | Inefficiencies | Updated |
 |---|---|---|---|---|
-| `baseline-experts` | `explorer-baseline-experts` | done | `ineff-baseline-experts-1` (open), `-2` (open) | 2026-11-04 17:41Z |
+| `baseline-experts` | `explorer-baseline-experts` | done | `ineff-baseline-experts-1` (confirmed), `-2` (confirmed) | 2026-11-04 17:47Z |
 | `baseline-routing` | `explorer-baseline-routing` | done | `ineff-baseline-routing-1` (confirmed), `-2` (confirmed) | 2026-11-04 17:41Z |
-| `baseline-combine` | `explorer-baseline-combine` | done | `ineff-baseline-combine-1` (open) | 2026-11-04 17:46Z |
-| `g3` | `explorer-g3` | done | `ineff-g3-1` (open), `-2` (open), `-3` (open) | 2026-11-04 17:41Z |
-| `quantized-kernels` | `explorer-quantized-kernels` | done | `ineff-quantized-kernels-1` (open), `-2` (open) | 2026-11-04 17:42Z |
+| `baseline-combine` | `explorer-baseline-combine` | done | `ineff-baseline-combine-1` (confirmed) | 2026-11-04 17:50Z |
+| `g3` | `explorer-g3` | done | `ineff-g3-1` (confirmed), `-2` (confirmed), `-3` (confirmed) | 2026-11-04 17:47Z |
+| `quantized-kernels` | `explorer-quantized-kernels` | done | `ineff-quantized-kernels-1` (confirmed), `-2` (confirmed) | 2026-11-04 17:50Z |
 | `grader` | `explorer-grader` | done | — (notes on baseline-*, g3) | 2026-11-04 17:41Z |
 
-Verdicts so far: 2 confirmed, 0 refuted, 8 open. All 6 territory entries `done`; verifier still checking.
+Verdicts: 10 confirmed, 0 refuted, 0 superseded, 0 open. All 6 territory entries `done`.
 
 ## Starting point
 
@@ -94,8 +94,77 @@ Each territory below is opened by the line of this section that names it. Explor
 | `quantized-kernels` (reopened) | Items 1 and 8 of *What is left* — round 2 mapped `gather_qmm_rhs`'s rounding; round 3 needs its speed: tiling, occupancy and what a fast exact prefill branch (or `max_rows` hand-off) must match or skip. |
 | `grader` (reopened) | "The judgment changed for round 3 (ADR 0011)" and "the lead's ready check (ADR 0013)" — the two-phase `beats_compiled`, the `max_rows` hand-off grading, and `check_ready.py`: what each measures and what each still can't see. |
 
+*Corrections exploration made to this Starting point.* (1) Combine: the ~1 ms mechanism is found — the seven `volatile` rounding barriers, not the step around the kernel (`ineff-baseline-combine-1`); net vs the compiled reference if the fix lands is −0.2/−0.4/−0.1 ms/step (verifier correction), not the twin's raw −0.5/−0.7/−0.4. (2) Routing: the candidate−reference per-layer prefill pair is 124.8/1067.5/2203.0 µs/layer (verifier correction to `ineff-g3-3`); the Starting point's candidate−compiled multiples (2.6/5.9/8.7×) are unaffected. (3) "Prefill piece predicts prompt within ~15%" needs a 1×128 carve-out (routing misses 24% inside the ~7 ms prompt spread). (4) Routing's −0.37 ms/step engine figure is the 32×128 workload; at 32×1024 the decode win is −0.556 ms/step.
+
+## Context
+
+A decode step produces one token per request. On plain MLX with 128-token prompts the bare step takes 4.75 / 13.37 / 28.19 ms at 1 / 8 / 32 rows (Claude: `results/runs/2026-11-01-breakdown/tables.md`, via round 1); in vLLM the unchanged step round 2 re-measured takes 5.442 / 14.524 / 30.470 ms (`claude/findings/muse-round-2.md` §3). A step is 867 kernels at 1 row, 987 at 32 rows, far below both hardware limits, so it is overhead-bound throughout. The MoE block (`MoE.__call__`, `third_party/mlx-lm/mlx_lm/models/mobilemoe.py:217-232`) runs in all 20 layers of every step, in decode and in prefill chunks alike; the three slots mirror its split.
+
+Prompt processing (the prefill) is the request's other phase, and from this round it is judged. The unchanged engine processes prompts in 50.1 / 201.7 / 802.7 / 6521.3 ms at 1×128 / 8×128 / 32×128 / 32×1024 (1 / 1 / 2 / 16 chunks of ≤2,048 rows; `results/runs/2026-11-04-engine-comparison/versions.csv`, via [ineff-g3-3.md](ineff-g3-3.md)). Per 20-layer chunk forward the compiled references cost, from the grade-phases JSONs: routing 1.75 / 4.42 / 5.81 ms at 127 / 1,016 / 2,048 rows, combine 1.32 / 5.43 / 10.4 ms, experts 19.2 / 86.1 / 240 ms. The starting points cost: routing 4.54 / 26.0 / 50.3 ms, combine 1.26 / 4.53 / 5.46 ms (the only prefill win), experts 304 / 2,383 / 4,814 ms — the experts prefill branch alone exceeds the whole healthy prompt by 6× at 1×128.
+
+Round 3's starting points already fuse each slot to 1 kernel per layer (20/step per slot) and pass G2 bit-exact at all six sizes. What remains is not launch count or exactness but: prefill speed (experts' scalar branch, routing's staged path), in-step composition the grader cannot see (combine's volatiles, the three-way 8-request term), and the experts 1-row decode chain. No slot has a baseline, so every saving below is against the compiled reference.
+
+## Territory map
+
+Measurements feed code: `g3` maps Claude's round-2 end-to-end measurement into the composition gaps (combine at 32, the three together at 8, prompt excess everywhere), and `grader` maps the new two-phase contract (`beats_compiled` across both phases, the `max_rows` hand-off, the ready check). The three `baseline-<slot>` territories map the starting-point kernels now in each slot. `quantized-kernels` (reopened) owns the reference's prefill speed that any fast exact branch must match.
+
+| Territory | Receives | Passes on | Measured cost |
+|---|---|---|---|
+| `baseline-experts` | `x` [rows,768] bf16 and `inds` [rows,4] from routing; expert weights [60,…] | `y` [rows,4,768] bf16 in `inds` order to combine | Starting point 1 kernel/layer; prefill 15.8/27.7/20.1× compiled (15,220/119,154/240,681 µs/layer); decode 1-row +13.5 over compiled, wins at 8/32 |
+| `baseline-routing` | `x` from post-attention norm; `w_router` [60,768] f32, `bias` [60] f32 | `inds` to experts, `weights` to combine (order is part of G2) | Starting point 1 kernel/layer; prefill 2.6/5.9/8.7× compiled (227/1,299/2,513 µs/layer); decode wins everywhere |
+| `baseline-combine` | `y` from experts, `weights` from routing, `shared` [rows,768] from shared expert | `out` [rows,768] bf16 to residual/next layer | Starting point 1 kernel/layer; grader wins at all six sizes; in-step +1.05 ms at 32 requests from the volatile barriers |
+| `g3` | The three starting points' piece timings and G3/prompt measurements | Composition gaps and the prompt-pricing rule to implementation | Combine swing +1.50 ms/step at 32; three-way +2.13–2.86 ms/step at 8; prompt excess to +78.9 s |
+| `quantized-kernels` | Sorted `idx`, gathered `x`, expert weights via `gather_qmm_rhs` | Grouped products to swiglu, then unsort to combine | Compiled prefill 961/4,306/11,999 µs/layer; tile waste ≤440/640/610, offsets ≤13 µs/layer |
+| `grader` | References from model/switch-layers code; captured decode inputs; prefill chunks | Two-phase verdicts, hand-off grading, ready-check protocol to builders and boundary | The contract, not a cost: what counts as identical, and how each phase is priced |
+
+How they feed each other: layernorm → `baseline-routing` (`inds`/`weights`) → `baseline-experts` (`y`) → `baseline-combine` (`out`) → residual. `quantized-kernels` sits inside the experts reference at prefill sizes (which tiling runs, and at what rate). `grader` sits across all three (what counts as identical, and how time is priced). `g3` sits across the whole step and the whole request (whether per-slot prices compose, and what prompts cost).
+
+## Inefficiencies, ranked
+
+Confirmed inefficiencies inside the slots. No slot has a baseline, so every saving is against the compiled reference. The ranking rule predates two-phase judgment, so decode and prefill prizes are ranked separately: decode shares use the plain-MLX step denominators 4.75 / 13.37 / 28.19 ms at 1 / 8 / 32 rows; prefill shares use prompt time per chunk, 50.1 / 201.7 / ~401 ms at 127 / 1,016 / 2,048 rows (the 32×128 prompt of 802.7 ms is 2 chunks). Each item names what removing it does to the other phase, and whether a `max_rows` hand-off keeps that phase unchanged. Costs are Claude's counters and grader verdicts; mechanisms are the swarm's.
+
+**Decode prizes**, ranked by predicted saving as a share of the decode step (1-row / 8-row / 32-row, mean):
+
+1. **The three together gain 2.1–2.9 ms/step at 8 requests while every pair adds up (interaction)** — 0 / 21.4 / 0.7% (mean 7.4%). Cost: three-way term +2.804 (pairs, plain), +2.858 (main, plain), +2.128 (main, vLLM), +2.435 (engine, vLLM) ms/step at 8 requests; pair interactions −0.128/+0.257/+0.354; at 32 requests only +0.192. Kind: overhead-bound. Entry: [ineff-g3-2.md](ineff-g3-2.md) (upper-bound prize 2.86 ms/step plain, 2.13 vLLM; mechanism — serial-latency composition vs three-kernel dispatch interaction — still open). Other phase: prompt-side composition of the three together is unverified; no hand-off removes an interaction. Carried as a constraint — per-slot wins are not assumed to compose — and the ready check times each candidate alone and all together, so round 3 sees composition inside the round.
+2. **Combine's volatile rounding barriers cost ~1.4 ms/step in the step, ~0 in the grader** — 0 / 3.7 / 5.0% (mean 2.9%), plus the prompt twin below. Cost: twin swing +0.142/+0.508/+1.441 ms/step vLLM (+7.1/+25.4/+72.1 µs/layer) with a ±0.1 ms cross-run control; the paid +72.1 µs/layer is ~9× the spill bytes' bandwidth time. Kind: overhead-bound. Entries: [ineff-baseline-combine-1.md](ineff-baseline-combine-1.md) (mechanism) and [ineff-g3-1.md](ineff-g3-1.md) (measurement: swing +1.499 vLLM/+1.616 plain ms/step at 32, in-step penalty vs compiled +66.2 µs/layer; the two entries partition measurement vs mechanism and their prizes do not add). Other phase: the identical lines run at every size with no size branch, so removing the volatiles improves prefill together with decode (the +1,501.7 ms prompt twin) — no hand-off needed. Net vs compiled if the fix lands: −0.2/−0.4/−0.1 ms/step (verifier-corrected).
+3. **Experts 1-row decode chain +13.5 µs/layer over compiled** — 5.7 / 0 / 0% (mean 1.9%). Cost: chained 92.1 vs 78.6 µs/layer (1/30 wins, `slower`); six fused exact packings plateaued at 92–110; the gap reproduces the G3 +0.29 ms to 0.02–0.09 ms. Kind: overhead-bound. Entry: [ineff-baseline-experts-2.md](ineff-baseline-experts-2.md) (saves 0.27 ms/step at 1 row; the next lever is a reference-shaped unfused structure for small row counts, not another fused packing). Other phase: 0 at prefill sizes — a disjoint cause from the scalar branch; the fix must keep the 8/32-row wins (1.45/5.65 ms/step) and prefill G2. A `max_rows` hand-off keeps decode rows on the fixed path by construction (decode ≤ 32 rows).
+
+**Prefill prizes**, ranked by predicted saving as a share of prompt time per chunk (127 / 1,016 / 2,048 rows, mean):
+
+4. **Experts scalar prefill branch 15–28× slower than compiled** — removes the dominant prompt cost (prompt 6.63–14.50× slower, throughput −10.0% to −82.5%). Cost: 15,220/119,154/240,681 vs 961/4,306/11,999 µs/layer; constant ~29.5 µs/pair serial issue at 18.8 GB/s (9.4% of peak), 10.6–10.8× above its own byte floor. Kind: overhead-bound. Entry: [ineff-baseline-experts-1.md](ineff-baseline-experts-1.md) (saves 14,259/114,848/228,682 µs/layer = 285 ms / 2.30 s / 4.57 s per chunk; fix shapes: vectorized per-pair scalar, grouped/tiled replica, or `max_rows`). Other phase: 0 at decode — the branch is not taken below 60 rows; a prefill fix must not spend the 8/32-row wins. A `max_rows` hand-off (Claude checked 59 bit-exact) keeps decode on the fused path unchanged and banks the whole prize at `same` as compiled.
+5. **Routing prefill gap: per-row `w_router` re-read plus per-row shape cost** — 5.6 / 10.7 / 11.1% (mean 9.1%). Cost: 227/1,299/2,513 vs 87/221/290 µs/layer (2.6/5.9/8.7×); traffic excess 116.1/935.4/1,886.5 plus shape residual 24.1/142.7/336.8 µs/layer, partitioning measured−compiled exactly. Kind: bandwidth-bound at prefill sizes (time scales with bytes), overhead-bound at decode. Entries: [ineff-baseline-routing-1.md](ineff-baseline-routing-1.md) (traffic: saves 116/935/1,887 µs/layer = 2.32/18.7/37.7 ms per chunk; round-1 tiled sharing was slower everywhere, so the design needs proof) and [ineff-baseline-routing-2.md](ineff-baseline-routing-2.md) (shape: 24 barriers, 28 KB cap, 23% single-partition duty; saves 24/143/337 µs/layer = 0.48/2.85/6.74 ms per chunk); the two savings do not add beyond the gap, and a GEMM-shaped kernel sharing weights across rows removes both together. Other phase: decode already wins everywhere (15.3/22.2/23.9 µs/layer), so prefill work only deepens or keeps the win — provided it adds no fixed cost. A `max_rows` hand-off keeps decode unchanged and banks the prize at `same`.
+6. **Combine barriers' prompt twin: +1,501.7 ms on the 32×128 all-three prompt** — the same seven volatiles at prefill thread counts (up to 88 MB/layer spill bytes at 2,048 rows). Entries: [ineff-g3-1.md](ineff-g3-1.md) (measurement: +37.5 µs/layer/chunk where the prefill piece says −573.2) and [ineff-baseline-combine-1.md](ineff-baseline-combine-1.md) (mechanism; predicts recovery of order 1 s, the looser half — no round-1 prefill twin exists to calibrate against). Banks with item 2's fix, not separately.
+7. **`gather_qmm_rhs` tile waste, repriced: up to ~440/640/610 µs per prefill layer** — 17.6 / 6.3 / 3.0% (mean 9.0%). Cost: padded fractions 47.1/15.3/5.2% of issued row-work plus, new, the all-partial safe path at 127 rows; upper edge 440/635/608, lower edge 154/251/152 µs/layer; empty tiles ≤3/≤2/≤6. Kind: overhead-bound. Entry: [ineff-quantized-kernels-1.md](ineff-quantized-kernels-1.md) (saves up to 8.8/12.7/12.2 ms per chunk; taken ONLY by a fast exact prefill branch matching MLX's grouped rate — a `max_rows` hand-off does NOT take it). Other phase: 0 at decode (kernel never runs there). Caveat: a second run timed compiled 2,048-row prefill 39% lower, which would scale the 2,048-row bound to ~370 µs.
+8. **Redundant `gather_mm_offsets`, repriced: ≤13 µs per prefill layer** — ≤0.5% at each prefill size. Cost: 40 bit-identical recomputations per 20-layer chunk forward, ≤0.26 ms per chunk. Kind: overhead-bound. Entry: [ineff-quantized-kernels-2.md](ineff-quantized-kernels-2.md) (a fused kernel avoids it for free; `max_rows` does not take it; not worth a fix on its own). Other phase: 0 at decode.
+
+**The composition rule** (not a separate prize — its prize is items 4–6 combined, counted once): [ineff-g3-3.md](ineff-g3-3.md) (confirmed) shows the prefill piece timing composes additively to prompt time — chunks × 20 × (candidate − reference) predicts the measured prompt excess within ~15% where measurable (with the 1×128 carve-out) — while decode-only piece wins overstate whole requests. Builders predict prompt effects on the prefill piece basis; the ready check measures whole requests.
+
+## Recommendations
+
+Confirmed inefficiencies outside the slots, for surucuonur's team. No hypothesis targets them. Round 2's four stand as written in `muse-spark/round-2/summary.md` and round 2's exploration README *Recommendations*; Claude's measurement did not test them:
+
+- **Attention re-reads K/V per query head** (round 1 `ineff-runs-4`, confirmed): up to ~0.1 ms at 1 row, ~2 ms at 32 rows.
+- **Split-K partial traffic from 14 rows** (round 1 `ineff-findings-3`, confirmed): rough upper bound ≈2.4 ms at 32 rows, unmeasured; testing needs a patched MLX.
+- **60 q/k/v `[0]` gathers + 60 contiguous copies per step** (round 1 `ineff-vllm-metal-3`, confirmed): measured −0.21 ms at 8 rows; ~0.3 ms estimate at 1 row, 0.24 ms knock-out at 32 rows.
+- **~2 ms engine CPU per 1-row step while CPU-bound** (round 1 `ineff-vllm-metal-4`, confirmed): small Python-side fixes save ≈0.5 ms at 1 row; 0 at 8/32 rows.
+
+Round 2's two prefill recommendations (tile waste, redundant offsets) are no longer recommendations: under two-phase judgment they are in-slot prompt-time prizes, repriced above as items 7 and 8. This round raises no new outside-slot items.
+
+## Refuted claims
+
+- `ineff-runs-3` (round 1, refuted): the micro sorted/unsorted gaps measure per-pair vs grouped kernel choice on identically ordered pairs, not pair order — sorting serving's pairs at 8 rows cannot yield 1.3 ms, and the 32-row gap was never collected.
+- Round 1's implicit timing claim — that the independent piece timing ranks attempts as the model does — is refuted by the chained measurement. Round 3 ranks by the chained two-phase timing only.
+- Round 2 exploration's claim that scalar sums cannot reproduce MMA rounding (round 2 `ineff-baseline-routing-1` as written): refuted by building — routing attempts 2–4 and experts attempt-1's scalar paths are bit-identical at all six sizes. Scalar first.
+
+This round refuted nothing: the verifier confirmed all 10 inefficiencies.
+
+## Files read
+
+Each territory entry lists what it read and what each file gave: [territory-baseline-experts.md](territory-baseline-experts.md), [territory-baseline-routing.md](territory-baseline-routing.md), [territory-baseline-combine.md](territory-baseline-combine.md), [territory-g3.md](territory-g3.md), [territory-quantized-kernels.md](territory-quantized-kernels.md), [territory-grader.md](territory-grader.md).
+
 ## Versions
 
+- v4 · 2026-11-04T17:52:03Z · final analysis: context, territory map, 8 ranked inefficiencies in two phases, composition rule, recommendations, refuted claims · changed: ineff-baseline-experts-1 v2, ineff-baseline-experts-2 v2, ineff-baseline-combine-1 v2, ineff-g3-1 v2, ineff-g3-2 v2, ineff-g3-3 v2, ineff-quantized-kernels-1 v2, ineff-quantized-kernels-2 v2
 - v3 · 2026-11-04T17:46:24Z · checkpoint: all 6 territories done; routing-1/-2 confirmed (lead's premature-confirm flag was a mid-edit read, verdicts stand); combine + quantized-kernels posted · changed: territory-baseline-combine v2, territory-quantized-kernels v2, ineff-baseline-routing-1 v2, ineff-baseline-routing-2 v2, ineff-baseline-combine-1 v1, ineff-quantized-kernels-1 v1, ineff-quantized-kernels-2 v1
 - v2 · 2026-11-04T17:41:39Z · checkpoint: baseline-experts, baseline-routing, g3, grader done; 7 inefficiencies posted; routing premature confirms flagged to verifier · changed: territory-baseline-experts v2, territory-baseline-routing v2, territory-g3 v2, territory-grader v2, ineff-baseline-experts-1 v1, ineff-baseline-experts-2 v1, ineff-baseline-routing-1 v2, ineff-baseline-routing-2 v2, ineff-g3-1 v1, ineff-g3-2 v1, ineff-g3-3 v1
 - v1 · 2026-11-04T17:36:02Z · opened round 3: starting point (no baselines, 3 starting points, 8 ranked leftovers, refuted claims, 6 territories) · changed: none

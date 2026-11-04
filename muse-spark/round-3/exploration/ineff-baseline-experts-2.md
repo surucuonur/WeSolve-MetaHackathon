@@ -1,10 +1,10 @@
 # Inefficiency: 1-row decode chain still 13.5 µs/layer over compiled — serial K-chain behind 4 groups at the register ceiling
 
 - **Owner:** explorer-baseline-experts
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T17:39:32Z
-- **Next:** verifier to confirm gap arithmetic and the plateau citations
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T17:46:33Z
+- **Next:** done — confirmed by verifier (see Verdict)
 
 ## Slot
 
@@ -164,7 +164,16 @@ still `qvm` below 60, round-2 territory §E, frozen).
 
 ## Verdict
 
-(verifier to write)
+verifier, 2026-11-04T17:46:33Z — **confirmed**. Every claim the cost and the saving rest on holds; one correction (a range endpoint) changes nothing.
+
+- **confirmed:** 1-row chain — 4 threadgroups × 512 threads, one per pair (block-0:15-16); `tg_x` + barrier (:29-32); gate/up interleaved 24 strided steps over K=768 on 12 of 16 simdgroups (:51-58, helper `k=lane;k<K;k+=32`); barrier (:73); silu-mul 384 of 512 (:77-85); barrier (:86); down interleaved 12 merged steps over K=384 on 12 of 16 (:95-102); 4 of 16 simdgroups idle in every phase ✓.
+- **confirmed:** per-step shape — each K step 2×(2 scale/bias + 4 weight words) + 64 dependent accumulates (both pair helpers) ✓; 4 `simd_sum` trees per thread (gate, up, down×2; block-1:121-127,188-194) ✓; 36 heavy K steps = 24 + 12 ✓.
+- **confirmed:** plateau 104.3/103.6/109.5/94.0/92.1/93.8 for attempts 1/2/3/4/5/7 own runs (round-2 ineff-baseline-experts-2:120-251, all six builder notes in range) ✓; widening 132.9→104.3 ≈ 29 µs ✓; interleave 104.3→94.0 ≈ 10 cross-run ✓; attempt-6 G1 fail on the third 32-float array at 512 threads (pipeline max 448), exactly two fit (attempt-7 notes:10-15,227-240 + block-0:7-13 header) ✓.
+- **confirmed:** down-merge latency-neutral at 1 row — 93.8 vs 92.1 = +1.85% → +1.8% cross-run, mechanism in notes:237-255 ✓; group counts 4 / 48+96 / 12+24 plateaued 103.6–109.5 (attempt-3 builder note) ✓; structural block ~20 µs (attempt-1 notes:46) ✓; parallel stores 94.0→92.1 ≈ 2 µs ✓.
+- **confirmed:** compiled reference 7 short kernels/layer at 1 row (3×(Arange+GatherQMM) + silu-mul, territory §E) with 24/24/48 threadgroups per product (`(M,(N+63)/64,B)` 64-thread groups, §F: gate/up (1,6,B), down (1,12,B)) ✓, totalling 78.6 incl. link (JSON) ✓.
+- **confirmed:** cost — 1 row 92.1 vs 78.6 (+13.5, +17.2%; 1/30 wins, slower) and vs 84.0 (+8.1) (JSON) ✓; own run 93.8 vs 74.8 (+19.0, notes:203-209) ✓; +13.5×20 = 270 µs = 0.27 ms, own-run 0.38, G3 +0.29 (round-3 README) ✓; bytes 4×552,960 = 2.21 MB → floor 11.1, effective 24.0 vs 28.1 GB/s ✓; 8 rows ahead 72.7 (−30.9%, 17.69 MB → 108.7 GB/s) ✓; 32 rows ahead 282.5 (−35.4%, 70.78 MB → 137.3 GB/s) ✓; prefill 0, disjoint from entry 1 ✓; decomposition honestly labelled prediction (20+60+11 ≈ 92.1) ✓.
+- **confirmed:** saving — 0.27 ms/step at 1 row; keep-outs 1.45/5.65 ms/step at 8/32 rows ✓; prefill headroom 14.3/114.8/228.7 ms/layer matches entry 1 ✓; reference-shaped-unfused next lever (round-2 summary:9) ✓; rows 33–59 sorted-from-16 yet `qvm`-below-60 (§E) ✓; chained-median bar (check_candidate.py:192-221) ✓.
+- **wrong (range endpoint):** "reproduces the step to 0.02–0.11 ms" — vs G3's 0.29 the errors are 0.02 (regrade 0.27) and 0.09 (own-run 0.38); 0.11 is own-run minus regrade-basis (0.38−0.27), not vs-G3. Correct range: 0.02–0.09.
 
 ## From other agents
 

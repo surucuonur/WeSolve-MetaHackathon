@@ -1,10 +1,10 @@
 # Inefficiency: combine attempt-1 costs ~1.1 ms per decode step at 32 requests where the piece timing says faster
 
 - **Owner:** explorer-g3
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T17:41:19Z
-- **Next:** verifier to check; mechanism belongs to baseline-combine
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T17:46:33Z
+- **Next:** done — confirmed by verifier (see Verdict); mechanism belongs to baseline-combine
 
 ## Slot
 
@@ -47,7 +47,16 @@ If the in-step penalty were removed while keeping the kernel's chained work, the
 
 ## Verdict
 
-(none — open)
+verifier, 2026-11-04T17:46:33Z — **confirmed**. Every number re-derived from the raw run files; one units error (immaterial — Cost carries the right figure).
+
+- **confirmed:** +1.051 ms (vLLM) / +1.168 ms (plain) at 32 requests, muse-combine medians in the main consoles' summary blocks ✓; +52.6/+58.4 µs/layer (÷20) ✓; piece 64.6 vs 87.0 reference / 69.1 compiled (`grade-phases-combine-attempt-1.json`, G2 differ 0 all six) ✓; harness median-of-3, 128-token prompts, 256 tokens (reps in consoles; time_candidates.py:148,217-218) ✓.
+- **confirmed:** swing table — piece-implied −0.142/−0.466/−0.448 from the JSON ✓; G3 rows match both consoles' medians ✓; swings −0.230/+0.269/+1.499 and −0.282/+0.354/+1.616 recomputed ✓; per-layer −11.5/+13.5/+75.0 and −14.1/+17.7/+80.8 ✓.
+- **confirmed:** vs-compiled penalty +6.1/+11.2/+66.2 µs/layer (+0.122/+0.224/+1.324 ms/step) — in-step muse−compiled −0.032/+0.054/+1.234 from the vLLM medians (compiled-combine −0.340/−0.251/−0.183) minus piece −0.154/−0.170/−0.090 ✓.
+- **confirmed:** reproduction — pairs combine-a1 at 32: +1.051, identical to main vLLM to 3 decimals (pairs console) ✓; engine submitted-minus-routing at 32×128: +0.537−(−0.374) = +0.911 ≈ +0.91 (versions.csv) ✓; prefill twin +1,501.7 ms (11533.4 vs 10031.7, versions.csv; ranges [11511.6–11566.0] vs [10026.1–10068.7] from muse-vllm.jsonl, no overlap) ✓; +37.5 µs/layer/chunk (÷40) vs piece −573.2 (273.0−846.2, JSON) ✓.
+- **confirmed:** traffic 9,232 B/row (combine notes:73) → 295.4 KB at 32 rows ≈ 1.5 µs floor; 52.6 paid ≈ 35× ✓; one kernel replaces five (−80 over 20 layers: pairs jsonl 866→786 at rows 1; reductions additive −200−80−120 = −400 = 866−466) ✓.
+- **confirmed:** ruled out — chained work faster (JSON, 28–30/30 wins) ✓; exact at 6 + 25 sizes (JSON + sizes-check.json: 25 each, all pass, fail lists empty) and end-to-end tokens (findings §3: every round-2 variant identical in both engines) ✓; no range overlap (vLLM muse-combine [31.433–31.547] vs base [30.346–30.513]) ✓.
+- **confirmed:** saving — swing prizes 1.50/1.62 and 0.27/0.35 ms/step ✓; prefill already beats compiled at all three sizes (62.8/226.5/273.0 vs 66.1/271.6/520.4, JSON), nothing further on the grader basis ✓; upper-bound framing with G2 intact ✓.
+- **wrong (units):** "the prefill piece says combine saves 11.5 ms/layer/chunk at 2048 rows" — 11.5 ms is per chunk over 20 layers (573.2 µs/layer × 20); per layer it is 573.2 µs/layer/chunk. Cost uses −573.2 correctly, so nothing downstream changes.
 
 ## From other agents
 

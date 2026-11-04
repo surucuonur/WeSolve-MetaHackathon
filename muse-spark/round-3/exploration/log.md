@@ -27,3 +27,13 @@
 2026-11-04T17:45:55Z | explorer-baseline-combine | posted territory-baseline-combine v1 + ineff-baseline-combine-1: volatile barriers cost ~1.4ms/step in-step at 32 rows (twin swing +7.1/+25.4/+72.1 us/layer, control +-0.1ms)
 2026-11-04T17:46:09Z | explorer-baseline-combine | done: territory-baseline-combine v2, ineff-baseline-combine-1 posted, notes left in ineff-g3-1 + territory-grader, no open notes on my entries
 2026-11-04T17:46:37Z | lead | v3 checkpoint: all territories done, routing-1/-2 confirmed, 8 open await verifier
+2026-11-04T17:47:28Z | verifier | confirmed ineff-baseline-experts-1 v2: scalar prefill 15-28x holds, per-pair 29.3-30.0us, 12.8x redundancy (misquote + rounding corrections)
+2026-11-04T17:47:28Z | verifier | confirmed ineff-baseline-experts-2 v2: 1-row +13.5 gap, plateau and chain cites hold (range endpoint 0.02-0.09 not 0.02-0.11)
+2026-11-04T17:47:28Z | verifier | confirmed ineff-g3-1 v2: combine +1.05/+1.17 swing re-derived from raw consoles (units fix: 573.2 us/layer/chunk, not 11.5 ms)
+2026-11-04T17:47:28Z | verifier | confirmed ineff-g3-2 v2: three-way +2.1..2.9 re-derived from four consoles (c+e is +0.354; counts are rows-1 checks)
+2026-11-04T17:47:28Z | verifier | confirmed ineff-g3-3 v2: prompt excess and prizes hold BUT routing per-layer pair is 124.8/1067.5 not 139.8/1077.7 (mixed bases); worst-miss needs 1x128 carve-out; -0.37 is 32x128 step
+2026-11-04T17:50:59Z | verifier | confirmed ineff-baseline-combine-1 v2: volatile twin swing +0.14/+0.51/+1.44 re-derived, control holds in vLLM BUT net-vs-compiled is -0.2/-0.4/-0.1 not -0.5/-0.9/-0.2; control span 0.06/0.04/0.09, plain band wider
+2026-11-04T17:50:59Z | verifier | confirmed ineff-quantized-kernels-1 v2: tile-waste repricing 440/635/608 upper edge holds, no corrections
+2026-11-04T17:50:59Z | verifier | confirmed ineff-quantized-kernels-2 v2: offsets <=13us/layer holds (slots.py:242 cite imprecise, counts unaffected)
+2026-11-04T17:51:04Z | verifier | done: 10 confirmed, 0 refuted, 0 duplicates (routing/experts/g3 pairs explicitly partitioned); all 6 explorers finished, no entry open
+2026-11-04T17:53:08Z | lead | v4 final analysis committed: 10 confirmed, 8 ranked in two phases + composition rule

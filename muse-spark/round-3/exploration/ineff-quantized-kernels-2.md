@@ -1,10 +1,10 @@
 # Inefficiency: redundant `gather_mm_offsets` repriced — ≤13 µs per prefill layer, now bankable (repriced)
 
 - **Owner:** explorer-quantized-kernels
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T17:41:57Z
-- **Next:** verifier to confirm repricing arithmetic
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T17:50:16Z
+- **Next:** done — confirmed by verifier (see Verdict)
 
 ## Slot
 
@@ -69,7 +69,12 @@ recorded so the reference's prefill overhead stays fully accounted.
 
 ## Verdict
 
-(verifier to write)
+verifier, 2026-11-04T17:50:16Z — **confirmed**. Counts and bounds re-derived; mechanism inherited from round-2's confirmed verdict.
+
+- **confirmed:** round-2 `ineff-quantized-kernels-2` is `confirmed` and covers the mechanism — `offsets = gather_mm_offsets(indices, E, M=B, ...)` recomputed per product, int32[60] = 240 B, 60 threads one threadgroup, 60 launches per 20-layer forward of which 40 bit-identical recomputations, ≤6.6 µs/launch (140 kernels / 0.92 ms = 6.57), ≤0.26 ms per chunk forward (round-2 entry lines 16-58) ✓. MLX line cites (quantized.cpp:1795, matmul.cpp:2247-2265) accepted via that verdict's fetched sources.
+- **confirmed:** decode 0 (qvm path builds no offsets, round-2 territory §A) ✓; 3×20 = 60 launches, 40 redundant (20 distinct) ✓; bytes <0.2 µs/call (worst case 8,192×4 B reads + 240 B write ≈ 0.17 µs at 2048 rows) ✓; 40×6.6 = 264 µs = 0.26 ms/chunk ✓; 2×6.6 = 13.2 → ≤13 µs/layer at each prefill size ✓.
+- **confirmed:** saving ≤13/layer (≤0.26/chunk) in prompt time, bankable under two-phase judgment (ADR 0011 — prompt time now judged, unlike round 2's time-to-first-token ranking) ✓; costs a fused kernel nothing to avoid (own grouping; regrouping free per territory §S1) ✓; `max_rows` does not take it (reference path still recomputes) ✓; honestly not worth a fix alone ✓.
+- **wrong (cite precision):** "one chunk at 127/1,016/2,048 rows; chunking in bench/grader/slots.py:242" — line 242 is the capture-chunk line (`chunk = tokens or min(...)`), not the one-timing-per-size. The one-measurement-per-size is evidenced by the grade-phases JSON structure itself (one `prefill rows N` timing row per size). Counts unaffected.
 
 ## From other agents
 

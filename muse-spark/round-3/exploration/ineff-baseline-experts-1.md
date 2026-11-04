@@ -1,10 +1,10 @@
 # Inefficiency: scalar prefill branch runs 15–28× slower than compiled — serial chain, scalar redundant loads, no cross-row reuse
 
 - **Owner:** explorer-baseline-experts
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T17:39:32Z
-- **Next:** verifier to confirm issue-amplification arithmetic and per-pair linearity
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T17:46:33Z
+- **Next:** done — confirmed by verifier (see Verdict)
 
 ## Slot
 
@@ -161,7 +161,17 @@ fast branch takes for free is priced in round-2
 
 ## Verdict
 
-(verifier to write)
+verifier, 2026-11-04T17:46:33Z — **confirmed**. Every claim the cost and the saving rest on holds; two corrections (a misquote and trivial rounding) change nothing.
+
+- **confirmed:** prefill branch at `rows >= 60` (block-0:22), gate/up (block-0:59-72) and down (block-0:103-112) call `qmm_accum` (block-1:206-230): one thread per output, single float `acc`, K = 768/768/384, contiguous `BK=32` order, no unrolling.
+- **confirmed:** 884,736 iterations/pair (384×768 ×2 + 768×384) ✓; serial depth 768+768+768 = 2,304 for simds 0–7 (down 2 blocks only there, block-0:105-111) ✓; gate/up sequential phases with 384 of 512 threads each (block-0:61,67 `simd < 12`) ✓.
+- **confirmed:** per-iteration loads 1 W + 1 S + 1 B device + 1 `xv` threadgroup (block-1:223-226); 8 lanes share each W word (`:217`), 32 share S/B/`xv[k]`; issued W 884,736×4 B = 3.54 MB vs 442,368 unique (8×), S+B 884,736×2×2 B = 3.54 MB vs 110,592 unique (32×); total 7.08 MB vs 552,960 B unique (12.8×) ✓.
+- **confirmed:** no cross-row reuse — per-pair grid (block-0:16), 508/4,064/8,192 pairs (rows×4) ✓, 552,960 B/pair ✓, unique-pair traffic 280.9/2,247.2/4,530.5 MB ✓; `rhs` loads each appearing expert's tile once per `BM=16` row tile into `Ws` shared across ≤16 rows (round-2 territory-quantized-kernels §C–§E); 8×8 frags stepped 8-wide over BK (§E) = 512 MACs vs 32 scalar = 16× issue gap ✓ (issue-rate comparison, not measured).
+- **confirmed:** cost table — all six reference/compiled/candidate triples match `grade-phases-experts-attempt-7.json`; ratios 15.84/27.67/20.06 → 15.8/27.7/20.1 ✓; per-pair 29.96/29.32/29.38 ✓; compiled per-pair-equiv 1.89/1.06/1.46 ✓; effective 18.5/18.9/18.8 GB/s ≈ 9.4% of 200 (GLOSSARY.md:10-11) ✓; 10.6–10.8× above own byte floor ✓; G2 `differ 0` at all three prefill sizes (JSON) ✓.
+- **confirmed:** end-to-end prompt 6.63/14.50/12.50/13.09× and throughput −10.0/−37.5/−48.0/−82.5% (round-3 README; routing-only 1.07–1.10× prompt corroborates the attribution) ✓; decode cost 0 below 60 rows (code line 22 + §E dispatch ⇔ rows ≥ 60; rows 33–59 take the decode path) ✓; reference prefill kernel count honestly recorded unverified.
+- **confirmed:** saving — 8/32-row leads 72.7/282.5 ✓; 14,259.2/114,848.4/228,682.2 µs/layer ✓; ×20 = 285.2/2,296.9/4,573.6 ms ✓; `max_rows`-59 hand-off bit-exact (`results/runs/2026-11-04-handoff-check/grade-experts-a7-max59.json`, corroborated by round-3 README); round-2 `ineff-quantized-kernels-1/2` both `confirmed` ✓.
+- **wrong (quote):** round-2 `ineff-baseline-experts-1` (itself `confirmed`) does not state "a slow-but-exact prefill branch is free" — it states "Prefill speed is not gated (G3 times decode only)". Substance holds; also its ADR line is :44 in the current file, not :42 (stale line inherited from round-2's own cites).
+- **confirmed (rounding):** byte floors exact 1,404.5/11,236.1/22,652.3 µs vs written 1,404.6/11,237/22,650 — immaterial.
 
 ## From other agents
 
