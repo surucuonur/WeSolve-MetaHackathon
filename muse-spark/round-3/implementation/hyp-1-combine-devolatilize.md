@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 3
-- **Updated:** 2026-11-04T17:58:28Z
-- **Next:** boundary-1 checks attempt-1 (G2 pass); builder-1-b still building attempt-2
+- **Version:** 4
+- **Updated:** 2026-11-04T18:03:53Z
+- **Next:** attempt-1 boundary pass; builder-1-b still building attempt-2
 
 ## Inefficiency
 
@@ -54,7 +54,16 @@ Helpers `combine_mul` / `combine_add` (`__attribute__((noinline))`, one op each,
 
 ## Boundary checks
 
-(none yet)
+### attempt-1 (`muse-spark/round-3/kernels/combine/attempt-1`) — pass
+
+*checked by boundary-1, 2026-11-04T17:59:29Z, by hand against the Boundary above (what the grader can't see). `check_sizes.py` not run: it loads the model (`bench/grader/check_sizes.py:39`), and only the grader and the ready check are GPU jobs (tracking.md Rules); the reasoning below is conclusive without it.*
+
+- **Other row counts (decode 1–32, prefill chunks any size, either side of 60): pass.** Straight-line thread-per-output kernel, no row-count-dependent branch anywhere (`block-0.metal:26-42`). Grid is `rows*768` threads (`spec.json`), threadgroup 256; 768 = 3·256, so the grid is an exact multiple of 256 at *every* row count — no partial threadgroup, `thread_position_in_grid.x < rows*768` always, hence `row < rows`, `d < 768` and every index in bounds with no bounds check needed. `uint` products (`row*3072+d`, max ≈6.3M at 2,048 rows) cannot overflow at any realistic size. Same compiled binary at all sizes (`"template": {}`, no specialization), so the six G2 passes (differ 0) carry the rounding argument to untested sizes; combine has no 60-row kernel switch (Boundary), so nothing changes across 60.
+- **Uninitialized threadgroup reads: pass.** No threadgroup/shared memory declared or touched; every local (`p0..p3`, `s01`, `s012`, `acc`) is assigned at declaration (`block-0.metal:34-40`). Nothing to leave unwritten.
+- **Threadgroup memory near the limit: pass.** 0 B used vs 32 KB; 256 threads/threadgroup vs 1,024 (`spec.json`). Same footprint as the starting point at all six sizes and beyond.
+- **Thread-timing dependence: pass.** `idx → sbase` is a bijection over `rows*768` (`block-0.metal:26-32,42`), each output written by exactly one thread, `atomic_outputs: false`, no cross-thread communication. Result is deterministic by construction.
+- **Captured-input assumptions: pass.** No branches, no data-dependent control flow; positional `weights[r,j] ↔ y[r,j,:]` pairing kept verbatim (`block-0.metal:34-37`); no non-negativity, sum, sorting or sparsity assumption. Mul/add are total on finite float32, and the fold order plus both bfloat16 roundings are byte-identical to the starting point, including the final line `bfloat(acc) + shared[sbase]` (`block-0.metal:42`). The `noinline` barrier mechanism (`block-1.metal:12-17`) is a compile-time property of the one binary G2 already validated, not a per-size or per-input property.
+- **`max_rows`: pass (absent).** No `max_rows` in `spec.json`: every decode step ≤32 rows and every prefill chunk run the kernels, identical lines at all sizes, so there is no hand-off band to verify and no 60-row-side question (combine has no switch underneath).
 
 ## Decision
 

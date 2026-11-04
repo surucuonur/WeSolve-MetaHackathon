@@ -1,6 +1,6 @@
 # Implementation: round 3
 
-**Version:** v3 · 2026-11-04T17:58:28Z · skill version 8
+**Version:** v4 · 2026-11-04T18:03:53Z · skill version 8
 
 ## Tracker
 
@@ -13,6 +13,7 @@ Ranked decode item 1 (`ineff-g3-2`, the three-way interaction at 8 requests) is 
 
 ## Versions
 
+- v4 · 2026-11-04T18:03:53Z · boundary checks pass for combine attempt-1 and experts attempt-1 · changed: hyp-1-combine-devolatilize v4, hyp-2-experts-prefill v4
 - v3 · 2026-11-04T17:58:28Z · combine attempt-1 graded (G2 pass, beats compiled both phases), experts attempt-1 graded (G2 pass, prefill same x3, 1-row misses); boundary checks started · changed: hyp-1-combine-devolatilize v3, hyp-2-experts-prefill v3
 - v2 · 2026-11-04T17:55:21Z · boundaries drawn, 5 builders started (2 combine, 3 experts) · changed: hyp-1-combine-devolatilize v2, hyp-2-experts-prefill v2
 - v1 · 2026-11-04T17:53:22Z · opened implementation, hyp-1 (combine) and hyp-2 (experts prefill) in boundary · changed: none

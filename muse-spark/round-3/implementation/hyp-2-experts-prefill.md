@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 3
-- **Updated:** 2026-11-04T17:58:28Z
-- **Next:** boundary-2 checks attempt-1 (G2 pass); builder-2-b (attempt-2) and builder-2-c still building
+- **Version:** 4
+- **Updated:** 2026-11-04T18:03:53Z
+- **Next:** attempt-1 boundary pass; builder-2-b (attempt-2) and builder-2-c (attempt-3) still building
 
 ## Inefficiency
 
@@ -166,7 +166,53 @@ candidate; MLX switches at 60).
 
 ## Boundary checks
 
-(none yet)
+### attempt-1 — pass (boundary-2, 2026-11-04T17:59:14Z)
+
+G1+G2 pass (differ 0 all six sizes). Kernels verified byte-identical to
+the starting point (`diff` of `block-0.metal` and `block-1.metal`
+against `muse-spark/round-2/kernels/experts/attempt-7/`); `spec.json`
+differs by one key only, `"max_rows": 59` (int ≥ 1, not a bool —
+accepted by `bench/grader/slots.py:329`). Dispatch sends rows >
+`max_rows` to the compiled reference (`slots.py:335`), so rows ≤ 59
+run the kernels.
+
+- **Every decode step stays on the fused path.** A decode step has
+  1–32 rows; 32 ≤ 59, so all of them run the kernels. Pass.
+- **Hand-off sits below MLX's switch at 60.** Rows ≥ 60 hand off to
+  the compiled reference; the kernels only ever see rows ≤ 59, where
+  the reference uses `gather_qvm` — and the kernels' own dispatch
+  (`block-0.metal:22`, `x_shape[0] >= 60`) takes the `qvm` path there
+  too, so both sides agree at every kernel-visible count including
+  the ungraded 33–59. The scalar `qmm_accum` prefill branch is dead
+  code wherever the kernels run, kept as G2-exact fallback. Pass.
+- **Row counts G2 doesn't test.** Kernel work is per-pair
+  (one 512-thread group per pair, grid `rows*2048` threads total):
+  no cross-row interaction, so the 1/8/32-row G2 verdict extends to
+  every decode count up to 32 by construction; 33–59 take the same
+  `qvm` path graded at 1/8/32. Prefill chunks of any size ≥ 60 run
+  the compiled reference exactly. Speed at 33–59 rows stays
+  unmeasured (grader times only 1/8/32 there) — noted, not a defect.
+- **Unwritten threadgroup reads: none.** `tg_x[768]` is fully covered
+  by the strided loop (`block-0.metal:29-31`); `tg_gate/tg_up[384]`
+  are fully covered in both branches (12 simdgroups × 32 lanes write
+  distinct `b*32+lane`, lines 51-58 / 61-71); `tg_h[384]` is fully
+  covered by the strided silu loop (line 77). Every read follows its
+  phase's barrier (lines 32, 73, 86).
+- **Threadgroup memory far from the limit.** 3,840 B
+  (`tg_x[768] + tg_gate/up/h[384]` bfloat16, `block-0.metal:24-27`)
+  vs the 32 KB ceiling; 512 threads/group vs the 1,024 count and the
+  inherited pipeline ceiling (two 32-float thread arrays `p`, `q`
+  unchanged — lines 42-43 — so the attempt-6 G1 failure mode does
+  not recur). Pass.
+- **No thread-timing dependence.** All cross-thread sharing passes
+  through `threadgroup_barrier`s; `y` slices are disjoint per pair
+  and per (simdgroup, lane); no atomics; `simd_sum` reductions are
+  fixed trees. The shared kernel-scope `q[32]` phases are separated
+  by barriers with re-zeroing on entry (round-2 checked).
+- **No new input assumptions.** The attempt adds no input-dependent
+  logic beyond `rows > max_rows` on `x_shape[0]` — the same value the
+  grader reads (`slots.py:334`) — and `inds` flows through untouched
+  (`y[r,j]` stays positional in `inds` order).
 
 ## Decision
 

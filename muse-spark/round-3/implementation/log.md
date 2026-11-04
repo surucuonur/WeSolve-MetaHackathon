@@ -11,3 +11,7 @@
 2026-11-04T17:58:15Z | builder-1-a | graded attempt-1: G1 pass, G2 pass all six sizes (differ 0), beats_compiled true (both phases faster)
 2026-11-04T17:58:15Z | builder-1-a | done: attempt-1 recorded in notes.md, hyp-1 section, ineff-baseline-combine-1 note (grader sees prefill part of prize)
 2026-11-04T17:58:41Z | lead | v3: combine-1 + experts-1 graded, both G2 pass; boundary checks started
+2026-11-04T17:59:26Z | boundary-2 | checked experts attempt-1 vs hyp-2 boundary: pass (max_rows 59 in 32-59 window, decode on fused path, hand-off below MLX switch at 60; 3,840 B tg, no unwritten reads, no timing dependence)
+2026-11-04T17:59:39Z | boundary-1 | boundary-checked combine attempt-1: pass (all six can't-see probes; check_sizes not run, model-loading GPU job)
+2026-11-04T18:00:47Z | builder-2-c | claimed attempt-3 for hyp-2 direction (c) grouped/tiled prefill replica on round-2 attempt-7 (attempt-2 taken by builder-2-b)
+2026-11-04T18:04:05Z | lead | v4: both attempt-1 boundary checks pass
