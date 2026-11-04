@@ -49,6 +49,9 @@ from pathlib import Path
 os.environ.setdefault("VLLM_ENABLE_V1_MULTIPROCESSING", "0")
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("VLLM_LOGGING_LEVEL", "WARNING")
+# vllm-metal's startup check that the KV cache fits refuses 1 GiB whenever this
+# Mac pages; the runs record swap-outs instead
+os.environ.setdefault("VLLM_METAL_KV_COMMIT_PROBE", "0")
 
 import mlx.core as mx  # noqa: E402
 import mlx.nn as nn  # noqa: E402

@@ -66,7 +66,8 @@ _Avoid_: optimization (for a change that hasn't been measured), tweak
 ## Inference
 
 **Prefill**:
-Processing a request's whole prompt in one pass before any token is generated.
+Processing a request's whole prompt through the model before its first token is generated, in chunks of up to the engine's token budget per pass (2,048 tokens here).
+_Avoid_: prompt phase (say prefill, or prompt processing)
 
 **Decode step**:
 One engine iteration that produces one new token for each request it includes.
@@ -134,6 +135,14 @@ Where one round writes all its files: round 1 at the top of `muse-spark/`, each 
 **Starting point**:
 The plan each round from round 2 on begins with, drawn from the earlier rounds and Claude's measurement: each slot's baseline, or the attempt to start from where it has none, with its end-to-end effect; what is left to build; the refuted claims; and the territories to explore again.
 _Avoid_: recap, retrospective
+
+**Improvement**:
+An attempt that is faster than its bar in one phase, prefill or decode, and slower in neither; a faster decode step bought with a slower prefill is not one.
+_Avoid_: speedup (for a change measured in one phase only)
+
+**Hand-off**:
+An attempt's choice to run the compiled reference instead of its own kernels above a row count it names, so prefill-sized inputs stay on MLX's code.
+_Avoid_: fallback
 
 **Baseline** (of a slot):
 A slot's best attempt so far that passes the current G2 and that Claude's G3 accepted, named in Claude's measurement of the previous round; every new attempt for that slot must beat it in the same grader run. A slot may have none.

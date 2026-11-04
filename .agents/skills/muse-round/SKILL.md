@@ -1,13 +1,13 @@
 ---
 name: muse-round
-description: Run one round of the Muse agent on the MobileMoE-S decode kernels as a swarm. Explorers map the code and measurements into a shared analysis; then competing builders write and grade fused Metal kernels for the top inefficiencies. From round 2 on, the round starts from the previous rounds' results and must beat their best attempts. Both phases are tracked in shared documents.
+description: Run one round of the Muse agent on the MobileMoE-S kernels as a swarm. Explorers map the code and measurements into a shared analysis; then competing builders write and grade fused Metal kernels for the top inefficiencies. From round 2 on, the round starts from the previous rounds' results and must beat their best attempts. Both phases are tracked in shared documents.
 ---
 
 # One round of the Muse agent: a swarm explores, then builds
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. Committed on main and tagged `muse-code-era` before the first Muse Code session; each later version is committed before the round that uses it. [Who made what](../../../PROVENANCE.md).*
 
-**Skill version 6.** This file, the role cards and tracking.md are versioned together; [CHANGELOG.md](CHANGELOG.md) lists every version. Each round records the version it ran (see *Versions* in tracking.md).
+**Skill version 7.** This file, the role cards and tracking.md are versioned together; [CHANGELOG.md](CHANGELOG.md) lists every version. Each round records the version it ran (see *Versions* in tracking.md).
 
 You are the **lead** of a Muse Code session in your own worktree on the branch `muse-agent`. The first prompt names the Meta model you run as, the name your commit subjects start with, and the co-author line every commit ends with. `claude/muse-agent-brief.md` fixes the task, the slots, the tools and limits, the grader command and the pass criteria (G1, G2). Four ADRs change it in five ways:
 
@@ -15,9 +15,9 @@ You are the **lead** of a Muse Code session in your own worktree on the branch `
 2. **No attempt limit and no stop rule** (ADR 0006). The brief's *When a slot stops* no longer applies: you decide when a slot is done. Every graded attempt is committed, so the history shows every try.
 3. **A swarm** ([ADR 0007](../../../claude/adr/0007-muse-spark-swarm.md)). Helpers explore and build; you coordinate and commit.
 4. **Files** (ADR 0007, [ADR 0009](../../../claude/adr/0009-rounds-build-on-each-other.md)). Each round writes in its own **round folder**: round 1 at the top of `muse-spark/`, round N from 2 on in `muse-spark/round-<N>/`. It holds `exploration/` and `implementation/`, the round's shared documents, which replace `strategy.md`; `kernels/<slot-folder>/attempt-<M>/`; and `summary.md`. tracking.md writes it `<round>/`.
-5. **Rounds build on each other** (ADR 0009). A finished round's files are frozen: read them and cite them, and the hooks refuse any change to them. From round 2 on, a slot may have a **baseline**: the best attempt so far that passes the current G2 and that Claude's G3 accepted, faster than the unchanged model and the compiled reference at 1, 8 and 32 requests. A new attempt must beat it in the same grader run. A slot without one has a **starting point** instead: an earlier attempt to build from, which Claude's measurement names, with what kept it from being a baseline.
+5. **Rounds build on each other** (ADR 0009). A finished round's files are frozen: read them and cite them, and the hooks refuse any change to them. From round 2 on, a slot may have a **baseline**: the best attempt so far that passes the current G2 and that Claude's G3 accepted: against the unchanged model and the compiled reference, faster in one phase, decode or prefill, and slower in neither ([ADR 0011](../../../claude/adr/0011-decode-and-prefill.md)). A new attempt must beat it in the same grader run. A slot without one has a **starting point** instead: an earlier attempt to build from, which Claude's measurement names, with what kept it from being a baseline.
 
-The rest of the brief stands. The goal: kernels that pass G1 and G2, beat the compiled reference at 1, 8 and 32 rows and, where the slot has a baseline, beat it too, faster because they remove a cause you can name. The Muse agent was Muse Spark in round 1 and is Muse Wonder from round 2 ([ADR 0008](../../../claude/adr/0008-muse-wonder.md)); documents written in earlier rounds say "Muse Spark".
+The rest of the brief stands. The goal: kernels that pass G1 and G2 and have `beats_compiled` true, faster in one phase, decode or prefill, and slower in neither (ADR 0011); where the slot has a baseline, `beats_baseline` true too; faster because they remove a cause you can name. A faster decode step bought with a slower prefill is no improvement. An attempt built for decode sizes may hand prefill-sized inputs to the compiled reference with `max_rows` (the brief's launch spec). The Muse agent was Muse Spark in round 1 and is Muse Wonder from round 2 ([ADR 0008](../../../claude/adr/0008-muse-wonder.md)); documents written in earlier rounds say "Muse Spark".
 
 ## The swarm
 
@@ -87,7 +87,7 @@ Commit it as exploration v1. **Done** when every slot has its baseline or starti
      | `switch-layers` | `third_party/mlx-lm/mlx_lm/models/switch_layers.py`: the routed experts' path, `gather_qmm`, the sort from 16 rows |
      | `quantized-kernels` | `quantized.h` and `quantized_utils.h` in `.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/`: the `affine_gather_*` kernels behind `gather_qmm` |
      | `other-kernels` | the other Metal kernels in the same folder that the routing and combine slots launch: sort, softmax, reductions, elementwise, copies |
-     | `vllm-metal` | `third_party/vllm-metal/vllm_metal/`: how the engine runs a decode step around the model |
+     | `vllm-metal` | `third_party/vllm-metal/vllm_metal/`: how the engine runs a decode step and a prefill chunk around the model |
      | `grader` | `bench/grader/`: the slot interface, what G1, G2 and the piece timing measure, and so the boundary every solution keeps |
      | `findings` | `claude/findings/` and `results/runs/2026-11-01-breakdown/` |
      | `runs` | `results/runs/2026-11-02-gpu-counters/`, `2026-10-29-baseline/` and `2026-10-30-micro/` |
@@ -107,10 +107,11 @@ Write the final `<round>/exploration/README.md`. It is the round's report on the
 
 - **Tracker:** the final table.
 - **Starting point** (from round 2 on), as written in step 1, with any correction exploration made.
-- **Context:** the decode step, the MoE block and its slots, and what the measurements say about where the time goes.
+- **Context:** the decode step and the prefill, the MoE block and its slots, and what the measurements say about where the time goes in each.
 - **Territory map:** how the territories feed each other. For each territory: what it receives, what it passes on, and its measured cost.
 - **Inefficiencies, ranked:**
-  - the confirmed ones inside the slots, ranked by predicted saving as a share of the decode step, averaged over 1, 8 and 32 rows; from round 2 on, the saving is against the baseline where the slot has one;
+  - the confirmed ones inside the slots, ranked by predicted saving as a share of the decode step, averaged over 1, 8 and 32 rows, or of the prefill chunk, averaged over 127, 1,016 and 2,048 rows; from round 2 on, the saving is against the baseline where the slot has one;
+  - each with what removing it does to the other phase, and whether a hand-off (`max_rows`) keeps that phase unchanged;
   - each with its cost, kind and entry;
   - Claude's findings marked as Claude's, earlier rounds' entries linked as theirs, and this round's own reading marked as yours.
 - **Recommendations:** the confirmed inefficiencies outside the slots, with their evidence. They're for surucuonur's team.
@@ -132,18 +133,18 @@ Take the ranked inefficiencies in order, at most two at a time, in different slo
    - checkpoint, committing its attempt folder with the hypothesis entry, the README and the log;
    - if the attempt passed G2, start `boundary-<n>` to check it.
 5. **Harden.**
-   - Pick the best attempt: it passes G1, G2 and its boundary check, and it is the fastest across the three row counts against the compiled reference and, where the slot has one, the baseline.
+   - Pick the best attempt: it passes G1, G2 and its boundary check, has `beats_compiled` true and, where the slot has a baseline, `beats_baseline`, and it is the fastest across the six sizes.
    - Set the status to `hardening`, and start a builder for that attempt's next single change.
    - Repeat while the attempt still has a cause you can name and remove.
 6. **Close.**
-   - **`ready`:** the best attempt passes G1, G2 and its boundary check, beats the compiled reference at 1, 8 and 32 rows and, where the slot has a baseline, has `beats_baseline` true, and you can name no further change worth making. Write the **Decision**: the attempt, why it is best, and what G3 should show.
+   - **`ready`:** the best attempt passes G1, G2 and its boundary check, has `beats_compiled` true and, where the slot has a baseline, `beats_baseline` true, and you can name no further change worth making. Write the **Decision**: the attempt, why it is best, and what G3 should show.
    - **`dropped`:** say why. A slot whose hypotheses are all dropped keeps its baseline, or the reference where it has none.
 
 Then open the next-ranked inefficiency. **Done** when no confirmed inefficiency is left that you judge will pay. Write why in the implementation README.
 
 ### 5. Finish
 
-1. **The implementation README:** the final tracker, one paragraph per hypothesis, and a **Ready to test** section. It names the attempt per slot that goes to G3, this round's, the baseline kept, or the reference, and the change in decode step period you expect at 1, 8 and 32 requests against the previous round's, with how you worked it out.
+1. **The implementation README:** the final tracker, one paragraph per hypothesis, and a **Ready to test** section. It names the attempt per slot that goes to G3, this round's, the baseline kept, or the reference, and the change you expect in G3's four workloads, in the decode step, the prompt time and the whole request, against the previous round's, with how you worked it out.
 2. **The exploration README:** add *What building taught*, the analysis corrected by what the attempts showed.
 3. **`<round>/summary.md`:** a `## Round N` section with:
    - the model, the skill version this round ran, and the final versions of both READMEs;

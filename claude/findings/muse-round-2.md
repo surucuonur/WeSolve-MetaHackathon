@@ -34,10 +34,10 @@ G3 timed each kernel alone, the submission, experts attempt-7 added to it, round
   - end to end, where the model's greedy tokens are identical in plain MLX and in vLLM, at 1 and 32 requests, for every round-2 variant.
 
   Round 1's kernels, timed in the same runs as a control, still change the tokens with 32 requests.
-- **routing attempt-4 passes G3 everywhere.** It is faster than both the unchanged model and the compiled reference at 1, 8 and 32 requests, in both engines. In vLLM it saves 0.47, 0.43 and 0.54 ms per step (8.7%, 3.0% and 1.8%). It is the project's first Muse kernel that passes every rule. Over whole requests its gain is smaller, since it processes prompts 7–10% slower: throughput rises 10.2% with 1 request and 1.8% with 8, is flat with 32 and falls 3.5% with 32 requests of 1,024-token prompts ([section 6](#6-whole-requests-prompts-and-throughput)).
+- **routing attempt-4 passed G3 as it stood, on decode steps.** It is faster than both the unchanged model and the compiled reference at 1, 8 and 32 requests, in both engines. In vLLM it saves 0.47, 0.43 and 0.54 ms per step (8.7%, 3.0% and 1.8%). It is the project's first Muse kernel that passed every rule of its time. Over whole requests its gain is smaller, since it processes prompts 7–10% slower: throughput rises 10.2% with 1 request and 1.8% with 8, is flat with 32 and falls 3.5% with 32 requests of 1,024-token prompts ([section 5](#5-whole-requests-prompts-and-throughput)). Under the rule set after this measurement, that an improvement must hold in both phases ([ADR 0011](../adr/0011-decode-and-prefill.md)), it fails, so it is no baseline for round 3 ([For round 3](#for-round-3-baselines-and-starting-points)).
 - **combine attempt-1 fails G3.** The grader timed it faster than the compiled reference at every row count. In the model it is slower than the unchanged step with 32 requests (+1.05 ms in vLLM, +1.17 ms in plain MLX), and no faster than the compiled reference with 8.
 - **The submission (routing + combine), in vLLM:** −0.73 ms (−13%) with 1 request, −0.74 ms (−5%) with 8, **+0.53 ms (+2%) with 32**, against a prediction of −0.84 ms at each. combine's slowdown outweighs routing's saving with 32 requests.
-- **experts attempt-7, not submitted, makes the decode step faster and whole requests much slower.** Per decode step in vLLM: −5.35 ms (−17.5%) with 32 requests, −1.22 ms (−8.4%) with 8, and +0.29 ms (+5.4%) with 1, which is why round 2 dropped it. But it processes prompts 6.6 to 14.5 times slower than the unchanged engine, so whole requests lose 10% to 83% of their throughput ([section 6](#6-whole-requests-prompts-and-throughput)). G3 times only decode steps, and this went unseen until the comparison in section 6.
+- **experts attempt-7, not submitted, makes the decode step faster and whole requests much slower.** Per decode step in vLLM: −5.35 ms (−17.5%) with 32 requests, −1.22 ms (−8.4%) with 8, and +0.29 ms (+5.4%) with 1, which is why round 2 dropped it. But it processes prompts 6.6 to 14.5 times slower than the unchanged engine, so whole requests lose 10% to 83% of their throughput ([section 5](#5-whole-requests-prompts-and-throughput)). G3 times only decode steps, and this went unseen until the comparison in section 5.
 - **All three slots replaced at once lose time with 8 requests,** as in round 1, although every pair of kernels adds up as expected. With 8 requests in plain MLX, the three alone save 1.87 ms together, and all three installed cost 0.94 ms ([section 4](#4-where-the-kernels-interfere)).
 - **Against round 1,** in the same runs, round 2's submission is faster at 1 and 8 requests (−0.73 against +0.92 ms, and −0.74 against +0.13 ms) and slower at 32 (+0.53 against −1.85 ms), with identical tokens where round 1's change them.
 - **The process held.** Round 2 ran the grader exactly once per attempt: 13 runs for 13 attempts (experts 7, routing 4, combine 2). Round 1 ran it 29 times for experts' 4.
@@ -125,9 +125,9 @@ A separate plain MLX run timed round 2's three kernels in every combination, eac
 - **Every pair comes within 0.5 ms of its parts' sum.**
 - **All three together, with 8 requests, are 2.8 ms slower than their parts.** It is the only case that misses by much.
 - **Round 1 did the same.** Its three kernels, with 8 requests, came out at +0.88 ms in plain MLX against −1.95 ms for the parts ([round 1](muse-round-1.md#3-g3-the-decode-step)). Two different sets of kernels show it, so the cause is likely in how the step runs with all three slots replaced at that size, not in one kernel. It is not explained.
-- **The fastest decode step with exact output** is routing attempt-4 with experts attempt-7: −20% with 32 requests, −10% with 8 and −6% with 1 in plain MLX, and −18.8% with 32 requests in vLLM (section 6). Over whole requests it is the slowest version measured, because of experts attempt-7's prompt processing.
+- **The fastest decode step with exact output** is routing attempt-4 with experts attempt-7: −20% with 32 requests, −10% with 8 and −6% with 1 in plain MLX, and −18.8% with 32 requests in vLLM (section 5). Over whole requests it is the slowest version measured, because of experts attempt-7's prompt processing.
 
-## 6. Whole requests: prompts and throughput
+## 5. Whole requests: prompts and throughput
 
 A last vLLM run (`results/runs/2026-11-04-engine-comparison/`, tables built by `bench/grader/engine_table.py`) timed eight versions of the engine at four workloads: 1, 8 and 32 requests with 128-token prompts, and 32 requests with 1,024-token prompts. Besides the decode step it recorded the time until every prompt was processed and each run's whole time, as generated tokens per second. Every version but round 1's kept the tokens identical. Throughput change against the unchanged engine (prompt time as a multiple of the unchanged engine's in brackets):
 
@@ -140,11 +140,12 @@ A last vLLM run (`results/runs/2026-11-04-engine-comparison/`, tables built by `
 | round 2: all three with experts attempt-7 | −10.7% (6.75×) | −43.0% (14.33×) | −53.7% (14.37×) | −83.3% (13.66×) |
 | round 1: all three (changes the output) | −13.3% (1.60×) | −9.6% (2.30×) | −8.1% (2.30×) | −33.6% (2.32×) |
 
-- **Compiling MLX's own code for the three slots,** with no new kernel, gains in every workload, 0.6% to 11.9%. No Muse version does that.
+- **Compiling MLX's own code for the three slots,** with no new kernel, gains 0.6% to 3.1% with 8 and 32 requests, where its repeats and the unchanged engine's don't overlap. With 1 request its median gain is 11.9%, but one of its three repeats falls inside the unchanged engine's range (1,374 to 1,559 ms against 1,486 to 1,580), so that gain is not certain. No Muse version gains in every workload.
+- **The unchanged engine is vLLM's own.** It ran with Claude's step hooks and vLLM's engine in the script's process. Alternating runs on the same afternoon found it within −0.2% to +1.9% of vLLM with neither, inside the spread between repeats in every workload (`bench/micro/clean_vllm.py`, [results/runs/2026-11-04-clean-vllm/](../../results/runs/2026-11-04-clean-vllm/)).
 - **Round 2's kernels are slower than MLX's when processing prompts,** in every slot measured: routing alone by 7–10%, routing with combine by 8–11%, and experts attempt-7 by 6.6 to 14.5 times. Every prompt chunk here has at least 128 rows, so it runs experts attempt-7's path for 60 rows and more, which copies `gather_qmm_rhs`'s rounding but not its speed.
 - **The grader checks the kernels' output at prompt sizes, and G3 times only decode steps,** so neither saw this. Its decode-step figures in sections 1 to 4 stand; they describe one part of a request.
 
-## 7. How round 2 worked
+## 6. How round 2 worked
 
 - **Time:** 63 minutes; the lead and 34 helpers; 983 model calls. 981 were `muse-wonder-1.0`, and 2 were Muse Code's reminder agents on `muse-spark-1.3` (`muse-spark/transcripts/01a1a48b-e027-7462-898f-0b01290c8c9a.summary.json`).
 - **Tokens:** 125.6M input, of which 121.1M were cached, and 0.77M output. At Muse Wonder's prices that is about $58: $18 uncached input, $24 cached input and $15 output. It would be about $65 if the 0.36M reasoning tokens are billed on top of the output.
@@ -154,16 +155,20 @@ A last vLLM run (`results/runs/2026-11-04-engine-comparison/`, tables built by `
 
 ## For round 3: baselines and starting points
 
-**The rule:** a slot's baseline is its best attempt so far that passes the current G2 *and* that G3 accepts, faster than the unchanged model and the compiled reference at 1, 8 and 32 requests. An attempt that passes G2 but fails G3 is a starting point, not a bar: making it the bar would ask a fix to beat it where it already wins.
+**The rule,** from round 3 ([ADR 0011](../adr/0011-decode-and-prefill.md)): a slot's baseline is its best attempt so far that passes the current G2, has `beats_compiled` true in the grader, and passes G3. Both of those now judge two phases, decode and prefill: faster in one, slower in neither, and in G3 no whole request slower, against the unchanged model and the compiled reference. An attempt that passes G2 but not the rest is a starting point, not a bar: making it the bar would ask a fix to beat it where it already wins.
 
-| Slot | Baseline | Starting point | Why |
-|---|---|---|---|
-| `routing` | `muse-spark/round-2/kernels/routing/attempt-4` | | Passes G2 at every size tested and G3 everywhere. A new attempt must beat it in the same grader run (`--baseline`). |
-| `combine` | none | `muse-spark/round-2/kernels/combine/attempt-1` | Bit-exact, but slower than the unchanged model with 32 requests in G3, for a reason the grader doesn't show. |
-| `experts` | none | `muse-spark/round-2/kernels/experts/attempt-7` | Bit-exact, and −17.5% per decode step with 32 requests, but slower with 1 request, and 6.6 to 14.5 times slower at processing prompts (section 6). |
+The current grader re-graded round 2's three kernels on 2026-11-04 (`results/runs/2026-11-04-muse-round-2/grade-phases-*.json`). Times are multiples of the compiled reference's, per layer:
+
+| Slot | Baseline | Starting point | Decode, 1 / 8 / 32 rows | Prefill, 127 / 1,016 / 2,048 rows | Why it is no baseline |
+|---|---|---|---|---|---|
+| `routing` | none | `muse-spark/round-2/kernels/routing/attempt-4` | 0.76 / 0.84 / 0.84, faster | 2.6 / 5.9 / 8.7, slower | Slower at every prefill size, so prompts take 7–10% longer and whole requests with 1,024-token prompts lose 3.5% (section 5). |
+| `combine` | none | `muse-spark/round-2/kernels/combine/attempt-1` | 0.86 / 0.85 / 0.93, faster | 0.95 / 0.83 / 0.52, faster | Its decode step in G3 was 1.05 ms slower than the unchanged model's with 32 requests, for a reason the grader doesn't show (section 3). |
+| `experts` | none | `muse-spark/round-2/kernels/experts/attempt-7` | 1.17 / 0.69 / 0.65, slower at 1 row | 15.8 / 27.7 / 20.1, slower | Slower at 1 row and at every prefill size, so prompts take 6.6 to 14.5 times as long (section 5). |
+
+Round 3 has no baseline in any slot, so its bar is the compiled reference everywhere.
 
 **What round 3 has to find out,** in Claude's reading of these results:
 1. **experts with 1 row.** attempt-7 keeps its 8- and 32-row speed and loses at 1 row, as every fused design in round 2 did (92 to 110 µs per layer chained, against 73 to 87 for the compiled reference, in round 2's runs). Round 2's summary suggests copying the reference's unfused structure exactly for small row counts.
 2. **Why combine attempt-1 costs 1 ms in the step with 32 requests** and not in the grader.
 3. **Why all three slots replaced at once lose 2.8 ms with 8 requests,** when every pair adds up (section 4).
-4. **Prompt-processing speed.** experts attempt-7's path from 60 rows is 6.6 to 14.5 times slower than MLX's, and routing's and combine's are 7–11% slower (section 6). A kernel has to be fast at prompt sizes too, and the grader should time them there before round 3, as G3 should time whole requests.
+4. **Prefill speed.** From round 3 the grader times the prefill sizes and G3 times prompts and whole requests (ADR 0011). routing attempt-4 and experts attempt-7 are slower than the compiled reference at every prefill size; combine attempt-1 is faster. An attempt may keep inputs above a row count it names on the compiled reference (`max_rows`, in the brief). Claude checked that hand-off on a copy of experts attempt-7 with `max_rows` 59: bit-exact at all six sizes, and the `same` as the compiled reference at every prefill size (`results/runs/2026-11-04-handoff-check/`).

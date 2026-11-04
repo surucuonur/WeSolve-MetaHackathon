@@ -1,0 +1,88 @@
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+W1104 08:26:35.077000 95080 torch/_library/triton.py:53] Triton not available, find_triton_kernels = []
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+default rep0  1 x  128, 256 tokens:    1508.4 ms
+default rep0 32 x  128, 256 tokens:    8404.9 ms
+default rep0 32 x 1024,   1 tokens:    6169.8 ms
+default rep0 32 x  128,   1 tokens:     743.0 ms
+default rep0  1 x  128,   1 tokens:      42.2 ms
+default rep0 32 x 1024, 256 tokens:   16323.2 ms
+default rep0  8 x  128,   1 tokens:     216.8 ms
+default rep0  8 x  128, 256 tokens:    3903.9 ms
+default rep1  1 x  128,   1 tokens:      41.9 ms
+default rep1 32 x 1024, 256 tokens:   16331.9 ms
+default rep1 32 x  128,   1 tokens:     752.9 ms
+default rep1  1 x  128, 256 tokens:    1492.3 ms
+default rep1 32 x 1024,   1 tokens:    6183.5 ms
+default rep1  8 x  128, 256 tokens:    3941.0 ms
+default rep1 32 x  128, 256 tokens:    8482.0 ms
+default rep1  8 x  128,   1 tokens:     221.8 ms
+default rep2  8 x  128,   1 tokens:     218.1 ms
+default rep2  1 x  128, 256 tokens:    1437.6 ms
+default rep2 32 x 1024, 256 tokens:   16393.8 ms
+default rep2  1 x  128,   1 tokens:      44.3 ms
+default rep2 32 x 1024,   1 tokens:    6223.9 ms
+default rep2 32 x  128, 256 tokens:    8416.0 ms
+default rep2 32 x  128,   1 tokens:     749.1 ms
+default rep2  8 x  128, 256 tokens:    3888.6 ms
+ 1 x  128:  171.6 tokens/s, prompt    42.2 ms, step  5.687 ms
+ 8 x  128:  524.6 tokens/s, prompt   218.1 ms, step 14.454 ms
+32 x  128:  973.4 tokens/s, prompt   749.1 ms, step 30.066 ms
+32 x 1024:  501.6 tokens/s, prompt  6183.5 ms, step 39.798 ms
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+W1104 08:28:47.969000 95554 torch/_library/triton.py:53] Triton not available, find_triton_kernels = []
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+default rep0  1 x  128, 256 tokens:    1785.3 ms
+default rep0 32 x  128, 256 tokens:    8560.9 ms
+default rep0 32 x 1024,   1 tokens:    6323.9 ms
+default rep0 32 x  128,   1 tokens:     764.2 ms
+default rep0  1 x  128,   1 tokens:      43.2 ms
+default rep0 32 x 1024, 256 tokens:   16522.5 ms
+default rep0  8 x  128,   1 tokens:     219.4 ms
+default rep0  8 x  128, 256 tokens:    3901.1 ms
+default rep1  1 x  128,   1 tokens:      42.6 ms
+default rep1 32 x 1024, 256 tokens:   16703.3 ms
+default rep1 32 x  128,   1 tokens:     756.4 ms
+default rep1  1 x  128, 256 tokens:    1551.3 ms
+default rep1 32 x 1024,   1 tokens:    6350.0 ms
+default rep1  8 x  128, 256 tokens:    3946.1 ms
+default rep1 32 x  128, 256 tokens:    8426.9 ms
+default rep1  8 x  128,   1 tokens:     218.7 ms
+default rep2  8 x  128,   1 tokens:     214.9 ms
+default rep2  1 x  128, 256 tokens:    1476.9 ms
+default rep2 32 x 1024, 256 tokens:   16732.7 ms
+default rep2  1 x  128,   1 tokens:      44.9 ms
+default rep2 32 x 1024,   1 tokens:    6327.6 ms
+default rep2 32 x  128, 256 tokens:    8551.3 ms
+default rep2 32 x  128,   1 tokens:     756.7 ms
+default rep2  8 x  128, 256 tokens:    3898.4 ms
+ 1 x  128:  165.0 tokens/s, prompt    43.2 ms, step  5.914 ms
+ 8 x  128:  525.0 tokens/s, prompt   218.7 ms, step 14.441 ms
+32 x  128:  958.0 tokens/s, prompt   756.7 ms, step 30.567 ms
+32 x 1024:  490.4 tokens/s, prompt  6327.6 ms, step 40.689 ms

@@ -97,10 +97,10 @@ Entries are named so that two agents never pick the same name:
 1. Status block. The statuses are `open`, `confirmed`, `refuted` and `superseded by <entry>`; only the verifier sets `confirmed` or `refuted`.
 2. **Slot:** `routing`, `combine`, `experts`, or `outside the slots`.
 3. **What happens:** what the code does, and where (file and lines).
-4. **Cost** at 1, 8 and 32 rows: kernels × the fixed cost per kernel, bytes ÷ peak bandwidth, and the measured time with the table it comes from.
+4. **Cost** at 1, 8 and 32 rows of a decode step and at the prefill's 127, 1,016 and 2,048 rows: kernels × the fixed cost per kernel, bytes ÷ peak bandwidth, and the measured time with the table it comes from.
 5. **Kind:** overhead-bound, bandwidth-bound or compute-bound, in the terms of `claude/GLOSSARY.md`.
 6. **Spans:** the territories involved.
-7. **Predicted saving** if removed, in µs per decode step at 1, 8 and 32 rows, with the arithmetic.
+7. **Predicted saving** if removed, in µs per decode step at 1, 8 and 32 rows and per prefill chunk at 127, 1,016 and 2,048 rows, with the arithmetic. A saving in one phase that costs the other is not one.
 8. **Verdict**, written by the verifier: each claim checked, and the result.
 
 ### Hypothesis entry
@@ -108,7 +108,7 @@ Entries are named so that two agents never pick the same name:
 1. Status block. The lead owns it; the statuses are `boundary`, `building`, `hardening`, `ready` and `dropped`.
 2. **Inefficiency** it removes, the slot, and from round 2 on the slot's baseline folder, or `none` and its starting point.
 3. **Boundary**, written by the boundary agent: what the solution must keep identical (see `boundary.md`).
-4. **One section per builder:** its direction, its attempts (folder, predicted and measured µs per layer at 1, 8 and 32 rows, G1, G2, and where the slot has a baseline its time and `beats_baseline`), and what each attempt taught.
+4. **One section per builder:** its direction, its attempts (folder, predicted and measured µs per layer at the six sizes with each size's verdict, G1, G2, `beats_compiled`, and where the slot has a baseline its time and `beats_baseline`), and what each attempt taught.
 5. **Boundary checks** of the attempts that passed G2.
 6. **Decision:** the best attempt and why. When the status is `ready`, it states what G3 should show.
 

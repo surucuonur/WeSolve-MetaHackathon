@@ -1,0 +1,65 @@
+{
+ "muse-experts": {
+  "base": {
+   "pass": false,
+   "phases": {
+    "decode": "slower",
+    "prompt": "slower",
+    "request": "slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "slower",
+     "prompt": "same",
+     "request": "slower"
+    },
+    "8x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x128": {
+     "decode": "faster",
+     "prompt": "faster",
+     "request": "faster"
+    },
+    "32x1024": {
+     "decode": "faster",
+     "prompt": "slower",
+     "request": "same"
+    }
+   }
+  },
+  "compiled-experts": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "not slower"
+   },
+   "settings": {
+    "1x128": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "same"
+    },
+    "8x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x128": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "32x1024": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "same"
+    }
+   }
+  },
+  "g3": false
+ }
+}

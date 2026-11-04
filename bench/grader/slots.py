@@ -302,7 +302,12 @@ def template_value(v):
 
 
 def build(spec, sources, slot):
-    """A function slot_inputs -> slot_outputs from Muse Spark's spec and Metal blocks."""
+    """A function slot_inputs -> slot_outputs from Muse Spark's spec and Metal blocks.
+
+    With "max_rows" in the spec, inputs with more rows than that run the slot's
+    reference under mx.compile instead of the kernels, so an attempt can keep
+    prompt-sized inputs on MLX's own code (claude/adr/0011-decode-and-prefill.md).
+    """
     slot_in, slot_out = SLOTS[slot]
     kernels = []
     for k in spec["kernels"]:
@@ -319,9 +324,17 @@ def build(spec, sources, slot):
     missing = set(slot_out) - set(spec["slot_outputs"])
     if missing:
         raise ValueError(f"slot_outputs is missing {sorted(missing)}")
+    max_rows = spec.get("max_rows")
+    if max_rows is not None:
+        if isinstance(max_rows, bool) or not isinstance(max_rows, int) or max_rows < 1:
+            raise ValueError(f"bad max_rows {max_rows!r}")
+        compiled = mx.compile(REFERENCE[slot])
 
     def run(**inputs):
         rows = inputs[slot_in[0]].shape[0]
+        if max_rows is not None and rows > max_rows:  # the compiled reference takes over
+            out = compiled(*[inputs[n] for n in slot_in])
+            return dict(zip(slot_out, out if isinstance(out, (tuple, list)) else [out]))
         env = dict(inputs)
         for k, fn in kernels:
             tg = [int(t) for t in k["threadgroup"]]

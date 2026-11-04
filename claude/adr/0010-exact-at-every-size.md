@@ -6,6 +6,8 @@ status: accepted
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
 
+*[ADR 0011](0011-decode-and-prefill.md) changes two parts of this record on 2026-11-04, before round 3. An attempt may hand inputs above a row count it chooses to the compiled reference, instead of running its kernels in every call. The piece timing and G3 also time the prefill. Bit-exactness at every size and the chained timing stand.*
+
 **The change.** Claude's measurement of round 1 ([findings](../findings/muse-round-1.md)) found that round 1's final attempts, which passed the grader, broke the brief's end-to-end rule in the model, and that one of them slowed the decode step it was meant to speed up. The grader missed three things:
 
 1. **Sizes.** It tested a slot on a decode step's inputs only, at 1, 8 and 32 rows. The same `MoE.__call__` runs the prefill, at 127 to 2,048 rows with 128-token prompts. From 60 rows on, MLX's own experts kernel changes, from `gather_qvm` to `gather_qmm_rhs`, and so does its rounding. Round 1's experts kernel copied `gather_qvm` bit for bit, and differed in 62% of its outputs at each prefill size.

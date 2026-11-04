@@ -1,0 +1,19 @@
+compiled_exact.py (Claude: hand-off check): waiting for the GPU (pid 97087: clean_vllm.py in-process)
+rows     1 routing : exact True, rows_differ 0
+rows     1 combine : exact True, differ 0
+rows     1 experts : exact True, differ 0
+rows     8 routing : exact True, rows_differ 0
+rows     8 combine : exact True, differ 0
+rows     8 experts : exact True, differ 0
+rows    32 routing : exact True, rows_differ 0
+rows    32 combine : exact True, differ 0
+rows    32 experts : exact True, differ 0
+prefill rows   127 routing : exact True, rows_differ 0
+prefill rows   127 combine : exact True, differ 0
+prefill rows   127 experts : exact True, differ 0
+prefill rows  1016 routing : exact True, rows_differ 0
+prefill rows  1016 combine : exact True, differ 0
+prefill rows  1016 experts : exact True, differ 0
+prefill rows  2048 routing : exact True, rows_differ 0
+prefill rows  2048 combine : exact True, differ 0
+prefill rows  2048 experts : exact True, differ 0

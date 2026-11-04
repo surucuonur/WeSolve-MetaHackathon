@@ -13,8 +13,18 @@ Variants, applied at runtime to MoE.__call__ in every layer:
                       FOLDER `compiled` is that slot's compiled reference
 
 G2 end to end: each variant's greedy tokens over 24 generated tokens, at 1
-and 32 requests, must equal base's. G3: the steady decode step period, as
-repeat_fixes.py measures it (3 repeats, shuffled), at 1, 8 and 32 requests.
+and 32 requests, must equal base's. G3 (vllm): each run's steady decode step
+period, its prompt time (until every prompt was processed) and its
+whole-request time, as repeat_fixes.py measures them (G3_REPEATS repeats,
+shuffled), at 1, 8 and 32 requests of 128-token prompts and 32 of 1,024. A muse-*
+variant passes against base and against its compiled-* counterpart when
+one phase, decode or prompt, is faster in every setting, neither is slower
+in any, and no request is slower; faster and slower mean the two ranges over
+the repeats don't overlap (claude/adr/0011-decode-and-prefill.md). With 5
+repeats each, two identical engines' ranges miss each other by chance 1 time
+in 252 per direction; with 3 it was 1 in 20, and the "never slower" checks,
+8 per phase, would fail an unchanged phase about a third of the time. The
+verdict goes to g3-vllm.json.
 
   .venv/bin/python bench/grader/time_candidates.py plain results/runs/<date>-muse <slot>=<attempt dir> ...
   .venv/bin/python bench/grader/time_candidates.py vllm  results/runs/<date>-muse <slot>=<attempt dir> ...
@@ -22,6 +32,7 @@ repeat_fixes.py measures it (3 repeats, shuffled), at 1, 8 and 32 requests.
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -38,6 +49,9 @@ from mlx_lm.models import mobilemoe  # noqa: E402
 import slots  # noqa: E402
 
 TOKENS = 24
+G3_SETTINGS = "1x128,8x128,32x128,32x1024"
+G3_REPEATS = 5
+MEASURES = {"decode": "period_median_ms", "prompt": "prompt_ms", "request": "wall_ms"}
 
 
 def as_routing(fn):
@@ -146,6 +160,43 @@ def plain_checks(model, variants):
     return out
 
 
+def against(c, b):
+    """Two (min, max) ranges of a time: "faster" when c's lies below b's, "slower" above."""
+    return "faster" if c[1] < b[0] else "slower" if c[0] > b[1] else "same"
+
+
+def g3(log, names, settings, out):
+    """Each muse-* variant against base and its compiled-* counterpart, from *log*'s vLLM runs."""
+    runs = [r for r in map(json.loads, log.open()) if r["kind"] == "run" and r["engine"] == "vllm"]
+
+    def ranges(name, rows, prompt):
+        rs = [r for r in runs if (r["variant"], r["rows"], r["prompt"]) == (name, rows, prompt)]
+        return {m: (min(r[k] for r in rs), max(r[k] for r in rs)) for m, k in MEASURES.items()}
+
+    verdict = {}
+    for name in [n for n in names if n.startswith("muse-")]:
+        verdict[name] = {}
+        for bar in ("base", "compiled-" + name.removeprefix("muse-")):
+            settings_v = {
+                f"{rows}x{prompt}": {
+                    m: against(c, b)
+                    for (m, c), b in zip(ranges(name, rows, prompt).items(), ranges(bar, rows, prompt).values())
+                }
+                for rows, prompt in settings
+            }
+            phases = {
+                m: "faster" if all(v[m] == "faster" for v in settings_v.values())
+                else "slower" if any(v[m] == "slower" for v in settings_v.values())
+                else "not slower"
+                for m in MEASURES
+            }
+            passes = "faster" in (phases["decode"], phases["prompt"]) and "slower" not in phases.values()
+            verdict[name][bar] = {"pass": passes, "phases": phases, "settings": settings_v}
+            print(f"G3 {name} vs {bar}: {'pass' if passes else 'fail'} {phases}")
+        verdict[name]["g3"] = all(v["pass"] for v in verdict[name].values())
+    out.write_text(json.dumps(verdict, indent=1) + "\n")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("engine", choices=("plain", "vllm"))
@@ -160,8 +211,9 @@ def main():
         help="another set of attempts to time, outside muse-all",
     )
     ap.add_argument("--tokens", type=int, default=256, help="output tokens per run")
+    ap.add_argument("--repeats", type=int, default=G3_REPEATS, help="shuffled repeats per variant and setting")
     ap.add_argument(
-        "--settings", default="1x128,8x128,32x128", metavar="ROWSxPROMPT,...",
+        "--settings", default=G3_SETTINGS, metavar="ROWSxPROMPT,...",
         help="request counts and prompt lengths to time (G3: the default)",
     )
     args = ap.parse_args()
@@ -204,7 +256,9 @@ def main():
         variants = Variants(args.attempts, args.variant)
         checks = rf.vllm_checks(llm, variants)
 
-    rf.time_variants(args.engine, variants, checks, run, log, settings)
+    rf.time_variants(args.engine, variants, checks, run, log, settings, args.repeats)
+    if args.engine == "vllm":
+        g3(log, variants.names, settings, args.out / "g3-vllm.json")
 
 
 if __name__ == "__main__":

@@ -282,9 +282,9 @@ def prompt_ms():
     return (done - steps[0]["t"]) * 1e3 if steps and done is not None else None
 
 
-def time_variants(engine, variants, checks, run, log, settings=SETTINGS):
+def time_variants(engine, variants, checks, run, log, settings=SETTINGS, repeats=REPEATS):
     """Log the checks, then time every variant at *settings* (rows, prompt tokens)
-    in shuffled repeats. Each run also records its wall time and prompt_ms()."""
+    in *repeats* shuffled repeats. Each run also records its wall time and prompt_ms()."""
     with log.open("a") as f:
         for (name, rows), c in checks.items():
             f.write(
@@ -297,7 +297,7 @@ def time_variants(engine, variants, checks, run, log, settings=SETTINGS):
             )
 
     plan = []
-    for rep in range(REPEATS):
+    for rep in range(repeats):
         block = [(v, r, p) for v in variants.names for r, p in settings]
         random.Random(100 + rep).shuffle(block)
         plan += [(rep, *b) for b in block]
@@ -332,7 +332,7 @@ def time_variants(engine, variants, checks, run, log, settings=SETTINGS):
         )
     variants.apply("base")
 
-    print(f"\n{engine}: median step ms over {REPEATS} repeats (change against base)")
+    print(f"\n{engine}: median step ms over {repeats} repeats (change against base)")
     runs = [json.loads(line) for line in log.read_text().splitlines()]
     for rows, prompt in settings:
         base = None

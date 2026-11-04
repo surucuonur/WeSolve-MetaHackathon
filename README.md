@@ -33,10 +33,11 @@ A Meta model working in Muse Code, Meta's own coding agent, works as a swarm of 
 - From round 2 the grader asks for bit-exact outputs at decode and prefill sizes, and chains the layers when timing ([ADR 0010](claude/adr/0010-exact-at-every-size.md)).
 
 **Round 2, measured** ([claude/findings/muse-round-2.md](claude/findings/muse-round-2.md)): Muse Wonder's kernels are bit-exact with MLX's at every size tested, and leave the model's tokens unchanged.
-- **The routing kernel** passes every rule: it shortens the vLLM decode step by 0.43 to 0.54 ms (2 to 9%) at 1, 8 and 32 requests. It processes prompts 7–10% slower, though, so over whole requests it gains 10% with 1 request and loses 3.5% with 32 requests of 1,024-token prompts.
+- **The routing kernel** shortens the vLLM decode step by 0.43 to 0.54 ms (2 to 9%) at 1, 8 and 32 requests, but processes prompts 7–10% slower, so over whole requests it gains 10% with 1 request and loses 3.5% with 32 requests of 1,024-token prompts. It passed G3 as it stood, which timed decode steps only. From round 3 an improvement must hold in both phases, prefill and decode ([ADR 0011](claude/adr/0011-decode-and-prefill.md)), and by that rule no round-2 kernel is one yet.
 - **The combine kernel** slows the decode step with 32 requests, so the submitted pair gains 16% in throughput with 1 request and loses 3–4% with 32.
 - **An experts kernel round 2 didn't submit** shortens the decode step by up to 19%, but processes prompts 7 to 15 times slower, so whole requests lose 10–83% of their throughput.
-- **Compiling MLX's own code for the three slots**, with no new kernel, raises throughput by 0.6–12% in every workload, which no Muse version does yet.
+- **Compiling MLX's own code for the three slots**, with no new kernel, raises throughput by 0.6–3.1% with 8 and 32 requests, outside the spread between repeats, and by a median 12% with 1 request, where the repeats are too noisy to be sure. No Muse version gains in every workload.
+- From round 3 the grader and G3 time both phases, and an attempt may hand prefill-sized inputs to MLX's compiled code ([ADR 0011](claude/adr/0011-decode-and-prefill.md)). The unchanged engine these numbers compare against matches vLLM as shipped, without Claude's timing hooks, within the noise between repeats ([results/runs/2026-11-04-clean-vllm/](results/runs/2026-11-04-clean-vllm/)).
 
 ## How Meta's models are used
 

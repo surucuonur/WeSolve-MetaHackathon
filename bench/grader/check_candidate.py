@@ -5,24 +5,30 @@ G2 tests it on the inputs `slots.py capture` recorded from a real decode step
 (1, 8 and 32 rows), and on every layer's inputs in a prefill, recorded as
 it runs (127, 1,016 and 2,048 rows): every output must be identical to the
 reference's, bit for bit, since only then are the model's tokens identical
-(claude/adr/0010-exact-at-every-size.md). The timing chains the 20 layers, so
-each call waits for the one before, as in a decode step. The grader prints
-its verdict as JSON, and writes it to --out when given. It never writes into
-the attempt folder, which holds only the Muse agent's files.
+(claude/adr/0010-exact-at-every-size.md). The timing runs at the same six
+sizes and chains the 20 layers, so each call waits for the one before, as in
+the model. The grader prints its verdict as JSON, and writes it to --out when
+given. It never writes into the attempt folder, which holds only the Muse
+agent's files.
 
   .venv/bin/python bench/grader/check_candidate.py <attempt folder> <slot> [--out FILE]
       [--baseline [SLOT=]FOLDER ...]
 
---baseline times an earlier, already graded attempt in the same run as the
-candidate, and adds `beats_baseline`. From round 2 on, the bar is the previous
-round's final attempt for the slot (claude/adr/0009-rounds-build-on-each-other.md).
-The two are timed in alternating repeats, so drift in the GPU's clocks reaches
-both alike, and the candidate beats the baseline at a row count only if it is
-faster in at least WINS_NEEDED of the REPEATS paired repeats: a one-sided sign
-test at p < 0.01. The same kernel timed twice differs by up to 5% between
-medians, so comparing medians alone would pass on noise. FOLDER alone is an
-attempt for the same slot. For routing+combine, give either one
-routing+combine attempt or `routing=FOLDER` and `combine=FOLDER`.
+The candidate and the compiled reference are timed in alternating repeats, so
+drift in the GPU's clocks reaches both alike. At each size the candidate is
+"faster" when it wins at least WINS_NEEDED of the REPEATS paired repeats (a
+one-sided sign test at p < 0.01), "slower" when it loses that many, and
+"same" otherwise; the same kernel timed twice differs by up to 5% between
+medians, so comparing medians alone would pass on noise. `beats_compiled`
+needs both phases, decode and prefill: faster at every size of one, slower
+at none of the other (claude/adr/0011-decode-and-prefill.md).
+
+--baseline times an earlier, already graded attempt in the same run and adds
+`beats_baseline`, judged the same way. From round 2 on, the bar is the
+previous round's final attempt for the slot
+(claude/adr/0009-rounds-build-on-each-other.md). FOLDER alone is an attempt
+for the same slot. For routing+combine, give either one routing+combine
+attempt or `routing=FOLDER` and `combine=FOLDER`.
 """
 
 import argparse
@@ -42,6 +48,7 @@ import gpu_lock  # noqa: E402
 import slots  # noqa: E402
 
 ROWS = (1, 8, 32)
+PHASES = {"decode": "rows ", "prefill": "prefill rows "}  # phase -> size label prefix
 REPEATS = 30
 WINS_NEEDED = next(  # 22 of 30
     k
@@ -228,6 +235,34 @@ def paired_times(fns, layers, names):
     return times
 
 
+def compare(wins):
+    """One size's verdict from the candidate's wins in REPEATS paired repeats."""
+    if wins >= WINS_NEEDED:
+        return "faster"
+    if REPEATS - wins >= WINS_NEEDED:
+        return "slower"
+    return "same"
+
+
+def judge(verdicts):
+    """Each phase's verdict from its sizes' verdicts, and whether the candidate
+    beats the bar: faster at every size of one phase, slower at no size of the other.
+
+    A phase is "faster" when every size is, "slower" when any size is, and
+    "not slower" otherwise.
+    """
+    phases = {}
+    for phase, prefix in PHASES.items():
+        sizes = [v for size, v in verdicts.items() if size.startswith(prefix)]
+        phases[phase] = (
+            "faster" if all(v == "faster" for v in sizes)
+            else "slower" if "slower" in sizes
+            else "not slower"
+        )
+    beats = "faster" in phases.values() and "slower" not in phases.values()
+    return phases, beats
+
+
 def short_error(e):
     """The exception, keeping only the compiler's error lines from Metal builds."""
     text = "".join(traceback.format_exception_only(type(e), e)).strip()
@@ -307,36 +342,39 @@ def main():
         result["correctness"] = stats
         result["g2"] = all(s.get("pass") for s in stats.values())
         if result["g2"]:
-            timing, beats, beats_base = {}, True, True
-            for rows in ROWS:
-                layers = slots.load_inputs(rows, weights)
-                row = {"reference": 0.0, "compiled": 0.0, "candidate": 0.0}
-                base_t, cand_t = [0.0] * REPEATS, [0.0] * REPEATS
+            timing = {}
+            bars = ("compiled", "baseline") if base else ("compiled",)
+            verdicts = {bar: {} for bar in bars}
+            for kind, inputs in sizes:
+                layers = inputs()
+                size = f"{kind} {layers[0]['x'].shape[0]}"
+                row = {"reference": 0.0}
+                times = {name: [0.0] * REPEATS for name in ("candidate", *bars)}
                 for part, fn in fns.items():
                     names = slots.SLOTS[part][0]
                     ref = slots.REFERENCE[part]
-                    wrap = lambda f: lambda **kw: f(
+                    wrap = lambda f: lambda **kw: f(  # noqa: E731
                         *[kw[n] for n in names]
-                    )  # noqa: E731
+                    )
                     row["reference"] += timed(wrap(ref), layers, names)
-                    row["compiled"] += timed(wrap(mx.compile(ref)), layers, names)
+                    together = {"candidate": fn, "compiled": wrap(mx.compile(ref))}
                     if base:
-                        b, c = paired_times([base[part], fn], layers, names)
-                        base_t = [t + u for t, u in zip(base_t, b)]
-                        cand_t = [t + u for t, u in zip(cand_t, c)]
-                    else:
-                        row["candidate"] += timed(fn, layers, names)
-                if base:
-                    row["candidate"] = statistics.median(cand_t)
-                    row["baseline"] = statistics.median(base_t)
-                    row["wins_vs_baseline"] = sum(c < b for b, c in zip(base_t, cand_t))
-                    beats_base &= row["wins_vs_baseline"] >= WINS_NEEDED
-                timing[f"rows {rows}"] = {k: round(v, 1) for k, v in row.items()}
-                beats &= row["candidate"] < row["compiled"]
+                        together["baseline"] = base[part]
+                    paired = paired_times(list(together.values()), layers, names)
+                    for name, t in zip(together, paired):
+                        times[name] = [s + u for s, u in zip(times[name], t)]
+                del layers
+                row |= {name: statistics.median(t) for name, t in times.items()}
+                for bar in bars:
+                    wins = sum(c < b for c, b in zip(times["candidate"], times[bar]))
+                    verdicts[bar][size] = compare(wins)
+                    row |= {f"wins_vs_{bar}": wins, f"vs_{bar}": verdicts[bar][size]}
+                timing[size] = {
+                    k: round(v, 1) if isinstance(v, float) else v for k, v in row.items()
+                }
             result["timing_us_per_layer"] = timing
-            result["beats_compiled"] = beats
-            if base:
-                result["beats_baseline"] = beats_base
+            for bar in bars:
+                result[f"phases_vs_{bar}"], result[f"beats_{bar}"] = judge(verdicts[bar])
     except Exception as e:  # report the failure to the Muse agent as G1
         result["error"] = short_error(e)
     if args.out:

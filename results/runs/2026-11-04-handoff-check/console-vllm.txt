@@ -1,0 +1,70 @@
+W1104 08:42:09.936000 2535 torch/_library/triton.py:53] Triton not available, find_triton_kernels = []
+(MainProcess pid=2535) WARNING 11-04 08:42:10 [arg_utils.py:1945] The global random seed is set to 0. Since VLLM_ENABLE_V1_MULTIPROCESSING is set to False, this may affect the random state of the Python process that launched vLLM.
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+vllm check        base rows  1: 967 kernels
+vllm check compiled-experts rows  1: 967 kernels, exact True
+vllm check muse-experts rows  1: 847 kernels, exact True
+vllm check        base rows 32: 1087 kernels
+vllm check compiled-experts rows 32: 1087 kernels, exact True
+vllm check muse-experts rows 32: 847 kernels, exact True
+vllm rep0        base rows  8 prompt 128:  14.405 ms/step
+vllm rep0 compiled-experts rows  1 prompt 128:   5.726 ms/step
+vllm rep0 muse-experts rows  8 prompt 128:  13.363 ms/step
+vllm rep0        base rows  1 prompt 128:   5.597 ms/step
+vllm rep0        base rows 32 prompt 1024:  39.821 ms/step
+vllm rep0 muse-experts rows  1 prompt 128:   5.850 ms/step
+vllm rep0 compiled-experts rows  8 prompt 128:  14.398 ms/step
+vllm rep0 compiled-experts rows 32 prompt 128:  29.995 ms/step
+vllm rep0 muse-experts rows 32 prompt 1024:  34.423 ms/step
+vllm rep0 muse-experts rows 32 prompt 128:  25.355 ms/step
+vllm rep0 compiled-experts rows 32 prompt 1024:  39.964 ms/step
+vllm rep0        base rows 32 prompt 128:  30.098 ms/step
+vllm rep1 muse-experts rows 32 prompt 128:  25.031 ms/step
+vllm rep1 compiled-experts rows 32 prompt 128:  30.051 ms/step
+vllm rep1        base rows 32 prompt 128:  30.245 ms/step
+vllm rep1        base rows  8 prompt 128:  14.487 ms/step
+vllm rep1 compiled-experts rows  1 prompt 128:   5.809 ms/step
+vllm rep1 muse-experts rows 32 prompt 1024:  34.757 ms/step
+vllm rep1        base rows  1 prompt 128:   5.663 ms/step
+vllm rep1 compiled-experts rows 32 prompt 1024:  39.789 ms/step
+vllm rep1 compiled-experts rows  8 prompt 128:  14.458 ms/step
+vllm rep1 muse-experts rows  1 prompt 128:   5.918 ms/step
+vllm rep1        base rows 32 prompt 1024:  39.661 ms/step
+vllm rep1 muse-experts rows  8 prompt 128:  13.337 ms/step
+vllm rep2        base rows  1 prompt 128:   5.440 ms/step
+vllm rep2 compiled-experts rows 32 prompt 1024:  39.763 ms/step
+vllm rep2        base rows 32 prompt 1024:  39.921 ms/step
+vllm rep2        base rows  8 prompt 128:  14.404 ms/step
+vllm rep2 compiled-experts rows 32 prompt 128:  30.102 ms/step
+vllm rep2 muse-experts rows  1 prompt 128:   5.803 ms/step
+vllm rep2 compiled-experts rows  1 prompt 128:   6.054 ms/step
+vllm rep2 muse-experts rows 32 prompt 1024:  36.275 ms/step
+vllm rep2 compiled-experts rows  8 prompt 128:  14.421 ms/step
+vllm rep2 muse-experts rows  8 prompt 128:  13.467 ms/step
+vllm rep2 muse-experts rows 32 prompt 128:  25.258 ms/step
+vllm rep2        base rows 32 prompt 128:  30.859 ms/step
+
+vllm: median step ms over 3 repeats (change against base)
+  rows  1 prompt  128        base:   5.597 [5.440-5.663]
+  rows  1 prompt  128 compiled-experts:   5.809 [5.726-6.054] (+0.211 ms, +3.8%)
+  rows  1 prompt  128 muse-experts:   5.850 [5.803-5.918] (+0.253 ms, +4.5%)
+  rows  8 prompt  128        base:  14.405 [14.404-14.487]
+  rows  8 prompt  128 compiled-experts:  14.421 [14.398-14.458] (+0.017 ms, +0.1%)
+  rows  8 prompt  128 muse-experts:  13.363 [13.337-13.467] (-1.042 ms, -7.2%)
+  rows 32 prompt  128        base:  30.245 [30.098-30.859]
+  rows 32 prompt  128 compiled-experts:  30.051 [29.995-30.102] (-0.194 ms, -0.6%)
+  rows 32 prompt  128 muse-experts:  25.258 [25.031-25.355] (-4.987 ms, -16.5%)
+  rows 32 prompt 1024        base:  39.821 [39.661-39.921]
+  rows 32 prompt 1024 compiled-experts:  39.789 [39.763-39.964] (-0.032 ms, -0.1%)
+  rows 32 prompt 1024 muse-experts:  34.757 [34.423-36.275] (-5.064 ms, -12.7%)
+G3 muse-experts vs base: fail {'decode': 'slower', 'prompt': 'slower', 'request': 'slower'}
+G3 muse-experts vs compiled-experts: fail {'decode': 'not slower', 'prompt': 'not slower', 'request': 'not slower'}
