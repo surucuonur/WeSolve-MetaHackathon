@@ -26,7 +26,7 @@ It is the measurement that round 2's skill reads first: the last section names w
   - +0.16 ms (+1%) with 8;
   - −1.76 ms (−6%) with 32.
 
-  Round 1 predicted −0.54, −1.81 and −5.72 ms.
+  Round 1's per-slot predictions (its piece basis, `muse-spark/implementation/README.md`), added up by Claude, were −0.54, −1.81 and −5.72 ms; round 1 itself stated no total.
 - **The experts kernel alone slows the step by 1.2 ms (22%) with 1 request,** although the grader timed it 36% faster than the reference.
   - The grader ran the 20 layers' calls with nothing between them, so the GPU overlapped them.
   - In the model each layer waits for the one before. Chained like that, the kernel takes 133 µs per layer against the reference's 80.
@@ -88,7 +88,7 @@ The decode step's period: the median over 3 repeats, in shuffled order, at 1, 8 
 | combine, compiled reference | −0.288 | −0.260 | −0.272 |
 | all three attempts | **+0.980** (+18.3%) | **+0.163** (+1.1%) | −1.756 (−5.9%) |
 | all three compiled references | −0.498 (−9.3%) | −0.558 (−3.9%) | −0.242 (−0.8%) |
-| round 1's prediction, all three | −0.54 | −1.81 | −5.72 |
+| round 1's per-slot predictions, added up (piece basis) | −0.54 | −1.81 | −5.72 |
 
 **Plain MLX**, change in ms against an unchanged step of 4.998, 13.541 and 28.496 ms:
 - experts: +1.228, −0.832, −3.661;
