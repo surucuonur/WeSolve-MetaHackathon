@@ -83,9 +83,58 @@ kept, no added launch, threadgroup unchanged (256 threads, 28,080 B).
 
 - **attempt-2** (`muse-spark/round-4/kernels/routing/attempt-2/`): first in direction (a). Predicted ~45 / 144 / 147 µs/layer at 1 / 8 / 32 rows (32-row saving 24 rows × 0.16 µs/row realised marginal = 3.8 µs off the 151.3 anchor), prefill `handed off` ×3. **Measured: G1 pass, G2 pass at all six sizes (`rows_differ` 0, `max_rel_err` 0.0); candidate 44.4 / 71.6 / 83.8 vs compiled 59.2 / 87.6 / 92.1 µs/layer, wins 30 / 30 / 29, decode `faster` ×3, prefill `handed off` ×3, `beats_compiled` true** (`grade.json`). Baseline `none`, so no `beats_baseline`. Taught: sharing is bit-exact at decode sizes (first sharing design timed at 17–32 rows) and the 1/8-row margins hold (14.8 / 16.0 vs the starting point's 17.7 / 15.8), but the 32-row margin narrowed to 8.3 µs/layer against the starting point's cross-run-stable ~19.7 — collapsing each row to 60 serial `(row, expert)` threads (8 compute groups, 24 exit-only groups) gave up more partition parallelism than the ~3.8 µs/layer of realised traffic saving bought. Absolutes missed by −50% / −43% at 8/32 from chained machine drift (the compiled bar moved 160.0 → 87.6 and 171.0 → 92.1 in the same run); the margin miss is the real one. Next change: share `w` inside the staged path's partition-parallel layout (2 rows per group, interleaved `parts`) rather than per-`(row, expert)` serial threads, or drop (a) for (b).
 
+### builder-2-c — direction (b) hardening: tail-group feeding on attempt-1
+
+**Direction:** build on attempt-1 (dead `parts[]` zeroing removed);
+use the 196 threads idle in the 23%-duty tail staged groups
+(`gbase` 32 / 36 / 40, `partitions == 32`, `base_iters == 1`) to
+pre-load the next group's `w_router` `float4`s into registers
+during the tail compute phase, so the next group fills `wsh`
+by threadgroup stores instead of fresh device loads
+(`ineff-baseline-routing-2` items 1–2, feeding fix). Per-row
+re-read structure, partition formula, barrier count (27/row),
+first-touch init, accumulation order, sigmoid, top-4 and fold
+untouched; `max_rows: 32` kept, no added launch, threadgroup
+unchanged (256 threads, 28,080 B; registers only).
+
+- **attempt-3** (`muse-spark/round-4/kernels/routing/attempt-3/`):
+  each idle tail thread holds up to 5 `float4`s (`pre[5]`,
+  `lv = (tid - 60) + j * 196`) covering the next group's 960
+  staging items exactly once with attempt-1's mapping; groups
+  36 / 40 / 44 are fed, the last group and all non-tail /
+  non-decode geometries run attempt-1 verbatim, GEMV untouched.
+  Predicted ≈58 / 136 / 74 µs/layer at 1 / 8 / 32 rows
+  (attempt-1 anchor 58.5 / 136.9 / 74.7 minus ~1 µs/layer of
+  overlap at 8/32, 0 at 1), prefill `handed off` ×3.
+  **Measured: G1 pass, G2 pass at all six sizes (`rows_differ`
+  0, `max_rel_err` 0.0); candidate 49.3 / 74.5 / 81.8 vs
+  compiled 66.2 / 86.1 / 94.8 µs/layer, wins 30 / 30 / 27,
+  decode `faster` ×3, prefill `handed off` ×3,
+  `beats_compiled` true** (`grade.json`). Baseline `none`, so
+  no `beats_baseline`. The 8-row absolute missed its anchor
+  by −45%, proven machine drift by the same run's compiled
+  bar moving 157.3 → 86.1 (−45%) and reference 164.8 → 100.4
+  with candidate/compiled ratios in attempt-1's band
+  (0.74 / 0.87 / 0.86 vs 0.68 / 0.87 / 0.81); margins this run
+  16.9 / 11.6 / 13.0 vs attempt-1's 27.6 / 20.4 / 17.4.
+  Taught: tail-group feeding is bit-exact and keeps the
+  verdict, but no saving is banked — the overlap is inside
+  paired noise (tail compute too short to hide 960 loads;
+  20-float register hold), so attempt-1 and attempt-3 are
+  timing-equivalent and the remaining direction-(b) prize,
+  if any, is not in feeding alone.
+
 ## Boundary checks
 
 *(boundary-2 appends here for each attempt that passed G2.)*
+
+- **attempt-1 (`muse-spark/round-4/kernels/routing/attempt-1/`) — pass** (boundary-2, 2026-11-04T21:58:25Z). G2 in its `grade.json`: pass, `rows_differ` 0 at all six sizes, decode `faster` ×3, prefill `handed off` ×3, `beats_compiled` true. `diff` against the starting point (`muse-spark/round-3/kernels/routing/attempt-6/`) confirms the only functional changes are the deleted `parts[]` zero loop and the first-touch ternary (`block-0.metal:34-36,115`); `block-1.metal` and `spec.json` are byte-identical.
+  - **Row counts 1–32:** `rows == 1` takes the GEMV branch (`block-0.metal:39-59`), which never reads `parts[]` or `wsh[]`. Every count 2–32 (graded 8/32 and ungraded 2–7, 9–31 alike) gives `tm = 1`, `partitions = 32`, `base_iters = 1` from the `rows`-only formula (`block-0.metal:63-77`) — the identical geometry the graded 8/32 run, no branch on any graded value. I enumerated the group/partition index arithmetic for all 32 counts by hand-simulation of `block-0.metal:79-134`: no count changes the accumulation order, partition boundaries or first-touch pattern.
+  - **Unwritten threadgroup reads — none.** `parts[p*64+e]` (`block-0.metal:115,124,131`): partitions 0–30 each cover one chunk (`pc0 = p`, `pc1 = p+1`), so their only touch has `c_lo == pc0` and starts from `0.0f` without reading; partition 31 covers chunks 31–47 (`pc0 = 31`, `pc1 = 48`), is initialised `0.0f` at group `gbase = 28` (chunk 31 only), then resumed at `gbase = 32, 36, 40, 44`, each resume separated from the previous store by the barrier at `block-0.metal:126`. The final sum (`:128-134`) reads only the 1,920 `(p, e)` slots so written; stride slots `p*64+60..63` are never read. `xpad` reads (`:46-49,121`) hit only `c*17+k`, `k < 16`, all written at `:31-33` (pad slot `c*17+16` never read; GEMV bases are multiples of 4, so `xb+3` never crosses into it). `wsh` reads (`:121`) hit only `s*1024+e+k*64`, `e < 60`, staged for every chunk in the group at `:85-97` before the barrier at `:98` (stride gaps 60–63 never read). `scores[0..59]` are fully written in both branches (GEMV by `lane == 0` per simdgroup, `:56-58`; scalar at `:128-134`) before the barrier at `:136`, the sigmoid rewrite (`:139-143`), the barrier at `:144` and thread 0's reads (`:149-170`).
+  - **Threadgroup memory:** unchanged `(816 + 60 + 2,048 + 4,096) × 4 B = 28,080 B` (`block-0.metal:19,26-29`), 4,688 B under the 32 KB limit; the `parts[2048]` allocation is retained, only its zeroing is gone. Threadgroup stays 256 threads (`spec.json`), the starting point's proven pipeline-cap configuration.
+  - **Thread timing:** no dependence. Every cross-thread reuse is barrier-separated — `xpad` write → `:37`, `wsh` stage → `:98`, `parts` store → `:126` before the next group's resume or overwrite, score stores → `:136`/`:144` — all barriers are reached uniformly (the `rows` branch is threadgroup-uniform, inner conditions guard work only, never a barrier), thread 0 alone writes the outputs, and the first-touch choice `(c_lo == pc0)` is a pure function of `gbase`/partition arithmetic, not of scheduling. No atomics.
+  - **Captured-input assumptions:** none new. The kernel hard-codes only the slot constants (`768`, `60`, `4`) whose shapes/dtypes/layouts G1 enforces, branches on `rows` only at `1` and in the partition formula, and reads `w_router` by `float4` at 4-float-aligned offsets exactly as the starting point did; sigmoid, strictly-greater tie scan and weights fold are byte-unchanged, so no value-range, tie or prompt assumption is added.
+  - **`max_rows: 32`:** kept verbatim (`spec.json`: `"max_rows": 32`, no `min_rows`, grid `rows*256`). Every decode count 1–32 stays on the kernel; 127/1,016/2,048 and any count above 32 are handed off to the compiled reference, so routing's reference-regime changes at 768 and the experts slot's 60-row switch are never kernel-visible.
 
 ## Decision
 

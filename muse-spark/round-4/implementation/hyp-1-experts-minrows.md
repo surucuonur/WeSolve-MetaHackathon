@@ -1,8 +1,8 @@
 # Hypothesis 1: experts with `min_rows` — hand 1 row to the compiled reference
 
 - **Owner:** lead
-- **Status:** building
-- **Version:** 5
+- **Status:** hardening
+- **Version:** 6
 - **Updated:** 2026-11-04T21:49:10Z
 - **Next:** builders grading
 
@@ -317,11 +317,15 @@ G1+G2 pass (`grade.json`: differ 0 / max_ulp 0.0 at all six sizes; `beats_compil
 
 ## Decision
 
-*(lead writes at close.)*
+**Best attempt: `muse-spark/round-4/kernels/experts/attempt-1`** (`min_rows: 2`, `max_rows: 59`, kernels byte-identical to the starting point). It passes G1, G2 (differ 0 at all six sizes) and its boundary check (`pass`), with `beats_compiled` true: decode `faster` at 8 and 32 rows (157.6 / 571.1 vs compiled 232.1 / 832.6 µs per layer, 30 wins each), 1-row and all prefill sizes `handed off`. Attempt-2 (`max_rows: 32`) also passes everything and is faster at 32 rows (538.1) but slower at 8 (170.5 vs 157.6); attempt-1 is picked because the 8-request workload is where the untested three-slot interaction (+2.13 to +2.86 ms/step, `ineff-g3-2`) bites, and because it keeps the starting point's full 2–59 kernel window. No hardening change is named: the kernels are unchanged by design and every kernel-level 1-row fix is refuted; the remaining cause (the 8/32-row chain headroom, `ineff-baseline-experts-2`) is a different hypothesis if the set fails.
+
+**Predicted change in whole requests (PREDICTION):** this slot alone adds nothing with 1 request (1 row handed off — MLX's own code runs) and, additively from its same-run piece margins × 20 layers, about −1.49 ms per decode step at 8 requests and −5.23 ms at 32 requests against the compiled reference (`ineff-g3-2.md` arithmetic); prompts unchanged (handed off). The ready check replaces this prediction with a measurement; the three-slot interaction may take some of it back at 8 requests.
 
 ## Failure ledger
 
-*(lead keeps: each graded attempt that lost, the size or phase, its named cause, its approach.)*
+## Failure ledger
+
+No graded attempt lost: attempts 1 and 2 both pass G1, G2 and `beats_compiled`. Nothing to harden against.
 
 ## Unverified
 
