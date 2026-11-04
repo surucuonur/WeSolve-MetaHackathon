@@ -1,7 +1,7 @@
 # Hypothesis 3: combine carried into the set, byte-identical
 
 - **Owner:** lead
-- **Status:** boundary
+- **Status:** hardening
 - **Version:** 1
 - **Updated:** 2026-11-04T22:05:00Z
 - **Next:** boundary-3 writes the Boundary section
@@ -47,7 +47,43 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory (`claude/m
 
 ## Builders
 
-*(one section per builder, filled as attempts return.)*
+### builder-3-a — direction (a): byte-identical copy
+
+**Direction:** copy `muse-spark/round-3/kernels/combine/attempt-2`
+byte-identically into this round (both blocks and `spec.json`,
+including the `FP_CONTRACT OFF` header at `block-1.metal:23-24` via
+`"header_block": 1`), no kernel or spec change at all, graded once so
+the ready check can time this slot in this round's set. Baseline
+`none`, no `max_rows`/`min_rows` — the kernel runs at all sizes.
+
+- **attempt-1** (`muse-spark/round-4/kernels/combine/attempt-1/`):
+  `block-0.metal`, `block-1.metal` and `spec.json` verified
+  byte-identical to the starting point with `diff` (all three
+  identical). Predicted 31.8 / 34.7 / 32.7 decode and 38.2 / 100.9 /
+  198.0 prefill µs/layer (the starting point's own grade,
+  `muse-spark/round-3/kernels/combine/attempt-2/grade.json`:
+  traffic 9,232 B/row = 0.05 / 0.37 / 1.48 µs decode and 5.9 / 46.9 /
+  94.5 µs prefill at 200 GB/s, remainder the shared chained dispatch
+  floor), `faster` at all six sizes, `beats_compiled` true.
+  **Measured: G1 pass, G2 pass at all six sizes (differ 0 / max ULP
+  0.0 each, first difference none); candidate 39.3 / 45.5 / 43.2 vs
+  compiled 47.1 / 60.5 / 69.6 decode and 43.9 / 95.1 / 178.8 vs
+  66.9 / 284.1 / 567.2 prefill µs/layer, wins 25 / 25 / 30 / 29 / 30 /
+  29, `faster` at all six sizes, `phases_vs_compiled` decode faster,
+  prefill faster, `beats_compiled` true** (`grade.json`, reference
+  43.8 / 73.7 / 89.5 decode, 91.0 / 425.8 / 924.1 prefill in the same
+  run). Baseline `none`, so no `beats_baseline`. The decode absolutes
+  missed the anchor by +24% / +31% / +32% while prefill stayed within
+  +15% / −6% / −10%: absolute drift across runs on identical code
+  (same-run compiled bar moved +28% / +47% / +52% decode vs the
+  starting point's run), judged by same-run verdicts — margins this
+  run −7.8 / −15.0 / −26.4 decode and −23.0 / −189.0 / −388.4 prefill
+  exceed the starting point's −5.1 / −6.4 / −13.0 and −25.8 / −180.9 /
+  −358.2. Taught: the copy reproduces the starting point's
+  exactness and compiled bar exactly; it removes no inefficiency
+  inside the slot (the slot sits on its chained floor), and any set
+  effect is measurable only by the ready check's `muse-all`, not by
+  this piece grade.
 
 ## Boundary checks
 
@@ -55,15 +91,21 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory (`claude/m
 
 ## Decision
 
-*(lead writes at close.)*
+**Best (only) attempt: `muse-spark/round-4/kernels/combine/attempt-1`** — the byte-identical copy of the starting point, graded in this round: G1 pass, G2 differ 0 at all six sizes, `beats_compiled` true with both phases `faster` (decode 39.3 / 45.5 / 43.2 vs compiled 47.1 / 60.5 / 69.6 µs per layer, 25 / 25 / 30 wins; prefill 43.9 / 95.1 / 178.8 vs 66.9 / 284.1 / 567.2, 29 / 30 / 29 wins). No hardening change exists to name: exploration confirms the slot is at its chained floor and no bit-exact change widens its margin, so a second builder direction would be a second byte-identical grade. The attempt goes to the ready check as the combine member of the set.
+
+**Predicted change in whole requests (PREDICTION):** this slot's own contribution, from its same-run margins × 20 layers, is about −0.16 / −0.30 / −0.53 ms per decode step at 1 / 8 / 32 requests against the compiled reference; the set's whole-request change is measured only by the ready check and is not a sum of slots.
 
 ## Failure ledger
 
-*(lead keeps: each graded attempt that lost, the size or phase, its named cause, its approach.)*
+## Failure ledger
+
+No graded attempt lost: attempt-1 passes G1, G2 and `beats_compiled`. Nothing to harden against.
 
 ## Unverified
 
-*(starts from the boundary's can't-see list.)*
+- Whether the pragma pair leaves any FMA in the compiled binary: G2 shows no contraction effect (differ 0 where the contracted kernel differed), but no AIR disassembly was available (no Metal toolchain in the grader environment); exactness rests on G2, not on inspecting the binary.
+- Row counts other than the six graded ones (any decode count 1–32, other prefill chunk sizes): correctness rests on the per-element, rows-independent construction, not on G2. Sizes above 2,048, prefill beyond the first seeded chunk, other lengths/distributions and mixed batches untested.
+- The set's whole-request behaviour (three-slot interaction at 8 requests; 1-request whole-request noise) is measured only by the ready check. Unwritten threadgroup reads: none by construction (no threadgroup memory), checked by hand in the boundary check. NaN-vs-NaN counts as equal in G2.
 
 ## Checks
 
