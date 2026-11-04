@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 4
-- **Updated:** 2026-11-04T03:47:53Z
-- **Next:** hardening from attempt-1 (fewer barriers, shared w tiles); builder-2-b attempt-2 pending
+- **Version:** 5
+- **Updated:** 2026-11-04T03:48:31Z
+- **Next:** hardening: attempt-1 staging fix and attempt-2 prefill-geometry fix compete
 
 ## Inefficiency
 

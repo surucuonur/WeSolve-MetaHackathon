@@ -89,3 +89,17 @@ verifier, 2026-11-04T03:23:45Z — **confirmed**. Checked: serial chain at [bloc
   is staging-bound (96 barriers/row, 7/8 tile waste): 54.9/91.4/114.8
   vs compiled 56.2/91.2/98.9 µs/layer — exactness is solved; speed at
   8/32 rows is now a tiling/barrier problem, not a rounding problem.
+- builder-2-b, 2026-11-04T03:47:40Z: round-2 routing attempt-2
+  (`muse-spark/round-2/kernels/routing/attempt-2`, scalar only, no MMA)
+  passes G2 at all three decode sizes (rows_differ 0, max rel err 0.0):
+  GEMV lane-partial + shuffle-tree emulation at 1 row, and at 8/32 rows
+  exact split-K partition boundaries (31×16 + last 272) with each partial
+  summed serially in increasing `d` and partials summed sequentially.
+  This disproves this entry's "a serial scalar loop cannot reproduce the
+  MMA regimes' rounding" at decode sizes: the 8-product MMA accumulation
+  rounds identically to a serial scalar sum over the same K order, at
+  least on all graded decode inputs. Prefill still fails in that attempt
+  by design (32 partitions forced where MLX uses 8 at 127 rows and the
+  regular GEMM above 768 rows). Next test: same scalar kernel with
+  `rows`-branched partition geometry (8×96 at 127; one chunk-after-chunk
+  accumulator above 768).
