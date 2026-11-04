@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 4
-- **Updated:** 2026-11-04T18:18:10Z
-- **Next:** attempt-1 boundary pass; builder-3-c (attempt-3) still building; builder-3-d fixes attempt-2's threadgroup size as attempt-4
+- **Version:** 5
+- **Updated:** 2026-11-04T18:19:19Z
+- **Next:** builder-3-d (attempt-4, 10-rows/group fix) still building; best remains attempt-1 (re-grade decision after attempt-4)
 
 ## Inefficiency
 
@@ -107,6 +107,45 @@ the chained timing decides).
   checks); re-derived prefill floors ~13 / ~102 / ~205 µs (see
   notes.md).
 
+### builder-3-c — direction (c): narrower staged footprint (drop `parts` where partitions = 1)
+
+Two kernels split at the regime boundary `rows = 768` (threadgroup
+arrays are statically sized, so one kernel cannot shed `parts`).
+Kernel-A is the starting point verbatim plus a uniform
+`if (rows > 768) return;` (outputs renamed `inds_a` / `weights_a`).
+Kernel-B copies kernel-A through at rows ≤ 768 and runs the
+single-partition path above: each expert's full 768-product chain in
+one thread-private accumulator, no `parts`, 19,888 B (60.7% of 32 KB)
+instead of 28,080 B. Orders, staging, barriers (24), sigmoid, top-4
+and fold verbatim. Ruled out while writing: single-kernel register
+partials (final ordered partition-sum needs a full-size gather
+scratch ≈ `parts` itself); 8-chunks/group (8,192 `wsh` floats alone
+exceed 32 KB) and 6-chunks/group (36,272 B with `parts`) — both
+infeasible; sharding one expert's K across threads (reorders its
+serial chain, fails G2).
+
+- **attempt-3** (`muse-spark/round-3/kernels/routing/attempt-3/`):
+  predicted 50 / 72 / 76 / 230 / 1266 / 2446 (decode = attempt-4 +
+  ~2-3 µs copy launch; prefill-big = anchor + empty launch − ~10%
+  of the shape residual), decode `faster` × 3, prefill `slower` × 3,
+  `beats_compiled` false. Measured (`grade.json`): G1 pass; G2 pass
+  all six, differ 0. Decode: 66.1 / 96.1 / 109.5 vs compiled 64.7 /
+  95.4 / 103.9 — `same` (14/15/9). Prefill: 266.0 / 1098.3 / 2097.3
+  vs compiled 96.9 / 235.3 / 299.7 — `slower` (0/2/0).
+  `phases_vs_compiled` decode `not slower`, prefill `slower`;
+  `beats_compiled` false. Taught: the decode miss (+32/+33/+44%) is
+  machine-state drift meeting the small real wiring cost — the
+  compiled bar swung ~2× between adjacent runs (attempt-1 saw
+  139.4/157.2/149.7 minutes earlier), compressing attempt-4's margin
+  to coin-flip races where ~2-3 µs of copy launch flips `faster` to
+  `same` (see notes.md). Prefill-big is the encouraging half:
+  −15%/−17% vs anchor against a +6%/+3% bar headwind, consistent
+  with removing most of the 355/610 µs shape residual — but
+  cross-run and drift-confounded, needs a same-run baseline to
+  confirm. Next: re-grade a byte-identical copy WITH `--baseline`
+  round-2 attempt-4 (lead must bless the flag; verdict-neutral, adds
+  the paired column) to isolate copy cost and residency saving.
+
 ## Boundary checks
 
 ### attempt-1 — pass (boundary-3, 2026-11-04T18:14:51Z)
@@ -133,6 +172,7 @@ Still unverified (inherited can't-see items, for **Unverified**): hand-off exact
 
 - attempt-1 (max_rows 32): G1+G2 pass, decode `faster` x3, prefill `same`/`same`/`slower` (2,048 rows: 8/30 wins, exactly the 22-loss threshold; candidate medians within 2.7% of compiled on literally identical code — paired noise, not a slowdown). Cause (suspected): noise on identical code; the builder's proposed next change is a re-grade of a byte-identical copy under a new number. Approach: hand-off (no kernel change can move identical-code timing).
 - attempt-2 (GEMM-shaped sharing, 16 rows/group): G1 fail — kernel 1 asks 960 threads/group (16 rows × 60 experts), pipeline max is 640; no G2, no timing. Cause: compile error (threadgroup size), not a speed cause; fix is 10 rows/group (600 threads) in a copied attempt.
+- attempt-3 (drop `parts` where partitions = 1, two-kernel split at rows = 768): G1+G2 pass, decode `same` × 3 (66.1/96.1/109.5 vs 64.7/95.4/103.9; 14/15/9 wins — the ~2–3 µs copy launch flips `faster` to `same`), prefill `slower` × 3 (266.0/1,098.3/2,097.3 vs 96.9/235.3/299.7 — the traffic re-read dominates; shape residual removal consistent with −15%/−17% but drift-confounded). Cause: per-row re-read untouched plus copy-launch wiring cost at decode. Approach: narrower staged footprint. (Declined: the proposed `--baseline` re-grade — this round has no baselines, so no `--baseline` runs.)
 
 ## Unverified
 

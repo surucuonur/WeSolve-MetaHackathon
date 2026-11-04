@@ -45,3 +45,8 @@
 2026-11-04T18:17:45Z | builder-3-b | graded attempt-2: G1 fail (threadgroup 960 > pipeline max 640), no G2/timing; recorded in notes.md, hyp-3 section, ineff-baseline-routing-1 note
 2026-11-04T18:17:45Z | builder-3-b | done: one attempt graded and recorded; next change is 10-rows-per-group (600 threads) copy in a new attempt
 2026-11-04T18:18:33Z | lead | v11: hyp-2 dropped (slot keeps reference); routing-2 G1 fail (ledger), routing-1 boundary pass
+2026-11-04T18:19:07Z | builder-3-c | graded attempt-3: G1+G2 pass (differ 0 all six), decode same x3 (14/15/9 wins), prefill slower x3, beats_compiled false
+2026-11-04T18:19:07Z | builder-3-c | done: verdict in notes.md + hyp-3 section, drift/wiring miss analysis in notes.md + ineff-baseline-routing-2 note; next is same-run --baseline re-grade of byte-identical copy
+2026-11-04T18:19:22Z | builder-3-d | start: hyp-3 direction (b) fix — copy attempt-2 to attempt-4 with 10 rows/group
+2026-11-04T18:19:22Z | builder-3-d | claimed muse-spark/round-3/kernels/routing/attempt-4 for hyp-3 direction (b) 10-rows/group fix of attempt-2
+2026-11-04T18:19:37Z | lead | v12: routing-3 G2 pass, decode same x3, prefill slower (ledger)
