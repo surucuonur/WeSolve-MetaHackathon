@@ -1,6 +1,6 @@
 # Exploration: round 4 — analysis
 
-**Version:** v2 · 2026-11-04T21:48:45Z · skill version 10
+**Version:** v3 · 2026-11-04T23:01:20Z · skill version 10
 
 ## Tracker
 
@@ -128,7 +128,12 @@ Confirmed inefficiencies outside the slots stand as written in round 1's and rou
 
 Each territory entry's *Files read* list: [territory-baseline-experts.md](territory-baseline-experts.md), [territory-baseline-routing.md](territory-baseline-routing.md), [territory-baseline-combine.md](territory-baseline-combine.md), [territory-g3.md](territory-g3.md), [territory-grader.md](territory-grader.md).
 
+## What building taught
+
+The analysis survives building with three corrections. (1) The `min_rows` hand-off works exactly as the grader territory mapped it: sizes 1, 127, 1,016 and 2,048 grade `handed off`, decode needs only 8 and 32 rows `faster`, and the experts attempt's measured whole-request decode (−1.57 ms/step at 8×128, −4.02 / −5.09 at the 32-request workloads vs base) matches its piece-margin prediction (−1.49 / −5.23 vs compiled) — piece timing at 8/32 rows transfers; the slot's problem was never speed. (2) The routing margin pools were smaller in the step than on paper: sharing `w_router` (item 3) narrowed the 32-row margin instead of widening it, and neither shape trim (item 4) widened attempt-1's margins, so the pair's 32×1024 gap (item 1 of *What is left*, `ineff-g3-1`) was not closed by any single-slot change — in ready-2 the pair's 32×1024 decode median is +0.86 ms vs base where +0.17 ms/step of extra separation was wanted. (3) The three-slot interaction is no longer historical: with these kernels the three-slot set measures +0.32 ms/step vs base at 8×128 against an additive ≈−2.16, i.e. ≈+2.5 ms/step of interaction, while the same slots at 32 requests compose fine (−4.31 / −4.00). Any future set should be designed at 8 requests first. The verdict-level lesson stands from round 3 and is now three times measured: at gains of ~1%, 5 shuffled repeats judge by spread, and every variant in both ready checks failed `not slower` with favourable medians in most workloads.
+
 ## Versions
 
+- v3 · 2026-11-04T23:01:20Z · What building taught added (hand-off transfers, margin pools small, interaction live at 8 requests) · changed: none
 - v2 · 2026-11-04T21:48:45Z · final analysis: 5 territories done, 7 confirmed 1 refuted, 6 ranked items · changed: territory-baseline-experts v2, territory-baseline-routing v2, territory-baseline-combine v2, territory-g3 v2, territory-grader v4, ineff-baseline-experts-1 v2, ineff-baseline-experts-2 v2, ineff-baseline-routing-1 v2, ineff-baseline-routing-2 v2, ineff-baseline-combine-1 v2, ineff-baseline-combine-2 v2, ineff-g3-1 v2, ineff-g3-2 v2
 - v1 · 2026-11-04T21:40:34Z · opened round 4 starting point, 5 territories · changed: none

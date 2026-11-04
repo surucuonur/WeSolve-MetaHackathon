@@ -60,3 +60,43 @@ verifier, 2026-11-04T21:47:11Z — **confirmed**.
 - **confirmed:** shape items in [block-0.metal](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-3/kernels/routing/attempt-6/block-0.metal:27) — barriers at :33, :94, :119 per staged group, :129, :137 → 12×2+3 = **27/row**, GEMV branch pays only the 3 outside ✓; partition formula at :57-75 gives `tm = 1, ratio = 24, partitions = 32, base_iters = 1` at decode 2–32, last partition chunks 31–47; groups `gbase` 0–28 run `tid < 4×60` = 240/256 (94%), `gbase` 32–44 run 60/256 (23.4%) at :99-101, final sum 60/256 at :121-127; 16 of 48 chunks = 33% of 46,080 FMAs/row through a quarter of lanes ✓; footprint (816+60+2048+4096)×4 = 28,080 B = 85.7% of 32 KB, 4,688 B headroom (:15,22-25) ✓; dead `parts` zeroing at :27-32 unused by GEMV :35-55 (which reads `xpad`/`w_router` only) ✓; sigmoid 60/256 at :132-136, thread-0 top-4 at :139-174 ✓; reordering partitions fails G2, feeding-only fixes legal ([hyp-3-routing-prefill.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-3/implementation/hyp-3-routing-prefill.md) boundary) ✓.
 - **confirmed:** residuals (measured − traffic floor from entry 1) — re-grade 45.1−0.9 = 44.2, 144.2−7.4 = 136.8, 151.3−29.7 = 121.6 µs; round-3 grade 50.8/83.5/102.5 µs; compiled overhead ~61.9/159.1/170.1 µs (compiled total − ~0.9 µs read-once floor, `~` as written) ✓; 1 kernel/layer vs ~12 reference, 46,080 FMA/row ≈ 0.01 µs at 5.2 TFLOPS — overhead-bound ([GLOSSARY.md](/Users/onur/Desktop/Github/Hackathon-muse/claude/GLOSSARY.md)) ✓; shape slice never decomposed, sole barrier datum ~3.2 vs ~0.8 µs/group inferred/confounded from attempt-5, cross-threadgroup overlap hiding decode latency — all carried as caveats, residual not claimed as saving ✓.
 - **confirmed:** saving bounds labelled prediction only — dead zeroing sub-µs at 1 row, tail feeding single-digit µs/layer envelope at 8/32 (0.02 ms/step per µs/layer), serial tail ~1 µs/layer unmeasured; total single-digit at 32 rows against the +7.5–12.5 µs/layer set need, prefill 0 by `max_rows: 32`, same-run chained proof required ✓.
+
+## From other agents
+
+- builder-2-b, 2026-11-04T21:55Z — attempt
+  `muse-spark/round-4/kernels/routing/attempt-1` removed item 4's
+  zeroing by first-touch initialisation (`(c_lo == pc0) ? 0.0f :
+  parts[...]`), deleting the 2,048 threadgroup writes at every decode
+  size, not just 1 row. G1+G2 pass at all six sizes, decode `faster`
+  ×3 (30/26/30 wins), `beats_compiled` true. The deleted writes'
+  effect was not resolvable in chained timing: same-run candidate
+  58.5/136.9/74.7 vs compiled 86.1/157.3/92.1 µs/layer, while the
+  compiled bar itself shifted +37%/−46% at 1/32 rows against the
+  re-grade anchor — absolutes are machine-state dominated at decode
+  sizes, and the ≤0.5 µs/layer bound on this item stands as
+  unmeasurable rather than banked. Items 1–2 (barriers, tail duty)
+  remain the only direction-(b) shape cost with a plausible
+  measurable effect.
+
+- builder-2-c, 2026-11-04T21:59Z — attempt
+  `muse-spark/round-4/kernels/routing/attempt-3` implemented the
+  tail-group feeding fix for items 1–2: in tail groups
+  (`gbase` 32/36/40, 60/256 threads computing) the 196 idle
+  threads pre-load the next group's 960 `w_router` float4s
+  into registers (5 per thread), and groups 36/40/44 fill
+  `wsh` by threadgroup stores instead of fresh device loads.
+  Barrier count (27/row), partition order and every
+  accumulation order unchanged. G1+G2 pass at all six sizes,
+  decode `faster` x3 (30/30/27 wins), `beats_compiled` true,
+  candidate 49.3/74.5/81.8 vs compiled 66.2/86.1/94.8
+  us/layer. No saving is banked: margins 16.9/11.6/13.0 vs
+  attempt-1's 27.6/20.4/17.4 in its own run are cross-run
+  drift (this run's compiled bar at 8 rows moved -45%
+  against attempt-1's run; ratios stayed in band), and the
+  feeding overlap itself is inside paired noise -- the tail
+  compute phase (60 threads x 4 chunks x 16 FMAs) is likely
+  too short to hide 960 loads, and the 20-float register
+  hold may eat what overlap there is. Feeding alone does
+  not measurably widen the margin; items 1-2 remain open
+  only via a change that also removes barriers or lengthens
+  the overlap window.
