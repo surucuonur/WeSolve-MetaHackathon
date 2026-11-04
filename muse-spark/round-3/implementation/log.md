@@ -63,3 +63,5 @@
 2026-11-04T18:26:37Z | lead | v15: routing-6 beats_compiled true (noise not reproduced); boundary check next
 2026-11-04T18:27:02Z | boundary-3 | checked attempt-6: pass by adoption of attempt-1 pass (diff -q empty on block-0/block-1/spec.json; max_rows 32 int; 2048-row slower not reproduced, noise confirmed)
 2026-11-04T18:27:26Z | lead | v16: hyp-3 closing on attempt-6 (Decision), checker-3 next
+2026-11-04T18:30:08Z | checker-3 | checked hyp-3-routing-prefill: all speed claims + Decision verify, 1 defect (Unverified L272-277 omits can't-see items listed at L251); attempt-6 byte-identity confirmed, ledger recounts
+2026-11-04T18:30:47Z | lead | v17: Unverified fixed per checker-3 defect; re-check next
