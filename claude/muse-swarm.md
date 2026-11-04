@@ -2,7 +2,7 @@
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../PROVENANCE.md).*
 
-The Muse agent, Meta's model working in Muse Code (Muse Spark in round 1, Muse Wonder from round 2; [ADR 0008](adr/0008-muse-wonder.md)), speeds up MobileMoE-S's decode step and prefill as a **swarm**: several agents in one Muse Code session, each covering part of the problem, sharing what they find in documents that all of them read. This page explains how one round runs, step by step, and where to watch it.
+The Muse agent, Meta's model working in Muse Code (Muse Spark in round 1 and from round 3, Muse Wonder in round 2; [ADR 0008](adr/0008-muse-wonder.md), [ADR 0012](adr/0012-muse-spark-contributor-unattended.md)), speeds up MobileMoE-S's decode step and prefill as a **swarm**: several agents in one Muse Code session, each covering part of the problem, sharing what they find in documents that all of them read. This page explains how one round runs, step by step, and where to watch it.
 
 - **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 7. This page describes it.
 - **Why it is built this way:** [ADR 0007](adr/0007-muse-spark-swarm.md) records the decision.

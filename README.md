@@ -25,7 +25,7 @@ A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by
 
 [claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs.
 
-A Meta model working in Muse Code, Meta's own coding agent, works as a swarm of agents: Muse Spark in round 1, Muse Wonder from round 2. They analyse the code and these findings together, then write GPU kernels against the inefficiencies they confirm. An independent grader checks them, and each round starts from the results of the rounds before it ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md), [ADR 0007](claude/adr/0007-muse-spark-swarm.md), [ADR 0008](claude/adr/0008-muse-wonder.md), [ADR 0009](claude/adr/0009-rounds-build-on-each-other.md)).
+A Meta model working in Muse Code, Meta's own coding agent, works as a swarm of agents: Muse Spark in round 1, Muse Wonder in round 2, and Muse Spark's contributor model again from round 3, unattended ([ADR 0012](claude/adr/0012-muse-spark-contributor-unattended.md)). They analyse the code and these findings together, then write GPU kernels against the inefficiencies they confirm. An independent grader checks them, and each round starts from the results of the rounds before it ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md), [ADR 0007](claude/adr/0007-muse-spark-swarm.md), [ADR 0008](claude/adr/0008-muse-wonder.md), [ADR 0009](claude/adr/0009-rounds-build-on-each-other.md)).
 
 **Round 1, measured** ([claude/findings/muse-round-1.md](claude/findings/muse-round-1.md)): Muse Spark's three kernels passed the grader, but in the model they changed the generated tokens.
 - All three together made the vLLM decode step 18% slower with 1 request, and 6% faster with 32.
@@ -60,7 +60,7 @@ Every commit is made by **surucuonur**. The co-author on each commit shows whose
 |---|---|---|
 | **surucuonur** | Direction, decisions, running the machine, starting the Muse agent's sessions | every commit |
 | **Claude Code** (Claude Opus 5.5) | Benchmark, grader and provenance code, measurements, write-ups, the Muse agent's brief and round skill | `bench/`, `claude/`, `tools/`, `.agents/skills/`, this README. Commits co-authored by `claude`. |
-| **The Muse agent**, in Muse Code: Muse Spark (`muse-spark-1.3-contributor`) in round 1, Muse Wonder from round 2 | Its analysis, hypotheses, kernels, phase logs and session transcripts | `muse-spark/`, on the branch `muse-agent`. Commits co-authored by "Muse Spark" (round 1) or "Muse Wonder" (round 2 on). |
+| **The Muse agent**, in Muse Code: Muse Spark (`muse-spark-1.3-contributor`) in round 1 and from round 3, Muse Wonder in round 2 | Its analysis, hypotheses, kernels, phase logs and session transcripts | `muse-spark/`, on the branch `muse-agent`. Commits co-authored by "Muse Spark" (round 1) or "Muse Wonder" (round 2 on). |
 | **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, Meta's model weights | `third_party/` at pinned commits, plus the installed wheels |
 
 Git hooks refuse commits that mix the two, and `tools/provenance_check.py` audits the whole history. [PROVENANCE.md](PROVENANCE.md) gives the details and the commands to check them.

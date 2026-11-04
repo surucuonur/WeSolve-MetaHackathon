@@ -6,6 +6,8 @@ status: accepted
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
 
+*[ADR 0012](0012-muse-spark-contributor-unattended.md) replaces this record's model choice on 2026-11-04, after round 2: from round 3 the launcher runs Muse Spark's contributor model again, with tool approvals off. Round 2 ran Muse Wonder as recorded here.*
+
 **The change.** From round 2 (decided 2026-11-03), the launcher runs **Muse Wonder** (`muse-wonder-1.0`) instead of Muse Spark (`muse-spark-1.3-contributor`, round 1). surucuonur asked for Meta's best model, wanting "to see improved results after this step". Meta calls Muse Wonder "Meta's most capable model" ([Meta's model docs](https://dev.meta.ai/docs/models)).
 
 surucuonur first chose Muse Wonder Full, "the higher-capability variant", and the launcher was set up for it. Full "is available only in Muse Code with a subscription", so it needs a Muse Code sign-in. surucuonur then chose to run without a sign-in: "without login switch to Muse Wonder in the api". No session ran with Full.

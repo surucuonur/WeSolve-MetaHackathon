@@ -12,9 +12,9 @@
 # session runs headless (muse exec) instead of in the terminal UI.
 #
 # This script is the only way to start one. It
-# - runs MUSE_MODEL (default muse-wonder-1.0, Muse Wonder; ADR 0008) at
-#   reasoning effort MUSE_EFFORT (default max), both passed explicitly so the
-#   session log records them;
+# - runs MUSE_MODEL (default muse-spark-1.3-contributor, Muse Spark's
+#   contributor model; ADR 0012) at reasoning effort MUSE_EFFORT (default max),
+#   both passed explicitly so the session log records them;
 # - signs in as MUSE_AUTH says:
 #   - key (default): the pay-as-you-go API key (MODEL_API_KEY) from
 #     legal-agent-workshop/agent/.env, given only to muse, as META_API_KEY; it
@@ -38,7 +38,11 @@
 #   there. Muse Code's settings for these (context.foreign_personal_*) don't
 #   stop them, and ~/.agents/skills counts as its own;
 # - turns Muse Code's OS sandbox off: it keeps .git read-only, and a worktree
-#   commits into the main checkout's .git. Tool approvals stay on.
+#   commits into the main checkout's .git;
+# - turns tool approvals off too, so the session runs unattended: approval mode
+#   MUSE_APPROVAL (default never, in which nothing stops for review; on-request
+#   or untrusted bring the prompts back). The git hooks still refuse a wrong
+#   commit.
 #
 # When the session ends, from any checkout:
 #   .venv/bin/python tools/export_transcript.py
@@ -47,8 +51,9 @@ set -euo pipefail
 
 MAIN="$(cd "$(dirname "$0")/../.." && pwd)"
 WT="${MUSE_WORKTREE:-$(dirname "$MAIN")/Hackathon-muse}"
-MODEL="${MUSE_MODEL:-muse-wonder-1.0}"
+MODEL="${MUSE_MODEL:-muse-spark-1.3-contributor}"
 EFFORT="${MUSE_EFFORT:-max}"
+APPROVAL="${MUSE_APPROVAL:-never}"
 CONTRIBUTOR="${MUSE_CONTRIBUTOR:-on}"
 AUTH="${MUSE_AUTH:-key}"
 MUSE_HOME="${MUSE_HOME:-$HOME/.muse-spark}"  # also read by tools/provenance.py
@@ -128,9 +133,10 @@ elif ! git merge-base --is-ancestor main muse-agent; then
 fi
 
 cd "$WT"
-echo "Muse agent session in Muse Code: $NAME, model $MODEL, effort $EFFORT, sign-in $AUTH${SIGNIN[*]:+, contributor mode $CONTRIBUTOR}"
+echo "Muse agent session in Muse Code: $NAME, model $MODEL, effort $EFFORT, approvals $APPROVAL, sign-in $AUTH${SIGNIN[*]:+, contributor mode $CONTRIBUTOR}"
 echo "Worktree $WT, branch muse-agent at $(git rev-parse --short HEAD), home $MUSE_HOME"
 echo "First prompt: $PROMPT"
 isolate_home
 exec muse ${SUB:+"$SUB"} --model "$MODEL" --reasoning-effort "$EFFORT" ${SIGNIN[@]+"${SIGNIN[@]}"} \
-  --workspace "$WT" --trust-workspace --disable-sandbox -c agents.execution_capacity=12 "$@" "$PROMPT"
+  --workspace "$WT" --trust-workspace --disable-sandbox --approval-mode "$APPROVAL" \
+  -c agents.execution_capacity=12 "$@" "$PROMPT"

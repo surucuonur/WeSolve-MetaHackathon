@@ -102,13 +102,13 @@ Meta's smallest on-device mixture-of-experts model (about 1.3B parameters in tot
 Meta's hosted model, and the Muse agent in round 1.
 
 **Muse Wonder**:
-Meta's most capable model family, in preview; its standard variant runs on Meta's Model API. The Muse agent from round 2.
+Meta's most capable model family, in preview; its standard variant runs on Meta's Model API. The Muse agent in round 2.
 
 **Muse Wonder Full**:
 The higher-capability variant of Muse Wonder, available only in Muse Code with a subscription; not used in this project.
 
 **Muse agent**:
-The Meta model that chooses which pieces of the decode step to replace and writes their kernels, on the branch `muse-agent`: Muse Spark in round 1, Muse Wonder from round 2. It is never the model under study.
+The Meta model that chooses which pieces of the decode step to replace and writes their kernels, on the branch `muse-agent`: Muse Spark in round 1 and from round 3, Muse Wonder in round 2. It is never the model under study.
 _Avoid_: Muse (alone), Meta agent
 
 **Muse Code**:
@@ -117,7 +117,7 @@ _Avoid_: Muse CLI, Meta Code
 
 **Muse agent session**:
 A Muse Code session in which the Muse agent writes every turn, the lead's and every helper's, kept apart from Claude's work by its own branch, folder and commit trailer.
-_Avoid_: Muse Spark session (from round 2 the model is Muse Wonder), guardrail (for the session itself), Meta mode
+_Avoid_: Muse Spark session (round 2's model was Muse Wonder), guardrail (for the session itself), Meta mode
 
 ## The Muse agent's work
 
