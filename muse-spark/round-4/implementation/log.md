@@ -1,1 +1,4 @@
 2026-11-04T21:49:22Z | lead | opened hyp-1-experts-minrows (experts, min_rows hand-off) and hyp-2-routing-margin (routing, decode margin) in boundary
+2026-11-04T21:50:48Z | boundary-1 | wrote Boundary in hyp-1-experts-minrows: cited round-3 boundary line-by-line, added min_rows:2 (only 1-row decode hands off; 1-request runs MLX code whole request) + max_rows:59 below 60-row switch, kernels 2-59, handed-off sizes untimed
+2026-11-04T21:51:21Z | boundary-2 | wrote Boundary in hyp-2-routing-margin (delta to round-3 hyp-3; starting point round-3 attempt-6 byte-identical kernels, max_rows: 32 kept with no min_rows; prefill 127/1016/2048 now handed off not timed, tie rule and pair order unchanged)
+2026-11-04T21:51:36Z | lead | boundaries drawn for hyp-1 and hyp-2; both to building, 4 builders started
