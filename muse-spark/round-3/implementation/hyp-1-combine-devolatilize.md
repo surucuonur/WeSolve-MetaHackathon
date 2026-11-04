@@ -1,10 +1,10 @@
 # Hypothesis 1: combine without volatiles
 
 - **Owner:** lead
-- **Status:** building
-- **Version:** 5
-- **Updated:** 2026-11-04T18:05:59Z
-- **Next:** boundary-1 checks attempt-2 (G2 pass); then pick best of attempt-1/2
+- **Status:** hardening
+- **Version:** 6
+- **Updated:** 2026-11-04T18:07:45Z
+- **Next:** checker-1 verifies the close; best is attempt-2, no further kernel change worth making
 
 ## Inefficiency
 
@@ -71,18 +71,35 @@ Seven plain `float` locals keep the exact fold `((p0+p1)+p2)+p3` and both bfloat
 - **Captured-input assumptions: pass.** No branches, no data-dependent control flow; positional `weights[r,j] ↔ y[r,j,:]` pairing kept verbatim (`block-0.metal:34-37`); no non-negativity, sum, sorting or sparsity assumption. Mul/add are total on finite float32, and the fold order plus both bfloat16 roundings are byte-identical to the starting point, including the final line `bfloat(acc) + shared[sbase]` (`block-0.metal:42`). The `noinline` barrier mechanism (`block-1.metal:12-17`) is a compile-time property of the one binary G2 already validated, not a per-size or per-input property.
 - **`max_rows`: pass (absent).** No `max_rows` in `spec.json`: every decode step ≤32 rows and every prefill chunk run the kernels, identical lines at all sizes, so there is no hand-off band to verify and no 60-row-side question (combine has no switch underneath).
 
+### attempt-2 (`muse-spark/round-3/kernels/combine/attempt-2`) — pass
+
+*checked by boundary-1, 2026-11-04T18:07:08Z, by hand against the Boundary above (what the grader can't see). `check_sizes.py` not run: it loads the model (`bench/grader/check_sizes.py:39`), and only the grader and the ready check are GPU jobs (tracking.md Rules); the reasoning below is conclusive without it. Grid, indexing, threadgroup and final line are verbatim the starting point's; the only change vs the starting point is the barrier mechanism (seven plain `float` locals + the header pragma pair instead of seven `volatile float`s).*
+
+- **Other row counts (decode 1–32, prefill chunks any size, either side of 60): pass.** Straight-line thread-per-output kernel, no row-count-dependent branch anywhere (`block-0.metal:26-42`). Grid is `rows*768` threads (`spec.json`), threadgroup 256; 768 = 3·256, so the grid is an exact multiple of 256 at *every* row count — no partial threadgroup, `thread_position_in_grid.x < rows*768` always, hence `row < rows`, `d < 768` and every index in bounds with no bounds check needed. `uint` products (`row*3072+d`, max ≈6.3M at 2,048 rows) cannot overflow at any realistic size. Same compiled binary at all sizes (`"template": {}`, no specialization), so the six G2 passes (differ 0) carry the rounding argument to untested sizes; combine has no 60-row kernel switch (Boundary), so nothing changes across 60.
+- **Uninitialized threadgroup reads: pass.** No threadgroup/shared memory declared or touched; every local (`p0..p3`, `s01`, `s012`, `acc`) is assigned at declaration (`block-0.metal:34-40`). Nothing to leave unwritten.
+- **Threadgroup memory near the limit: pass.** 0 B used vs 32 KB; 256 threads/threadgroup vs 1,024 (`spec.json`). Same footprint as the starting point at all six sizes and beyond.
+- **Thread-timing dependence: pass.** `idx → sbase` is a bijection over `rows*768` (`block-0.metal:26-32,42`), each output written by exactly one thread, `atomic_outputs: false`, no cross-thread communication. Result is deterministic by construction.
+- **Captured-input assumptions: pass.** No branches, no data-dependent control flow; positional `weights[r,j] ↔ y[r,j,:]` pairing kept verbatim (`block-0.metal:34-37`); no non-negativity, sum, sorting or sparsity assumption. Mul/add are total on finite float32, and the fold order plus both bfloat16 roundings are byte-identical to the starting point, including the final line `bfloat(acc) + shared[sbase]` (`block-0.metal:42`). The pragma barrier mechanism (`#pragma STDC FP_CONTRACT OFF` + `#pragma clang fp contract(off)` in `block-1.metal:23-24`, emitted before the kernel function where FP-option pragmas take effect) is a compile-time codegen property of the one binary G2 already validated with differ 0 — not a per-size or per-input property, and FP contraction cannot vary with input values. Reassociation needs no barrier: the compiler does not reassociate without fast-math flags and the grader passes none (`slots.build` sets no `compile_options`).
+- **`max_rows`: pass (absent).** No `max_rows` in `spec.json`: every decode step ≤32 rows and every prefill chunk run the kernels, identical lines at all sizes, so there is no hand-off band to verify and no 60-row-side question (combine has no switch underneath).
+
 ## Decision
 
-(none yet)
+Best attempt: `muse-spark/round-3/kernels/combine/attempt-2` (direction b: plain `float` locals, exact fold `((p0+p1)+p2)+p3`, contraction disabled by `#pragma STDC FP_CONTRACT OFF` + `#pragma clang fp contract(off)` in `header_block`). It passes G1, G2 bit-exact at all six sizes (differ 0), its boundary check, and `beats_compiled` (faster at every size, 24–30/30 wins; no baseline exists). Attempt-1 (noinline barriers) passes all the same gates; cross-run chained absolutes drift (compiled moved −35% between the two runs minutes apart), so within-run verdicts are the evidence and both pass — attempt-2 wins on simplicity (no calls, no helpers, grid/indexing verbatim, strictly less in-loop code), with attempt-1 as the backup. No further kernel change is worth making: both directions converged on zero-traffic exact kernels, and both builders agree the remaining prize (vLLM step/prompt recovery) is measurable only by the ready check, not by another edit.
+
+Predicted change in whole requests (PREDICTION — stands beside the ready check's measured value once it runs): decode step recovers the twin swing, returning to ≈ −0.51/−0.71/−0.39 ms/step vs the unchanged model (≈0 claimed at 1 request, within noise; ≈ −0.5 ms at 8, ≈ −1.4 ms at 32), net vs the compiled reference −0.2/−0.4/−0.1 ms/step (verifier-corrected); prompt recovery of order 1 s on 32×128 combine-including prompts (the looser half — no round-1 prefill twin exists). Basis: [ineff-baseline-combine-1.md](../exploration/ineff-baseline-combine-1.md) twin swing +0.142/+0.508/+1.441 ms with ±0.1 ms control.
 
 ## Failure ledger
 
-(none yet)
+(none — both graded attempts pass every gate)
 
 ## Unverified
 
-(at least the boundary's *can't see* list, once written)
+- Row counts and inputs the grader doesn't test (boundary's *can't see* list): the kernel is straight-line with no size branch, so all sizes run identical lines, but only the six G2 sizes plus (for the starting point) 25 check_sizes counts were ever verified.
+- Toolchain dependence: exactness relies on the compiler honoring `FP_CONTRACT OFF` — re-grade after any MLX/macOS/Xcode change.
+- The in-step stall mechanism is attributed (7 store→load pairs, ±0.1 ms twin control) but its on-chip accounting is unverified; the ready check reproduces-or-refutes the recovery in-round.
+- Prompt-side recovery magnitude (order 1 s) has no round-1 prefill twin to calibrate against.
+- Composition with the other slots' candidates (the three-way 8-request term): the ready check times combine-alone and all-together.
 
 ## Checks
 
-(none yet)
+(checker-1 to write)

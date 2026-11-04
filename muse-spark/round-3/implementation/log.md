@@ -23,3 +23,6 @@
 2026-11-04T18:06:14Z | builder-2-b | done: verdict in notes.md + hyp-2 section, miss analysis in notes.md + ineff-baseline-experts-1 note
 2026-11-04T18:06:25Z | lead | v5: combine-2 G2 pass, experts-3 G1 fail (ledger); boundary check + fix builder next
 2026-11-04T18:06:45Z | lead | v6: experts-2 G2 pass but prefill slower (ledger); best remains attempt-1
+2026-11-04T18:07:07Z | builder-2-d | claimed attempt-4 (experts): copy of attempt-3 with half->part rename
+2026-11-04T18:07:17Z | boundary-1 | boundary-checked attempt-2 (hyp-1-combine-devolatilize): pass on all six can't-see items, appended to Boundary checks
+2026-11-04T18:08:08Z | lead | v7: hyp-1 hardening (attempt-2 best, Decision), hyp-3 opened; checker-1 + boundary-3 next
