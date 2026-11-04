@@ -1,17 +1,17 @@
 # Exploration: round 2 — analysis
 
-**Version:** v1 · 2026-11-04T03:14:21Z · skill version 5
+**Version:** v2 · 2026-11-04T03:19:40Z · skill version 5
 
 ## Tracker
 
 | Territory | Agent | Status | Inefficiencies | Updated |
 |---|---|---|---|---|
-| `baseline-experts` | `explorer-baseline-experts` | exploring | — | 2026-11-04 03:14Z |
-| `baseline-routing` | `explorer-baseline-routing` | exploring | — | 2026-11-04 03:14Z |
-| `baseline-combine` | `explorer-baseline-combine` | exploring | — | 2026-11-04 03:14Z |
-| `g3` | `explorer-g3` | exploring | — | 2026-11-04 03:14Z |
-| `quantized-kernels` | `explorer-quantized-kernels` | exploring | — | 2026-11-04 03:14Z |
-| `grader` | `explorer-grader` | exploring | — | 2026-11-04 03:14Z |
+| `baseline-experts` | `explorer-baseline-experts` | done | `ineff-baseline-experts-1` (open), `-2` (open), `-3` (open) | 2026-11-04 03:19Z |
+| `baseline-routing` | `explorer-baseline-routing` | exploring | — | 2026-11-04 03:19Z |
+| `baseline-combine` | `explorer-baseline-combine` | done | `ineff-baseline-combine-1` (open), `-2` (open) | 2026-11-04 03:19Z |
+| `g3` | `explorer-g3` | done | `ineff-g3-1` (open), `ineff-g3-2` (superseded by ineff-baseline-experts-2) | 2026-11-04 03:19Z |
+| `quantized-kernels` | `explorer-quantized-kernels` | exploring | — | 2026-11-04 03:19Z |
+| `grader` | `explorer-grader` | done | — (notes on baseline-experts, baseline-combine) | 2026-11-04 03:19Z |
 
 ## Starting point
 
@@ -90,4 +90,5 @@ Each territory below is opened by the line of this section that names it. Explor
 
 ## Versions
 
+- v2 · 2026-11-04T03:19:40Z · checkpoint: baseline-experts, baseline-combine, g3, grader done; g3-2 superseded by baseline-experts-2 · changed: territory-baseline-experts v2, territory-baseline-combine v2, territory-g3 v2, territory-grader v2, ineff-baseline-experts-1 v1, ineff-baseline-experts-2 v1, ineff-baseline-experts-3 v1, ineff-baseline-combine-1 v1, ineff-baseline-combine-2 v1, ineff-g3-1 v1, ineff-g3-2 v2
 - v1 · 2026-11-04T03:14:21Z · opened round 2: starting point (no baselines, 3 starting points, 4 ranked leftovers, refuted claims, 6 territories) · changed: none
