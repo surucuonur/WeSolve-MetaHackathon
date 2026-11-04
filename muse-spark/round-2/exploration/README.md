@@ -1,6 +1,6 @@
 # Exploration: round 2 — analysis
 
-**Version:** v4 · 2026-11-04T03:28:20Z · skill version 5
+**Version:** v5 · 2026-11-04T04:15:27Z · skill version 5
 
 ## Tracker
 
@@ -153,8 +153,19 @@ Confirmed inefficiencies outside the slots (or outside decode timing), for suruc
 
 Each territory entry lists what it read and what each file gave: [territory-baseline-experts.md](territory-baseline-experts.md), [territory-baseline-routing.md](territory-baseline-routing.md), [territory-baseline-combine.md](territory-baseline-combine.md), [territory-g3.md](territory-g3.md), [territory-quantized-kernels.md](territory-quantized-kernels.md), [territory-grader.md](territory-grader.md).
 
+## What building taught
+
+The analysis corrected by what the attempts showed (see `../implementation/README.md`):
+
+1. **Scalar sums reproduce MMA rounding — the round's central surprise.** Exploration held that the steel regimes' 8-product hardware accumulation could not be reproduced by scalar reordering (`ineff-baseline-routing-1`). Routing attempt-2 disproved it at decode sizes and attempt-3 at all six: serial scalar sums over the same partition/K order are bit-identical to `simdgroup_float8x8` accumulation on this GPU, including the 8-partition (127-row) and single-accumulator (>768) groupings. The same held for experts prefill: attempt-1's serial BK=32 scalar path matched `gather_qmm_rhs` bit for bit, as did attempt-2's MMA-tile form. Future exact kernels should try scalar first — it is simpler and, once staged, faster.
+2. **Unstaged scalar is latency-bound; staging is the fix, not MMA.** Routing attempt-3 (scalar, device loads) ran 300 µs/layer at 8/32 rows on uncoalesced loads and threadgroup bank conflicts; attempt-4 (same sums, coalesced `float4` staging, padded `x`) runs 69–73 µs and beats compiled everywhere. The barrier count (24/row) did not bind; cross-threadgroup overlap hides it.
+3. **Experts 1-row latency is a plateau, not a packing problem.** Six G2-exact attempts spanning 4 to 144 threadgroups per call, 128–512 threads per group, fused and split, interleaved and parallel-stored, all chain at 92–110 µs/layer at 1 row against compiled 73–87. Width, group count, interleave and store parallelism each moved 8/32 rows (best 510 µs at 32 rows, attempt-7) and none moved 1 row by more than ~12 µs. The remainder is the per-block serial K chains plus chained fixed cost; a fused exact kernel may need to stop fusing (reference-shaped separate products) to win at 1 row — untested, since every attempt kept at most two kernels.
+4. **Chained floors replace independent floors.** Combine's ~17 µs independent floor is ~32–40 µs chained; routing's compiled bar is 56–91 µs chained against 30–49 independent. Every builder prediction anchored on the independent basis missed by +80–150% in the same direction, candidates and compiled alike. Predict only on the chained basis; within-run vs-compiled remains the valid comparison (1-row baselines still shift 73–87 µs for experts across runs).
+5. **Contraction suppression needs volatile, not `precise`.** The literal `precise float` qualifier does not compile under MLX 0.32.4's header; `volatile` thread-local round-trips reproduce the reference's per-op roundings exactly (differ 0 over 49.6M graded combine elements) in both combine organizations. The residual is toolchain dependence — re-grade after any MLX/macOS change (boundary-3).
+
 ## Versions
 
+- v5 · 2026-11-04T04:15:27Z · What building taught (scalar=MMA, staging fix, experts plateau, chained floors, volatile barriers) · changed: none (README only)
 - v4 · 2026-11-04T03:28:20Z · final analysis: context, territory map, 11 ranked inefficiencies, recommendations, refuted claims · changed: none (README only)
 - v3 · 2026-11-04T03:27:48Z · checkpoint: all explorers done, verifier 12 confirmed 0 refuted · changed: territory-baseline-routing v2, territory-quantized-kernels v2, ineff-baseline-routing-1 v2, ineff-baseline-routing-2 v2, ineff-baseline-routing-3 v1, ineff-baseline-routing-4 v1, ineff-quantized-kernels-1 v2, ineff-quantized-kernels-2 v2, ineff-baseline-combine-1 v2, ineff-baseline-combine-2 v2, ineff-baseline-experts-1 v2, ineff-baseline-experts-2 v2, ineff-baseline-experts-3 v2, ineff-g3-1 v2
 - v2 · 2026-11-04T03:19:40Z · checkpoint: baseline-experts, baseline-combine, g3, grader done; g3-2 superseded by baseline-experts-2 · changed: territory-baseline-experts v2, territory-baseline-combine v2, territory-g3 v2, territory-grader v2, ineff-baseline-experts-1 v1, ineff-baseline-experts-2 v1, ineff-baseline-experts-3 v1, ineff-baseline-combine-1 v1, ineff-baseline-combine-2 v1, ineff-g3-1 v1, ineff-g3-2 v2
