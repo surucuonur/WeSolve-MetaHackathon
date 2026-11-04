@@ -2,7 +2,7 @@
 
 - **Owner:** lead
 - **Status:** hardening
-- **Version:** 7
+- **Version:** 8
 - **Updated:** 2026-11-04T21:49:10Z
 - **Next:** builders grading
 
@@ -243,8 +243,9 @@ fails G1 loudly. A pure `spec.json` hand-off change touches none of this.
   between runs); handed-off sizes equal compiled exactly by
   construction; kernel sizes run byte-identical kernels.
 - **Taught:** the spec change alone flips `beats_compiled`
-  false → true at zero kernel cost, on the already-measured
-  8/32-row wins. Unproven remains whole-request: with 1 request
+  false → true with no kernel change (the hand-off's own timing
+  cost is not isolated by any measurement; the two runs differ by
+  a level shift), on the already-measured 8/32-row wins. Unproven remains whole-request: with 1 request
   this slot runs MLX's own code everywhere, so G3 passes only
   inside a faster set (see **Unverified**).
 
@@ -284,8 +285,9 @@ fails G1 loudly. A pure `spec.json` hand-off change touches none of this.
   86.6 / 238.2 / 883.4 in the starting point's run); handed-off
   sizes equal compiled exactly by construction; kernel sizes run
   byte-identical kernels.
-- **Taught:** narrowing the window to 2–32 rows costs nothing at
-  any graded size and flips `beats_compiled` false → true exactly
+- **Taught:** narrowing the window to 2–32 rows matches direction
+  (a)'s verdict at every graded size (any timing difference is
+  inside the separate runs' noise, not measured as zero) and flips `beats_compiled` false → true exactly
   as direction (a) does; the 33–59 band's hand-off cost stays
   unmeasured by the piece timing. Unproven remains whole-request:
   with 1 request this slot runs MLX's own code everywhere, so G3
@@ -334,7 +336,7 @@ No graded attempt lost: attempts 1 and 2 both pass G1, G2 and `beats_compiled`. 
 - Sizes above 2,048 rows, prefill beyond the first seeded chunk, other prompt lengths/distributions and mixed batches are untested.
 - The 1-request consequence: with 1 request this slot runs MLX's own code for the whole workload (1-row hand-off), so it adds nothing there and the set passes at 1×128 only on routing+combine. Only the ready check / G3 measures this.
 - The three-slot interaction at 8 requests (+2.13 to +2.86 ms/step in rounds 1–2) is untested by the piece timing; only the ready check's `muse-all` measures it with these kernels.
-- Unwritten threadgroup reads and thread-timing dependence: checked by hand in the boundary check (pass), not by the grader. Threadgroup memory 3,840 B against the 32 KB limit, counted by hand. NaN-vs-NaN counts as equal in G2.
+- Unwritten threadgroup reads and thread-timing dependence: checked by hand in the boundary check (pass), not by the grader. Threadgroup memory 3,840 B against the 32 KB limit, counted by hand. NaN-vs-NaN counts as equal in G2. Whole-request noise in the ready check / G3 at 1 request (5-repeat ranges) is itself unmeasured until the ready check runs.
 
 ## Checks
 
@@ -343,3 +345,8 @@ No graded attempt lost: attempts 1 and 2 both pass G1, G2 and `beats_compiled`. 
   2. `muse-spark/round-4/implementation/hyp-1-experts-minrows.md:245-247` — a cost is called zero without a measurement: “at zero kernel cost”. Byte-identity proves no kernel change, not zero timing cost; attempt-1 and the starting point were graded in separate runs with an acknowledged level shift (compiled bar 86.6 → 73.9 µs/layer at 1 row, `:242-243`), so no measurement isolates the spec/hand-off cost as zero.
   3. `muse-spark/round-4/implementation/hyp-1-experts-minrows.md:287-288` — a cost is called zero without a measurement: narrowing to 2–32 rows “costs nothing at any graded size”. Attempts 1 and 2 were graded in separate runs (compiled 232.1 / 832.6 vs 236.8 / 823.2 µs/layer; candidate 157.6 vs 170.5 µs/layer at 8 rows), so only the verdict kind matching (`:278-280`) is measured, not a zero difference. (The 33–59 hand-off cost is correctly left unmeasured at `:289-290`.)
 - **Verified (no defect):** every measured piece number was found in its cited `grade.json` at the named size/key and the arithmetic redone — attempt-1 (`muse-spark/round-4/kernels/experts/attempt-1/grade.json`): G1/G2 pass, differ 0 / max_ulp 0.0 at all six sizes; candidate/reference/compiled 73.9/76.2/73.9 handed off, 157.6/233.0/232.1 faster (30 wins), 571.1/842.5/832.6 faster (30 wins), prefill 1026.6/1016.0/1026.6, 4013.4/4070.0/4013.4, 7412.5/7452.5/7412.5 handed off; margins 232.1−157.6=74.5 and 832.6−571.1=261.5 µs/layer; prediction misses −14.7/−6.7/+3.0/−9.2/−2.9/−1.9% (none over 20%). Attempt-2 (`muse-spark/round-4/kernels/experts/attempt-2/grade.json`): 76.1/79.2/76.1 handed off, 170.5/237.2/236.8 and 538.1/809.1/823.2 faster (30 wins each), prefill 991.6/1043.8/991.6, 3998.9/4090.0/3998.9, 7441.5/7440.4/7441.5 handed off; margins 236.8−170.5=66.3 and 823.2−538.1=285.1 µs/layer; misses −12.1/+0.9/−3.0/−12.3/−3.3/−1.5%. Boundary-check equalities (handed-off candidate = compiled) match both grade files. Predictions are labelled with arithmetic counting only this slot's own measured effect (builder predictions 238.2−168.9=69.3, 883.4−554.7=328.7 µs/layer; Decision `:322` is labelled PREDICTION: same-run margins × 20 layers = 74.5×20=1.49 ms and 261.5×20=5.23 ms per decode step); no combination gain is summed from slots (the +2.13 to +2.86 ms/step three-slot term at `:320` is quoted as untested historical context, not added to this slot's gain). Failure ledger (`:324-328`) recounts correctly: neither grade file lost — both attempts pass G1, G2 and `beats_compiled` with no `slower` size or phase, so there is nothing to harden against.
+- **checker-1, 2026-11-04T22:03:48Z — re-check: check: fail** (Unverified placeholder fixed; defects below remain; do not close as `candidate` until fixed):
+  1. `muse-spark/round-4/implementation/hyp-1-experts-minrows.md:245-246` — a cost is still called zero without a measurement: “at zero kernel cost”. Unchanged since the first check. Byte-identity proves no kernel change, not zero timing cost; attempt-1 and the starting point were graded in separate runs with an acknowledged level shift (compiled bar 86.6 → 73.9 µs/layer at 1 row, `:242-243`), so no measurement isolates the spec/hand-off cost as zero.
+  2. `muse-spark/round-4/implementation/hyp-1-experts-minrows.md:287-288` — a cost is still called zero without a measurement: narrowing to 2–32 rows “costs nothing at any graded size”. Unchanged since the first check. Attempts 1 and 2 were graded in separate runs (compiled 232.1 / 832.6 vs 236.8 / 823.2 µs/layer; candidate 157.6 vs 170.5 µs/layer at 8 rows), so only the verdict-kind matching (`:278-280`) is measured, not a zero difference. (The 33–59 hand-off cost is correctly left unmeasured at `:289-290`.)
+  3. `muse-spark/round-4/implementation/hyp-1-experts-minrows.md:330-337` — **Unverified** now covers the boundary's can't-see list (`:164-192`) except one sub-item: 1-request whole-request noise in G3 (`:191-192`) is named nowhere in `:330-337`. `:335` says only the ready check / G3 measures the 1-request consequence; it does not list G3 noise itself as unmeasured.
+- **Re-verified (no defect):** Unverified fix verified — `:332` exact hand-off bounds (`min_rows: 2` vs 3–8 handing off 2–7, bounds graded only by reading `spec.json`; specs re-read: attempt-1 `min_rows: 2`/`max_rows: 59`, attempt-2 `min_rows: 2`/`max_rows: 32`, plain ints), `:333` kernel speed/correctness at ungraded 2–7, 9–31 and (attempt-1) 33–59 resting on construction not G2, `:334` sizes above 2,048 / prefill beyond the first seeded chunk / other lengths, distributions and mixed batches, `:335` 1-request whole-request consequence (slot runs MLX code, passes only inside a faster set, ready check / G3 only), `:336` three-slot interaction at 8 requests (`muse-all` only), `:337` unwritten threadgroup reads / thread-timing dependence checked by hand, 3,840 B vs 32 KB counted by hand, NaN-vs-NaN equality. Every measured piece number re-found in its cited `grade.json` at the named size/key and arithmetic redone — starting point (`muse-spark/round-3/kernels/experts/attempt-1/grade.json`): 96.9 vs 86.6 `slower` (5 wins), 168.9 vs 238.2 and 554.7 vs 883.4 `faster`; predictions 238.2−168.9=69.3, 883.4−554.7=328.7 µs/layer, handed-off prefill = compiled 1,131.1 / 4,133.5 / 7,557.8. Attempt-1 (`muse-spark/round-4/kernels/experts/attempt-1/grade.json`): G1/G2 pass, differ 0 / max_ulp 0.0 at all six sizes; 73.9/76.2/73.9 `handed off`, 157.6/233.0/232.1 `faster` (30 wins), 571.1/842.5/832.6 `faster` (30 wins), prefill 1,026.6/1,016.0/1,026.6, 4,013.4/4,070.0/4,013.4, 7,412.5/7,452.5/7,412.5 `handed off`; `phases_vs_compiled` decode `faster`, prefill `handed off`, `beats_compiled` true; margins 232.1−157.6=74.5, 832.6−571.1=261.5 µs/layer; misses −14.7/−6.7/+3.0/−9.2/−2.9/−1.9% (none over 20%). Attempt-2 (`muse-spark/round-4/kernels/experts/attempt-2/grade.json`): 76.1/79.2/76.1 `handed off`, 170.5/237.2/236.8 and 538.1/809.1/823.2 `faster` (30 wins each), prefill 991.6/1,043.8/991.6, 3,998.9/4,090.0/3,998.9, 7,441.5/7,440.4/7,441.5 `handed off`; margins 236.8−170.5=66.3, 823.2−538.1=285.1 µs/layer; misses −12.1/+0.9/−3.0/−12.3/−3.3/−1.5%. No measured whole-request claim cites a grader file, timing run or arithmetic (Decision `:322` is labelled PREDICTION, same-run margins × 20 layers = 74.5×20=1.49 ms and 261.5×20=5.23 ms per decode step, counting only this slot's own effect, ready check to replace it); no combination gain is summed from slots (the +2.13 to +2.86 ms/step three-slot term at `:320`/`:336` is untested historical context, not added). Failure ledger (`:324-328`) recount verified from both `grade.json` files: neither attempt lost (both G1 pass, G2 pass, `beats_compiled` true, no `slower` size or phase), so no approach-change entry is owed.
