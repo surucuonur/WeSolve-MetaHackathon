@@ -142,3 +142,22 @@ attempt-4 has, and the 6 KB of prefill tile memory allocated in
 the same kernels caps resident decode groups. Splitting helps
 only if several blocks stay in flight per group and decode
 threadgroup memory stays near attempt-4's 3,840 B.
+
+builder-1-c, 2026-11-04T03:51:59Z — round-2
+`kernels/experts/attempt-3` tested exactly that remedy (two
+kernels, 4 simdgroups per 128-thread group owning 4 blocks each;
+12+24 groups at 1 row; attempt-1's scalar `qmm_accum` prefill so
+threadgroup memory is 2,048/768 B, no MMA tiles; per-block
+`qvm_block` byte-identical) and graded chained 109.5 / 195.0 /
+637.7 µs/layer vs compiled 86.9 / 243.6 / 798.9, G2 pass all six.
+The remedy recovered most of attempt-2's streaming loss
+(80 → 111 GB/s at 32 rows) but not attempt-1's fused rate
+(132 GB/s; 535.7 µs), and 1 row did not move: attempt-1
+(4 groups × 512 thr), attempt-2 (48+96 × 32 thr) and attempt-3
+(12+24 × 128 thr) all plateau at 103.6–109.5 µs/layer. Group
+count past 4 is therefore not the binding 1-row limit; the
+invariant cost is each block's serial K chain (24+24+12 strided
+steps) plus the chained fixed cost, which no block packing
+shortens — and the split adds a launch, a `hidden` round-trip
+and duplicated `tg_x`/`tg_h` loads (+19% at 32 rows). Full
+numbers and miss analysis in the attempt's `notes.md`.

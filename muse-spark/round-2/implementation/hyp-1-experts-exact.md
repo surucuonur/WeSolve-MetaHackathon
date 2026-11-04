@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** hardening
-- **Version:** 5
-- **Updated:** 2026-11-04T03:49:13Z
-- **Next:** hardening from attempt-1: block-parallel decode, 4 blocks per group
+- **Version:** 6
+- **Updated:** 2026-11-04T03:52:53Z
+- **Next:** boundary check attempt-3; next: fused interleave gate/up from attempt-1
 
 ## Inefficiency
 
@@ -225,6 +225,42 @@ Any prefill branch must stay inside both limits at all six sizes.
   tiles' 6 KB of threadgroup memory is paid in the decode branch
   too, capping resident groups. Next: 4-simdgroup groups (4 blocks
   each) with tile memory overlaid on the decode buffers.
+
+### builder-1-c — hardening: 4-block groups, scalar prefill
+
+- Attempt: `muse-spark/round-2/kernels/experts/attempt-3` (builds
+  on best attempt `muse-spark/round-2/kernels/experts/attempt-1`).
+  Two kernels (gate/up+silu to `hidden`, then down), each
+  threadgroup holding 4 simdgroups owning 4 distinct 32-output
+  blocks (128 threads/group; 12 gate/up + 24 down groups at 1
+  row). Each block's `qvm_block` strided-lane + `simd_sum` order
+  byte-identical to attempt-1's; prefill reuses attempt-1's scalar
+  `qmm_accum` (bfloat16 dequant + BK=32 serial order, no MMA
+  tiles), so threadgroup memory is 2,048 B (gate/up) / 768 B
+  (down) vs attempt-2's 7,808/6,912 B. All four bfloat16 rounding
+  points and positional `y` kept.
+- Predicted (chained µs/layer at 1/8/32): 74 / 162 / 530.
+  Measured (grader, this run): **109.5 / 195.0 / 637.7**, vs
+  reference 93.1 / 248.8 / 846.0 and compiled 86.9 / 243.6 /
+  798.9 in the same run. Attempt-1 (other run): 104.3 / 193.3 /
+  535.7 vs compiled 77.6 / 235.7 / 791.6.
+- **G1 pass; G2 pass — differ 0, max_ulp 0.0 at all six sizes**
+  (decode exact via unchanged per-block qvm math; prefill exact
+  via attempt-1's scalar BK=32 path). `beats_compiled` false:
+  wins 8/32 rows, loses 1 row (109.5 vs compiled 86.9). Baseline
+  `none` — no `wins_vs_baseline`/`beats_baseline`. Prediction
+  missed +48% / +20% / +20% (all over the 20% bar; see attempt
+  notes for the full analysis).
+- Learned: threadgroups per call is not the 1-row lever past 4
+  groups — attempt-1 (4×512 threads), attempt-2 (48+96×32) and
+  attempt-3 (12+24×128, 4 blocks/group, low threadgroup memory)
+  all plateau at 103.6–109.5 µs/layer at 1 row. The invariant
+  cost is each block's serial K chain plus the chained fixed
+  cost; the split's extra launch, `hidden` round-trip and
+  duplicated `tg_x`/`tg_h` loads also cost +19% at 32 rows vs
+  the fused attempt-1 (637.7 vs 535.7). Next lever: overlap the
+  per-block chain itself (interleaved gate/up loads) inside the
+  fused kernel, not more groups.
 
 ## Boundary checks
 

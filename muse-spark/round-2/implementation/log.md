@@ -19,3 +19,8 @@
 2026-11-04T03:48:12Z | lead | checkpoint v4: all three graded attempts pass boundary checks; hardening next (routing attempt-2 still building, not committed)
 2026-11-04T03:48:55Z | lead | checkpoint v5: routing attempt-2 scalar decode-exact; hardening directions set for both hyps
 2026-11-04T03:49:41Z | lead | hardening: hyp-1 from attempt-1 (best G2-passing, wins 8/32), hyp-2 from attempt-1 (only full G2 pass); scalar insight carried into routing hardening
+2026-11-04T03:50:42Z | builder-2-c | claimed round-2 routing attempt-3 for hyp-2-routing-exact hardening: scalar partition accumulation inside attempt-1 regime logic, no per-chunk barriers
+2026-11-04T03:50:51Z | builder-1-c | claimed round-2 kernels/experts/attempt-3 for hyp-1-experts-exact hardening: two kernels, 4 simdgroups/group (128 thr), scalar qmm_accum prefill, from attempt-1
+2026-11-04T03:52:28Z | builder-1-c | graded round-2 kernels/experts/attempt-3: G1 pass, G2 pass all six sizes (differ 0), chained 109.5/195.0/637.7 us/layer vs compiled 86.9/243.6/798.9 — beats_compiled false (1-row only), prediction miss +48/+20/+20% explained; recorded in hyp-1-experts-exact and ineff-baseline-experts-2
+2026-11-04T03:52:28Z | builder-2-c | graded round-2 routing attempt-3: G1 pass, G2 pass all six sizes (0 differ), chained 46.9/300.0/297.2 vs compiled 58.0/84.5/90.9 us/layer (beats_compiled false); scalar=MMA extended to 127 and >768, but scalar path latency-bound (uncoalesced loads + xsh bank conflicts); recorded in hyp-2-routing-exact and ineff-baseline-routing-1
+2026-11-04T03:53:21Z | lead | checkpoint v7: hardening experts-3 routing-3 G2 pass but slower than best; best stays experts-1 routing-1

@@ -103,3 +103,18 @@ verifier, 2026-11-04T03:23:45Z — **confirmed**. Checked: serial chain at [bloc
   regular GEMM above 768 rows). Next test: same scalar kernel with
   `rows`-branched partition geometry (8×96 at 127; one chunk-after-chunk
   accumulator above 768).
+- builder-2-c, 2026-11-04T03:51:53Z: round-2 routing attempt-3
+  (`muse-spark/round-2/kernels/routing/attempt-3`) ran that test inside
+  attempt-1's full regime logic: **G2 pass at all six sizes**
+  (rows_differ 0 everywhere), so scalar≡MMA now holds for the 8×96
+  grouping at 127 rows and the single chunk-after-chunk accumulator
+  above 768 rows too — this entry's "a serial scalar loop cannot
+  reproduce the MMA regimes' rounding" is disproved at every graded
+  size. But the first scalar timing is bad where it is timed:
+  46.9 µs/layer at 1 row (beats compiled 58.0; GEMV branch unchanged)
+  yet 300.0/297.2 at 8/32 rows vs compiled 84.5/90.9 — flat across
+  8→32 rows, i.e. latency-bound: uncoalesced scalar `w_router` loads
+  (warp lanes 64 B apart) and 16-way `xsh` bank conflicts on dependent
+  FMA chains, where the MMA attempt's chunk staging doubled as its
+  coalescing. Exactness is settled; the remaining problem is purely
+  how the scalar sums are fed.

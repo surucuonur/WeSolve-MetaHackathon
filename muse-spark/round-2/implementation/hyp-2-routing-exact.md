@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** hardening
-- **Version:** 6
-- **Updated:** 2026-11-04T03:49:13Z
-- **Next:** hardening from attempt-1: scalar accumulation, same regime orders
+- **Version:** 7
+- **Updated:** 2026-11-04T03:52:53Z
+- **Next:** boundary check attempt-3; next: coalesced staging from attempt-3
 
 ## Inefficiency
 
@@ -134,6 +134,33 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory ([muse-age
   scalar emulation. Next (one change): branch partition geometry on `rows`
   (8×96 at 127; single chunk-after-chunk accumulator above 768), rest of
   this kernel unchanged.
+
+### builder-2-c — hardening: scalar accumulation inside attempt-1's regime logic
+
+- Attempt `muse-spark/round-2/kernels/routing/attempt-3`: attempt-1 with
+  ONE main change — its simdgroup-MMA threadgroup staging (48 chunks × 2
+  barriers/row, 8×8 tiles with 7/8 waste) replaced by scalar partition
+  accumulation with no per-chunk barriers. Kept verbatim from attempt-1:
+  the regime branches, split-K partition formula and sequential partial
+  order (8 partitions at 127 rows; single partition over all 48 chunks
+  above 768), the GEMV shuffle tree, the verbatim sigmoid, the top-4 tie
+  rule and the weights sum. Each (expert, partition) partial is one
+  thread's serial scalar sum in increasing `d`, stored to a
+  `parts[60×32]` threadgroup array behind one barrier, then summed in
+  partition order. Predicted 55/65/89 µs/layer at 1/8/32 rows.
+  **G1 pass, G2 pass at all six sizes (0 rows differ, max rel err 0.0).**
+  Chained µs/layer (reference / compiled / candidate): 1 row
+  68.7 / 58.0 / 46.9 (beats compiled); 8 rows 106.2 / 84.5 / 300.0;
+  32 rows 106.7 / 90.9 / 297.2 — `beats_compiled` false (no baseline).
+  Taught: attempt-2's scalar≡MMA identity extends to the groupings it
+  never tested (8×96 at 127 rows, single accumulator above 768), so
+  scalar accumulation is a full-G2 design; but as written it is
+  latency-bound — flat ~300 µs across 8→32 rows — because the scalar
+  chains read `w_router` uncoalesced (lanes 64 B apart) and `xsh` with
+  16-way bank conflicts, where attempt-1's staging was also its
+  coalescing. Next: same scalar order, but stage each partition's
+  `w_router` block coalesced into threadgroup memory and sum from a
+  swizzled `xsh`.
 
 ## Boundary checks
 
