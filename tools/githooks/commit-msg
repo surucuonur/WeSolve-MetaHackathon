@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Refuse a commit whose co-author doesn't match its branch (PROVENANCE.md).
 
-On muse-agent: the Muse Spark co-author is required and Claude is refused.
-Anywhere else: the Muse Spark co-author is refused.
+On muse-agent: a Muse agent's co-author (pv.MUSE_AUTHORS) is required and
+Claude is refused.
+Anywhere else: the Muse agents' co-authors are refused.
 """
 
 import sys
@@ -20,12 +21,16 @@ def main():
     claude = [n for n in names if pv.is_claude(n)]
     if branch == pv.MUSE_BRANCH:
         if not muse:
-            sys.exit(f"commit-msg: commits on {branch} need the trailer\n  {pv.MUSE_COAUTHOR}")
+            lines = "\n  ".join(line for _, line in pv.MUSE_AUTHORS.values())
+            sys.exit(
+                f"commit-msg: commits on {branch} need the co-author line of the Meta "
+                f"model that wrote them, one of\n  {lines}"
+            )
         if claude:
             sys.exit(f"commit-msg: commits on {branch} can't name Claude: {claude}")
     elif muse:
         sys.exit(
-            f"commit-msg: the Muse Spark co-author belongs only on {pv.MUSE_BRANCH}; "
+            f"commit-msg: the Muse agent's co-author belongs only on {pv.MUSE_BRANCH}; "
             f"this branch is {branch or '(detached)'}"
         )
 

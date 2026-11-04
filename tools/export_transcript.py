@@ -1,12 +1,14 @@
-"""Copy the Muse Spark sessions' transcripts into muse-spark/transcripts/.
+"""Copy the Muse agent's session transcripts into muse-spark/transcripts/.
 
 Muse Code logs each session under <Muse home>/.local/share/muse/sessions/: the
 lead agent's in <session>/session.jsonl, and every other agent's below it in
 subagent/<id>/session.jsonl. Those are the helper agents the lead starts and
 Muse Code's own reminder agents, which watch the lead and may nudge it.
 tools/muse-agent/start.sh gives muse a home folder of its own, so every session
-there is a Muse Spark session. All are exported, unless --session picks one
-(by id, or by folder for a session logged elsewhere).
+there is a Muse agent session. Each one not yet exported is, unless --session
+picks one (by id, or by folder for a session logged elsewhere). A session
+already exported is skipped: its transcript belongs to a finished round once
+that round is tagged, and stays as committed.
 
 Each agent's log is read through `muse export`, which reads only local files.
 One transcript per session keeps every agent's conversation: the prompt, the
@@ -19,8 +21,9 @@ refuses to write if an API key value appears anywhere.
 
   .venv/bin/python tools/export_transcript.py [--session ID-or-folder]
 
-Run it from the Muse Spark worktree, then commit the files there with the
-Muse Spark co-author (tools/muse-agent/start.sh shows the command).
+It writes into the muse-agent worktree from any checkout, and prints the
+command that commits the files there with the co-author of the model that
+made the calls.
 """
 
 import argparse
@@ -171,22 +174,43 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--session", help="session id or folder (default: every session in the store)")
     ap.add_argument("--store", type=Path, default=pv.muse_sessions_dir())
-    ap.add_argument("--out", type=Path, default=Path(pv.MUSE_DIR) / "transcripts")
+    ap.add_argument("--out", type=Path, help="default: muse-spark/transcripts/ in the muse-agent worktree")
     args = ap.parse_args()
-    folders = find(args.store, args.session)
+    worktree = pv.muse_worktree()
+    out = args.out or worktree / pv.TRANSCRIPTS_DIR
+    folders = []
+    for folder in find(args.store, args.session):
+        if (out / f"{folder.name}.jsonl").exists():
+            print(f"already exported: {folder.name}")
+        else:
+            folders.append(folder)
+    if not folders:
+        print("no new sessions to export")
+        return
 
     values = pv.secrets()
     if not values:
         raise SystemExit("can't check for API keys: none found in the .env files")
     converted = [convert(f, values) for f in folders]  # all checked before any is written
-    args.out.mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents=True, exist_ok=True)
+    models = set()
     for text, summary in converted:
         session = summary["session"]
-        (args.out / f"{session}.jsonl").write_text(text)
-        (args.out / f"{session}.summary.json").write_text(json.dumps(summary, indent=1) + "\n")
+        (out / f"{session}.jsonl").write_text(text)
+        (out / f"{session}.summary.json").write_text(json.dumps(summary, indent=1) + "\n")
         print(json.dumps(summary, indent=1))
+        models.update(summary["model_calls_by_model"])
         if any(not pv.is_meta_model(m) for m in summary["model_calls_by_model"]):
             print(f"warning: some model calls of {session} were not by a Meta model", file=sys.stderr)
+
+    authors = sorted({pv.muse_author(m) for m in models if pv.is_meta_model(m)})
+    subject = " and ".join(name for name, _ in authors) or "Muse"
+    trailers = " ".join(f'-m "{line}"' for _, line in authors)
+    print(
+        f"\nCommit them in the muse-agent worktree:\n"
+        f"  cd {worktree}\n"
+        f"  git add {pv.TRANSCRIPTS_DIR} && git commit -m \"{subject}: session transcripts\" {trailers}"
+    )
 
 
 if __name__ == "__main__":

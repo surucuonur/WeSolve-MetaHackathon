@@ -1,15 +1,28 @@
 """Grade one kernel attempt: compile it, test it on captured inputs, time it.
 
-The independent grader for Muse Spark's kernels (claude/muse-agent-brief.md).
+The independent grader for the Muse agent's kernels (claude/muse-agent-brief.md).
 It runs on the inputs `slots.py capture` recorded from a real decode step,
 prints its verdict as JSON, and writes it to --out when given. It never
-writes into the attempt folder, which holds only Muse Spark's files.
+writes into the attempt folder, which holds only the Muse agent's files.
 
-  .venv/bin/python bench/grader/check_candidate.py muse-spark/kernels/<slot>/attempt-N <slot> [--out FILE]
+  .venv/bin/python bench/grader/check_candidate.py <attempt folder> <slot> [--out FILE]
+      [--baseline [SLOT=]FOLDER ...]
+
+--baseline times an earlier, already graded attempt in the same run as the
+candidate, and adds `beats_baseline`. From round 2 on, the bar is the previous
+round's final attempt for the slot (claude/adr/0009-rounds-build-on-each-other.md).
+The two are timed in alternating repeats, so drift in the GPU's clocks reaches
+both alike, and the candidate beats the baseline at a row count only if it is
+faster in at least WINS_NEEDED of the REPEATS paired repeats: a one-sided sign
+test at p < 0.01. The same kernel timed twice differs by up to 5% between
+medians, so comparing medians alone would pass on noise. FOLDER alone is an
+attempt for the same slot. For routing+combine, give either one
+routing+combine attempt or `routing=FOLDER` and `combine=FOLDER`.
 """
 
 import argparse
 import json
+import math
 import statistics
 import sys
 import time
@@ -25,6 +38,11 @@ import slots  # noqa: E402
 
 ROWS = (1, 8, 32)
 REPEATS = 30
+WINS_NEEDED = next(  # 22 of 30
+    k
+    for k in range(REPEATS + 1)
+    if sum(math.comb(REPEATS, i) for i in range(k, REPEATS + 1)) / 2**REPEATS < 0.01
+)
 
 
 def parts(slot):
@@ -39,6 +57,23 @@ def load(attempt, slot):
     ]
     specs = spec if slot == "routing+combine" else {slot: spec}
     return {p: slots.build(specs[p], sources, p) for p in parts(slot)}
+
+
+def baselines(values, slot):
+    """The --baseline attempts' functions by part; they must cover the slot's parts."""
+    fns = {}
+    for value in values:
+        name, sep, folder = value.rpartition("=")
+        name = name if sep else slot
+        if name not in slots.SLOTS:
+            sys.exit(f"--baseline {value}: unknown slot {name!r}")
+        try:
+            fns |= load(Path(folder), name)
+        except Exception as e:
+            sys.exit(f"--baseline {value}: can't load it: {short_error(e)}")
+    if sorted(fns) != sorted(parts(slot)):
+        sys.exit(f"--baseline must cover {parts(slot)}, not {sorted(fns)}")
+    return fns
 
 
 def ulp_bf16(r):
@@ -150,6 +185,24 @@ def timed(fn, layers, names):
     return round(statistics.median(times) * 1e6, 1)
 
 
+def paired_times(fns, layers, names):
+    """Per-repeat µs per layer of each function, in rotating order within each repeat."""
+    calls = [
+        lambda f=f: mx.eval([f(**{n: layer[n] for n in names}) for layer in layers])
+        for f in fns
+    ]
+    for _ in range(3):
+        for call in calls:
+            call()
+    times = [[] for _ in fns]
+    for i in range(REPEATS):
+        for j in [(i + k) % len(fns) for k in range(len(fns))]:
+            t0 = time.perf_counter()
+            calls[j]()
+            times[j].append((time.perf_counter() - t0) / len(layers) * 1e6)
+    return times
+
+
 def short_error(e):
     """The exception, keeping only the compiler's error lines from Metal builds."""
     text = "".join(traceback.format_exception_only(type(e), e)).strip()
@@ -168,10 +221,24 @@ def main():
     ap.add_argument("attempt", type=Path)
     ap.add_argument("slot", choices=tuple(slots.SLOTS))
     ap.add_argument("--out", type=Path, help="also write the verdict here")
+    ap.add_argument(
+        "--baseline",
+        action="append",
+        default=[],
+        metavar="[SLOT=]FOLDER",
+        help="an earlier attempt to time in the same run (repeat for routing+combine)",
+    )
     args = ap.parse_args()
     attempt, slot = args.attempt, args.slot
     gpu_lock.hold(f"check_candidate.py {attempt} {slot}")
+    base = baselines(args.baseline, slot) if args.baseline else None
     result = {"slot": slot, "g1": False, "g2": False, "beats_compiled": False}
+    if base:
+        result |= {
+            "baseline": args.baseline,
+            "beats_baseline": False,
+            "wins_needed": f"{WINS_NEEDED} of {REPEATS} paired repeats",
+        }
     try:
         fns = load(attempt, slot)
         weights = slots.load_expert_weights() if slot == "experts" else None
@@ -207,10 +274,11 @@ def main():
         result["correctness"] = stats
         result["g2"] = all(s.get("pass") for s in stats.values())
         if result["g2"]:
-            timing, beats = {}, True
+            timing, beats, beats_base = {}, True, True
             for rows in ROWS:
                 layers = slots.load_inputs(rows, weights)
                 row = {"reference": 0.0, "compiled": 0.0, "candidate": 0.0}
+                base_t, cand_t = [0.0] * REPEATS, [0.0] * REPEATS
                 for part, fn in fns.items():
                     names = slots.SLOTS[part][0]
                     ref = slots.REFERENCE[part]
@@ -219,12 +287,24 @@ def main():
                     )  # noqa: E731
                     row["reference"] += timed(wrap(ref), layers, names)
                     row["compiled"] += timed(wrap(mx.compile(ref)), layers, names)
-                    row["candidate"] += timed(fn, layers, names)
+                    if base:
+                        b, c = paired_times([base[part], fn], layers, names)
+                        base_t = [t + u for t, u in zip(base_t, b)]
+                        cand_t = [t + u for t, u in zip(cand_t, c)]
+                    else:
+                        row["candidate"] += timed(fn, layers, names)
+                if base:
+                    row["candidate"] = statistics.median(cand_t)
+                    row["baseline"] = statistics.median(base_t)
+                    row["wins_vs_baseline"] = sum(c < b for b, c in zip(base_t, cand_t))
+                    beats_base &= row["wins_vs_baseline"] >= WINS_NEEDED
                 timing[f"rows {rows}"] = {k: round(v, 1) for k, v in row.items()}
                 beats &= row["candidate"] < row["compiled"]
             result["timing_us_per_layer"] = timing
             result["beats_compiled"] = beats
-    except Exception as e:  # report the failure to Muse Spark as G1
+            if base:
+                result["beats_baseline"] = beats_base
+    except Exception as e:  # report the failure to the Muse agent as G1
         result["error"] = short_error(e)
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)

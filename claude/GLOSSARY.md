@@ -98,25 +98,44 @@ _Avoid_: unique experts, expert coverage
 Meta's smallest on-device mixture-of-experts model (about 1.3B parameters in total, about 272M used per token), studied here in its SFT (full-precision) and QAT (int4) variants.
 
 **Muse Spark**:
-Meta's hosted model. In this project it chooses which pieces of the decode step to replace and writes their kernels, working in its own Muse Spark session; it is never the model under study.
+Meta's hosted model, and the Muse agent in round 1.
+
+**Muse Wonder Full**:
+The higher-capability variant of Muse Wonder, which Meta calls its most capable model; available only in Muse Code with a subscription. The Muse agent from round 2.
+_Avoid_: Muse Wonder (that is the lighter variant, on Meta's API)
+
+**Muse agent**:
+The Meta model that chooses which pieces of the decode step to replace and writes their kernels, on the branch `muse-agent`: Muse Spark in round 1, Muse Wonder Full from round 2. It is never the model under study.
+_Avoid_: Muse (alone), Meta agent
 
 **Muse Code**:
-Meta's own coding agent for the terminal, built on Muse Spark; the only program in which Muse Spark does its work in this project.
+Meta's own coding agent for the terminal; the only program in which the Muse agent does its work in this project.
 _Avoid_: Muse CLI, Meta Code
 
-**Muse Spark session**:
-A Muse Code session in which Muse Spark writes every turn, the lead's and every helper's, kept apart from Claude's work by its own branch, folder and commit trailer.
-_Avoid_: guardrail (for the session itself), Meta mode
+**Muse agent session**:
+A Muse Code session in which the Muse agent writes every turn, the lead's and every helper's, kept apart from Claude's work by its own branch, folder and commit trailer.
+_Avoid_: Muse Spark session (from round 2 the model is Muse Wonder Full), guardrail (for the session itself), Meta mode
 
-## Muse Spark's work
+## The Muse agent's work
 
 **Slot**:
-One replaceable piece of the mixture-of-experts block (routing, combine, or the routed experts), with fixed inputs and outputs, that Muse Spark may replace with its own kernels.
-_Avoid_: target (that is a slot Muse Spark has chosen), module
+One replaceable piece of the mixture-of-experts block (routing, combine, or the routed experts), with fixed inputs and outputs, that the Muse agent may replace with its own kernels.
+_Avoid_: target (that is a slot the Muse agent has chosen), module
 
 **Round**:
-One Muse Spark session in which a swarm explores and then builds, followed by Claude's independent measurement of what it produced.
+One Muse agent session in which a swarm explores and then builds, writing in its own round folder, followed by Claude's independent measurement of what it produced. Once a round is finished, its files are frozen.
 _Avoid_: iteration, cycle
+
+**Round folder**:
+Where one round writes all its files: round 1 at the top of `muse-spark/`, each later round in `muse-spark/round-<N>/`.
+
+**Starting point**:
+The plan each round from round 2 on begins with, drawn from the earlier rounds and Claude's measurement: each slot's baseline and its end-to-end effect, what is left to build, the refuted claims, and the territories to explore again.
+_Avoid_: recap, retrospective
+
+**Baseline**:
+A slot's best attempt so far, named in Claude's measurement of the previous round, which every new attempt for that slot must beat in the same grader run.
+_Avoid_: reference (that is the original MLX code and its compiled version)
 
 **Swarm**:
 All the agents of one round, the lead and its helpers, working toward one goal through shared documents that each of them reads and adds to.
@@ -131,7 +150,7 @@ An agent the lead starts: an explorer, the verifier, a builder or a boundary age
 _Avoid_: worker, subagent (when the role matters, not the mechanism)
 
 **Reminder agent**:
-One of Muse Code's own background agents, which watch the lead's progress and may nudge it, for example to check a claim before it says it is done; Muse Spark writes their turns too, but they take no part in the work.
+One of Muse Code's own background agents, which watch the lead's progress and may nudge it, for example to check a claim before it says it is done; the Muse agent's model writes their turns too, but they take no part in the work.
 _Avoid_: helper (that is one the lead starts)
 
 **Exploration phase**:
@@ -162,5 +181,5 @@ What a solution must keep identical so that the steps before and after its slot 
 _Avoid_: interface (unqualified), contract
 
 **Attempt**:
-A solution a builder has graded and the lead has committed; attempts for a slot are numbered in order and have no limit.
+One grader run of a solution a builder wrote, committed by the lead; attempts for a slot are numbered in order within each round and have no limit.
 _Avoid_: try, submission, draft

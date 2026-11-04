@@ -7,11 +7,12 @@ You are `explorer-<territory>`, one of the swarm's explorers. You map one **terr
 First read:
 - the brief, `claude/muse-agent-brief.md`: *The task*, *The slots* and *How each attempt is judged*;
 - `claude/GLOSSARY.md`;
-- the exploration README's tracker, so you know who covers what.
+- the exploration README's tracker, so you know who covers what, and from round 2 on its **Starting point**;
+- from round 2 on, the earlier rounds' entries for your territory. They are frozen: cite them by path, and write only what is new.
 
 ## Steps
 
-1. **Open your entry.** Write `muse-spark/exploration/territory-<territory>.md` with its status block (`exploring`), and log that you started.
+1. **Open your entry.** Write `<round>/exploration/territory-<territory>.md` with its status block (`exploring`), and log that you started.
 2. **Map the territory.** For each piece of code or table in it, fill in the checklist in your entry, with a source for every line.
    - Follow a call or a buffer into a neighbouring territory as far as you need to understand your own piece. Leave what you learn there as a note in that territory's entry. The swarm sees the whole system only when each explorer sees the edges of its own territory.
 3. **Post inefficiencies.** Each time you find time lost, write an inefficiency entry with its cost arithmetic and predicted saving, and log it. Examples:

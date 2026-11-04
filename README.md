@@ -25,18 +25,19 @@ A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by
 
 [claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs.
 
-Next: Muse Spark, working in Muse Code, Meta's own coding agent, works as a swarm of agents. They analyse the code and these findings together, then write GPU kernels against the inefficiencies they confirm. An independent grader checks them ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md), [ADR 0007](claude/adr/0007-muse-spark-swarm.md)).
+Next: a Meta model working in Muse Code, Meta's own coding agent, works as a swarm of agents: Muse Spark in round 1, Muse Wonder Full from round 2. They analyse the code and these findings together, then write GPU kernels against the inefficiencies they confirm. An independent grader checks them, and each round must beat the best kernels of the rounds before it ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md), [ADR 0007](claude/adr/0007-muse-spark-swarm.md), [ADR 0008](claude/adr/0008-muse-wonder-full.md), [ADR 0009](claude/adr/0009-rounds-build-on-each-other.md)).
 
 ## How Meta's models are used
 
 - **MobileMoE-S** (open weights) is the model under study, served by vLLM through vllm-metal. The baseline serves the int4 `facebook/MobileMoE-S-QAT` ([why](claude/adr/0002-int4-qat-baseline.md)); the bfloat16 `facebook/MobileMoE-S-SFT` is used to check the port.
-- **Muse Spark** (`muse-spark-1.3-contributor`; Meta Model API) works in **Muse Code**, Meta's own coding agent, started only with `tools/muse-agent/start.sh`.
-  - Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md). In it, Muse Spark works as a swarm:
+- **The Muse agent** works in **Muse Code**, Meta's own coding agent, started only with `tools/muse-agent/start.sh`: **Muse Spark** (`muse-spark-1.3-contributor`; Meta Model API) in round 1, **Muse Wonder Full** (Muse Code subscription) from round 2.
+  - Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md). In it, the Muse agent works as a swarm:
     - explorers, one per part of the code or the measurements, write a shared analysis;
     - competing builders write fused GPU kernels for the top inefficiencies and run the grader on them;
     - the lead coordinates and commits.
     
-    Both phases are tracked live in shared documents in `muse-spark/exploration/` and `muse-spark/implementation/`. [How the swarm works](claude/muse-swarm.md), with diagrams.
+    Both phases are tracked live in shared documents in the round's folder: `muse-spark/exploration/` and `muse-spark/implementation/` for round 1, `muse-spark/round-<N>/` for each later round. [How the swarm works](claude/muse-swarm.md), with diagrams.
+  - From round 2 on, a round starts from the earlier rounds' results, and each new kernel must beat its slot's best so far. A finished round's files are frozen (tag `muse-round-<N>`).
   - Its work goes to `muse-spark/` on the branch `muse-agent`, with the transcripts of its sessions. Its task was committed and tagged `agent-era` ([brief](claude/muse-agent-brief.md)); the move to Muse Code and the skill were committed and tagged `muse-code-era` before its first Muse Code session.
 
 ## Who made what
@@ -45,9 +46,9 @@ Every commit is made by **surucuonur**. The co-author on each commit shows whose
 
 | Who | What | Where |
 |---|---|---|
-| **surucuonur** | Direction, decisions, running the machine, starting the Muse Spark sessions | every commit |
-| **Claude Code** (Claude Opus 5.5) | Benchmark, grader and provenance code, measurements, write-ups, Muse Spark's brief and round skill | `bench/`, `claude/`, `tools/`, `.agents/skills/`, this README. Commits co-authored by `claude`. |
-| **Muse Spark** (`muse-spark-1.3-contributor`), in Muse Code | Its analysis, hypotheses, kernels, phase logs and session transcripts | `muse-spark/`, on the branch `muse-agent`. Commits co-authored by "Muse Spark". |
+| **surucuonur** | Direction, decisions, running the machine, starting the Muse agent's sessions | every commit |
+| **Claude Code** (Claude Opus 5.5) | Benchmark, grader and provenance code, measurements, write-ups, the Muse agent's brief and round skill | `bench/`, `claude/`, `tools/`, `.agents/skills/`, this README. Commits co-authored by `claude`. |
+| **The Muse agent**, in Muse Code: Muse Spark (`muse-spark-1.3-contributor`) in round 1, Muse Wonder Full from round 2 | Its analysis, hypotheses, kernels, phase logs and session transcripts | `muse-spark/`, on the branch `muse-agent`. Commits co-authored by "Muse Spark" (round 1) or "Muse Wonder Full" (round 2 on). |
 | **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, Meta's model weights | `third_party/` at pinned commits, plus the installed wheels |
 
 Git hooks refuse commits that mix the two, and `tools/provenance_check.py` audits the whole history. [PROVENANCE.md](PROVENANCE.md) gives the details and the commands to check them.
@@ -61,13 +62,13 @@ claude/GLOSSARY.md    shared vocabulary
 claude/adr/           decisions and why
 claude/benchmark/     baseline benchmark write-up: findings, every measurement, method
 claude/findings/      where a decode step's time goes, and the fixes it suggests
-muse-spark/           Muse Spark's work: its analysis, hypotheses, kernels and session transcripts (branch muse-agent)
-.agents/skills/       the round skill Muse Spark follows in Muse Code (written by Claude)
+muse-spark/           the Muse agent's work: round 1 at the top, round-<N>/ for later rounds, and the session transcripts (branch muse-agent)
+.agents/skills/       the round skill the Muse agent follows in Muse Code (written by Claude)
 third_party/          pinned submodules: vllm-metal and mlx-lm (forks, where changes go), vLLM v0.32.0 (read-only)
 bench/                benchmark sweep, roofline calculation, port correctness check
 bench/micro/          microbenchmarks of a decode step's parts
-bench/grader/         the independent grader for Muse Spark's kernels
-tools/                provenance hooks and audit; the Muse Spark launcher
+bench/grader/         the independent grader for the Muse agent's kernels
+tools/                provenance hooks and audit; the Muse agent's launcher
 results/runs/         every benchmark run, committed
 results/traces/       Metal GPU traces (large, not committed)
 ```
@@ -98,7 +99,7 @@ for f in $(cd $W && ls metal/*.metallib metal/_paged_ops.* pytorch_backend/_mps_
 done
 ```
 
-`.env` is not committed. It holds `MODEL_API_KEY` for Muse Spark and `HUGGINGFACE_API_KEY` for downloading the gated model; the scripts pass the second one to Hugging Face tools as `HF_TOKEN`.
+`.env` is not committed. It holds `MODEL_API_KEY` for Muse Spark on Meta's API (round 1) and `HUGGINGFACE_API_KEY` for downloading the gated model; the scripts pass the second one to Hugging Face tools as `HF_TOKEN`.
 
 The int4 model is converted to MLX's format once. The serving copy has bfloat16 scales; the float32 copy keeps the scales exact for the correctness check. Both go to `models/` (git-ignored):
 

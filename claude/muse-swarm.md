@@ -1,10 +1,10 @@
-# How Muse Spark's swarm works
+# How the Muse agent's swarm works
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../PROVENANCE.md).*
 
-Muse Spark improves the MobileMoE-S decode step as a **swarm**: several agents in one Muse Code session, each covering part of the problem, sharing what they find in documents that all of them read. This page explains how one round runs, step by step, and where to watch it.
+The Muse agent, Meta's model working in Muse Code (Muse Spark in round 1, Muse Wonder Full from round 2; [ADR 0008](adr/0008-muse-wonder-full.md)), improves the MobileMoE-S decode step as a **swarm**: several agents in one Muse Code session, each covering part of the problem, sharing what they find in documents that all of them read. This page explains how one round runs, step by step, and where to watch it.
 
-- **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 3. This page describes it.
+- **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 4. This page describes it.
 - **Why it is built this way:** [ADR 0007](adr/0007-muse-spark-swarm.md) records the decision.
 - **The diagrams:** [diagrams/muse-swarm.drawio](diagrams/muse-swarm.drawio) opens in draw.io, with one page each for the overview, exploration and implementation. The images below are exported from it.
 
@@ -12,10 +12,10 @@ Muse Spark improves the MobileMoE-S decode step as a **swarm**: several agents i
 
 ![One round: find where you are, exploration, the analysis, implementation, finish; then Claude's independent measurement](diagrams/muse-swarm-overview.svg)
 
-A round is one Muse Code session on the branch `muse-agent`, with up to 12 agents at once.
+A round is one Muse Code session on the branch `muse-agent`, with up to 12 agents at once. It writes everything in its own **round folder**: round 1 at the top of `muse-spark/`, round N in `muse-spark/round-<N>/`, written `<round>/` below.
 - **Exploration:** the agents first map the code and the measurements, and agree on where the time goes.
 - **Implementation:** they then build and grade kernels against the causes they confirmed.
-- **Claude's measurement:** after the round, Claude merges the branch and measures the results independently (G3), and the next round starts from those results.
+- **Claude's measurement:** after the round, Claude merges the branch and measures the results independently (G3), and the next round starts from those results (see *Rounds build on each other*).
 
 | Role | How many | What it does | What it writes |
 |---|---|---|---|
@@ -29,8 +29,8 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
 
 ![Exploration: explorers write entries and log lines in the shared folder; the verifier confirms or refutes inefficiencies; the lead checkpoints and commits](diagrams/muse-swarm-exploration.svg)
 
-1. **The lead opens the phase.** It writes `muse-spark/exploration/README.md` with its version line (v1, skill version 3), a tracker table and an empty log, and commits it as `exploration v1`.
-2. **Eight explorers and the verifier start at once,** one explorer per territory:
+1. **The lead opens the phase.** It writes `<round>/exploration/README.md` with its version line (v1, skill version 4), a tracker table and an empty log, and commits it as `exploration v1`. From round 2 on, the README opens with the round's **starting point** (see *Rounds build on each other*).
+2. **The explorers and the verifier start at once,** one explorer per territory. Round 1 started with eight:
    - **Code:**
      - the model's layer around the slots (`mobilemoe.py`);
      - the routed experts (`switch_layers.py`);
@@ -39,6 +39,8 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
      - vllm-metal's decode path around the model;
      - the grader's slot interface.
    - **Measurements:** Claude's findings with the breakdown run, and the other runs.
+
+   From round 2 on, the starting point picks the territories: each slot's baseline kernels, the difference between Claude's G3 and the piece timing, and only those round-1 territories it reopens.
 3. **Each explorer maps its territory.** It fills a checklist for every piece of code: callers, callees, data, neighbours, cost and invariants, each line with a source. It follows calls and buffers into neighbouring territories as far as it needs to, and leaves what it learns there as a note. That is how the swarm sees the whole system, not just isolated files.
 4. **It posts every inefficiency it finds,** as its own entry, giving:
    - where in the code it is;
@@ -92,11 +94,24 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
 7. **Next, and finish.**
    - Then comes the next-ranked inefficiency. There is no attempt limit; the lead ends the phase when it judges no remaining inefficiency will pay, and says why.
    - The round finishes with both READMEs final, including a **Ready to test** section naming the attempt per slot that goes to G3.
-   - `summary.md` gets a round section: the skill version, the final attempts and the number of graded attempts per slot.
+   - `<round>/summary.md` gets a round section: the model, the skill version, the final attempts and the number of graded attempts per slot.
+
+## Rounds build on each other
+
+From round 2 on, a round starts where the earlier ones stopped ([ADR 0009](adr/0009-rounds-build-on-each-other.md)).
+- **Finished rounds are frozen.** After a round's transcripts are committed, Claude tags its last commit `muse-round-<N>` (round 1: `muse-round-1`). The hooks then refuse any change to that round's files, and new files anywhere but the current round's folder and the transcripts.
+- **The starting point.** The lead first reads the earlier rounds' final documents, the best attempts' notes and Claude's G3 report on the previous round. It writes the plan at the top of the round's exploration README:
+  - per slot, the best attempt so far, the **baseline**, and how its G3 effect compared with its prediction;
+  - what is left to build;
+  - the refuted claims;
+  - the territories to explore again.
+
+  Without Claude's report the round stops.
+- **The baseline is the bar.** A new attempt must beat its slot's baseline in the same grader run (`check_candidate.py --baseline`). The two are timed in alternating repeats, and the attempt must win at least 22 of 30 at each row count. A slot that nothing beats keeps its baseline for G3.
 
 ## Shared documents and versions
 
-Each phase folder, `muse-spark/exploration/` and `muse-spark/implementation/`, holds three kinds of document:
+Each phase folder, `<round>/exploration/` and `<round>/implementation/`, holds three kinds of document:
 
 | Document | Written by | Holds |
 |---|---|---|
@@ -105,13 +120,13 @@ Each phase folder, `muse-spark/exploration/` and `muse-spark/implementation/`, h
 | `log.md` | every agent, appending one line per event | time, agent, and what happened |
 
 Every version is raised by a single writer, so no number is taken twice:
-- **Phase versions.** Each checkpoint raises the README's version and is exactly one commit, whose subject names it: `Muse Spark: exploration v5: …`. `git diff` between two version commits shows what changed.
+- **Phase versions.** Each checkpoint raises the README's version and is exactly one commit, whose subject names it: `<name>: exploration v5: …`, for example `Muse Wonder Full: exploration v5: …` in round 2. `git diff` between two version commits shows what changed.
 - **Entry versions** are raised by the entry's owner, by the verifier with its verdict, or by the lead for hypothesis entries.
 - **The skill's own version** is in its header and its [changelog](../.agents/skills/muse-round/CHANGELOG.md), and each round records the version it ran.
 
 ## What keeps it honest
 
-- **Placement.** Muse Spark writes only in `muse-spark/`, on `muse-agent`, and only the lead commits, always with the Muse Spark co-author. The git hooks refuse anything else, and [tools/provenance_check.py](../tools/provenance_check.py) re-checks the whole history.
+- **Placement.** The Muse agent writes only in its round's folder in `muse-spark/`, on `muse-agent`, and only the lead commits, always with its model's co-author. A finished round's files can't change. The git hooks refuse anything else, and [tools/provenance_check.py](../tools/provenance_check.py) re-checks the whole history.
 - **Sources.** Every number in the shared documents has a source: a file and line, a table row, a grader verdict, or arithmetic shown in full.
 - **Attempts.** Every graded attempt is committed and counted, so a result can't hide how many tries it took.
 - **The GPU.** The grader is the only GPU job, and runs queue through [bench/grader/gpu_lock.py](../bench/grader/gpu_lock.py).
@@ -122,12 +137,12 @@ Every version is raised by a single writer, so no number is taken twice:
 From the main checkout, while a round runs:
 
 ```bash
-tail -f ../Hackathon-muse/muse-spark/exploration/log.md      # every event, as it happens
-tail -f ../Hackathon-muse/muse-spark/implementation/log.md   # once implementation starts
+tail -f ../Hackathon-muse/muse-spark/round-2/exploration/log.md      # every event, as it happens (round 2)
+tail -f ../Hackathon-muse/muse-spark/round-2/implementation/log.md   # once implementation starts
 git log --oneline main..muse-agent                           # every checkpoint, one per version
 ```
 
-- **The trackers:** `../Hackathon-muse/muse-spark/exploration/README.md` and its implementation counterpart show who is on what, their status, and the current version.
+- **The trackers:** `../Hackathon-muse/muse-spark/round-2/exploration/README.md` and its implementation counterpart show who is on what, their status, and the current version.
 - **An agent's current work:** open its entry.
 
 ## Where each part is defined
@@ -138,5 +153,5 @@ git log --oneline main..muse-agent                           # every checkpoint,
 | Shared documents, versions, adapting rule, rules for every agent | [tracking.md](../.agents/skills/muse-round/tracking.md) |
 | Role instructions | [explorer.md](../.agents/skills/muse-round/explorer.md), [verifier.md](../.agents/skills/muse-round/verifier.md), [builder.md](../.agents/skills/muse-round/builder.md), [boundary.md](../.agents/skills/muse-round/boundary.md) |
 | The task, slots and pass criteria | [muse-agent-brief.md](muse-agent-brief.md), as changed by [ADR 0006](adr/0006-muse-spark-in-muse-code.md) and [ADR 0007](adr/0007-muse-spark-swarm.md) |
-| The launcher (key, worktree, own home folder, 12 agents) | [tools/muse-agent/start.sh](../tools/muse-agent/start.sh) |
+| The launcher (model and sign-in, worktree, own home folder, 12 agents) | [tools/muse-agent/start.sh](../tools/muse-agent/start.sh) |
 | Session transcripts | [tools/export_transcript.py](../tools/export_transcript.py), into `muse-spark/transcripts/` |

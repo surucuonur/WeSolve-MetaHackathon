@@ -13,7 +13,7 @@ Write the hypothesis entry's **Boundary** section, with a source for each line:
 - **What the grader checks, and what it can't see.** G1 and G2 run only 1, 8 and 32 rows of captured inputs, but a decode step can have any row count from 1 to 32, and other inputs.
 - **The GPU limits:** at most 1,024 threads per threadgroup and 32 KB of threadgroup memory.
 
-Use the checklist in tracking.md for each neighbour. Log it, and return when the section is complete.
+Use the checklist in tracking.md for each neighbour. From round 2 on, an earlier round's hypothesis entry may already hold the slot's boundary: cite it, check each line still holds for the baseline, and write only what changed. Log it, and return when the section is complete.
 
 ## Task: check an attempt
 

@@ -4,14 +4,18 @@
 
 Every agent of the round reads this file. The documents below are how the swarm shares what it knows and how surucuonur follows the round while it runs, so keep them current as you work, not at the end.
 
-## The two phase folders
+## The round folder and its two phase folders
+
+`<round>/` is this round's folder: `muse-spark/round-<N>/` from round 2 on (round 1's is `muse-spark/` itself). The lead's prompt names it.
 
 | Folder | Phase | Holds |
 |---|---|---|
-| `muse-spark/exploration/` | Exploration | the analysis: `README.md`, territory and inefficiency entries, `log.md` |
-| `muse-spark/implementation/` | Implementation | the report: `README.md`, hypothesis entries, `log.md` |
+| `<round>/exploration/` | Exploration | the analysis: `README.md`, territory and inefficiency entries, `log.md` |
+| `<round>/implementation/` | Implementation | the report: `README.md`, hypothesis entries, `log.md` |
 
-Kernels stay where the grader reads them: `muse-spark/kernels/<slot-folder>/attempt-<N>/`.
+Kernels go in `<round>/kernels/<slot-folder>/attempt-<N>/`, numbered from 1 in each round; the grader reads any attempt folder it is given.
+
+**Earlier rounds' folders are frozen.** Read them and cite them by path; write what you add in this round's entries. The hooks refuse a change to any file a finished round left.
 
 Each folder has three kinds of document:
 
@@ -26,11 +30,11 @@ Every shared document carries a version number, so a reader knows which version 
 **Phase versions.** Each README opens with its version line:
 
 ```markdown
-**Version:** v5 · 2026-11-04T09:40Z · skill version 3
+**Version:** v5 · 2026-11-04T09:40Z · skill version 4
 ```
 
 - **Who raises it:** the lead, at every checkpoint, and each version is exactly one commit.
-- **The commit:** its subject names the version, `Muse Spark: exploration v5: <what changed>`. `git log --grep 'exploration v5:'` finds it, and `git diff` between two such commits shows what changed.
+- **The commit:** its subject names the version, `<name>: exploration v5: <what changed>`, where `<name>` is the Muse agent's name from the lead's first prompt. `git log --grep 'exploration v5:'` finds it, and `git diff` between two such commits shows what changed.
 - **The changelog:** the README ends with `## Versions`, one line per version, newest first, naming the entries that changed and their new versions:
 
 ```markdown
@@ -41,6 +45,8 @@ Every shared document carries a version number, so a reader knows which version 
 - **Territory and inefficiency entries:** the owner raises it with every change to its own text. The verifier raises it when it writes the verdict.
 - **Hypothesis entries:** the lead raises it at each checkpoint where the entry changed, builders' and the boundary agent's sections included.
 - **Notes:** a note under `## From other agents` leaves the version alone. The owner raises it when folding the note in.
+
+**Times.** Every time you write, in a version line, a status block, a tracker row, a note or a log line, is the output of `date -u +%FT%TZ` run at that moment. Never estimate or round one.
 
 ## The README trackers
 
@@ -56,6 +62,8 @@ Implementation, `implementation/README.md`:
 |---|---|---|---|---|
 | `hyp-1-fused-gather` | `experts` | `builder-1-a`, `builder-1-b` | 3: pass, pass, 41 / 55 / 180 (48 / 70 / 260) | hardening |
 
+From round 2 on, the attempts column also gives the baseline's time from the same run, and whether `beats_baseline` is true.
+
 ## Entries
 
 Each entry opens with a status block that its owner keeps current:
@@ -69,9 +77,9 @@ Each entry opens with a status block that its owner keeps current:
 ```
 
 Entries are named so that two agents never pick the same name:
-- `exploration/territory-<territory>.md`
-- `exploration/ineff-<territory>-<n>.md`, numbered by the explorer of that territory
-- `implementation/hyp-<n>-<slug>.md`, numbered by the lead
+- `<round>/exploration/territory-<territory>.md`
+- `<round>/exploration/ineff-<territory>-<n>.md`, numbered by the explorer of that territory
+- `<round>/implementation/hyp-<n>-<slug>.md`, numbered by the lead
 
 **Another agent's entry:** append under its `## From other agents` heading, starting with your name and the time. The owner's text stays as written, so two agents never overwrite each other. The owner reads these notes and folds in what holds.
 
@@ -98,9 +106,9 @@ Entries are named so that two agents never pick the same name:
 ### Hypothesis entry
 
 1. Status block. The lead owns it; the statuses are `boundary`, `building`, `hardening`, `ready` and `dropped`.
-2. **Inefficiency** it removes, and the slot.
+2. **Inefficiency** it removes, the slot, and from round 2 on the slot's baseline folder.
 3. **Boundary**, written by the boundary agent: what the solution must keep identical (see `boundary.md`).
-4. **One section per builder:** its direction, its attempts (folder, predicted and measured µs per layer at 1, 8 and 32 rows, G1, G2), and what each attempt taught.
+4. **One section per builder:** its direction, its attempts (folder, predicted and measured µs per layer at 1, 8 and 32 rows, G1, G2, and from round 2 on the baseline's time and `beats_baseline`), and what each attempt taught.
 5. **Boundary checks** of the attempts that passed G2.
 6. **Decision:** the best attempt and why. When the status is `ready`, it states what G3 should show.
 
@@ -117,10 +125,10 @@ Fill it in for each piece of code you inspect, so that no piece is judged withou
 
 ## The log
 
-Append one line per event with the shell, so lines from several agents never mix:
+Append one line per event with the shell, so lines from several agents never mix. In round 2:
 
 ```bash
-printf '%s | %s | %s\n' "$(date -u +%FT%TZ)" "explorer-quantized-kernels" "posted ineff-quantized-kernels-2: each weight byte read 4 times at 32 rows" >> muse-spark/exploration/log.md
+printf '%s | %s | %s\n' "$(date -u +%FT%TZ)" "explorer-baseline-experts" "posted ineff-baseline-experts-2: each weight byte read 4 times at 32 rows" >> muse-spark/round-2/exploration/log.md
 ```
 
 Log when you start, claim something, post or confirm an entry, change direction (what from, what to, and which entry made you), grade an attempt (with its verdict), and finish.
@@ -139,7 +147,7 @@ Two claims on the same item go to the lead, who settles them.
 
 ## Rules for every agent
 
-- **Writes go only to `muse-spark/`, in the files your role names.** Everything else in the worktree, and everything outside it, is read-only.
+- **Writes go only to this round's folder, in the files your role names.** Earlier rounds' folders, everything else in the worktree, and everything outside it are read-only.
 - **Only the lead commits.** Helpers never run `git add` or `git commit`.
 - **The grader is the only GPU job.** Run it only as a builder, through the brief's command; it waits its turn when another run has the GPU. Load no model and start no other GPU work: the machine has 16 GB and slows down sharply when memory runs short.
 - **Every number has a source:** a file and line, a table (path and row), a grader verdict (attempt folder), or arithmetic shown in full.

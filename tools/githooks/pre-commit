@@ -2,6 +2,9 @@
 """Refuse a commit that mixes authors' folders or contains a secret (PROVENANCE.md).
 
 On muse-agent: every staged path must be under muse-spark/, and no merges.
+Once a round is finished (tag muse-round-<N>), its files there are frozen: no
+commit may change or delete them, and new files go only in the current round's
+folder or in muse-spark/transcripts/.
 Anywhere else: no staged path under muse-spark/, except when merging muse-agent.
 Everywhere: no staged file may contain MODEL_API_KEY's or HUGGINGFACE_API_KEY's
 value, read from the main checkout's .env and legal-agent-workshop/agent/.env.
@@ -28,6 +31,32 @@ def merging_muse_agent():
     return bool(merge) and merge == ref(pv.MUSE_BRANCH)
 
 
+def check_rounds():
+    """Refuse changes to a finished round's files, and new files outside this round's folder."""
+    finished = pv.finished_rounds()
+    if not finished:
+        return
+    frozen = pv.frozen_paths()
+    changed = pv.git(
+        "diff", "--cached", "--name-only", "--no-renames", "--diff-filter=MDT", "-z"
+    ).split("\0")
+    touched = [p for p in changed if p in frozen]
+    if touched:
+        sys.exit(
+            f"pre-commit: these files belong to a finished round "
+            f"({pv.ROUND_TAG}{finished[-1]} or earlier) and can't change: {touched[:10]}"
+        )
+    here = pv.round_dir(finished[-1] + 1)
+    added = pv.git("diff", "--cached", "--name-only", "--no-renames", "--diff-filter=A", "-z")
+    astray = [
+        p
+        for p in added.split("\0")
+        if p and not p.startswith((here, pv.TRANSCRIPTS_DIR))
+    ]
+    if astray:
+        sys.exit(f"pre-commit: this round writes in {here}, not: {astray[:10]}")
+
+
 def main():
     branch = pv.git("branch", "--show-current").strip()
     staged = pv.git("diff", "--cached", "--name-only", "--no-renames", "-z").split("\0")
@@ -39,9 +68,10 @@ def main():
         outside = [p for p in staged if not p.startswith(pv.MUSE_DIR)]
         if outside:
             sys.exit(f"pre-commit: on {branch}, only {pv.MUSE_DIR} may change: {outside[:10]}")
+        check_rounds()
     elif in_muse and not merging_muse_agent():
         sys.exit(
-            f"pre-commit: {pv.MUSE_DIR} holds only Muse Spark's work, committed on "
+            f"pre-commit: {pv.MUSE_DIR} holds only the Muse agent's work, committed on "
             f"{pv.MUSE_BRANCH}: {in_muse[:10]}"
         )
 

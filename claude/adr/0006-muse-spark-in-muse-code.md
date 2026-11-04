@@ -50,7 +50,7 @@ The [brief](../muse-agent-brief.md) stays fixed as committed, and so do its task
 
 ## Consequences
 
-- **The model:** `muse-spark-1.3-contributor`, as in ADR 0005. Meta may train on everything sent: the brief, the skill, the findings and every file Muse reads, all written by Claude or by us. Claude Code's own prompt is no longer among them. surucuonur accepted this for the lower price.
+- **The model:** `muse-spark-1.3-contributor`, as in ADR 0005, for round 1; from round 2, Muse Wonder Full through a Muse Code subscription ([ADR 0008](0008-muse-wonder-full.md)). Meta may train on everything sent: the brief, the skill, the findings and every file Muse reads, all written by Claude or by us. Claude Code's own prompt is no longer among them. surucuonur accepted this for the lower price.
 - **No sandbox.** Muse Code's sandbox keeps `.git` read-only, and a worktree commits into the main checkout's `.git`, so the launcher passes `--disable-sandbox`. Tool approvals stay on.
   - **Remaining risk:** an approved shell command can reach what the account can, and the key is in the session's environment. Every commit and exported transcript is scanned for it.
 - **No fallback.** If Muse Code can't run the round, the fix is in the Muse Code setup. surucuonur ruled out returning to the Claude Code harness.

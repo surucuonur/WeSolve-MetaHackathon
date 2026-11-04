@@ -8,9 +8,9 @@ The hackathon rules require judges to tell what was built during the event, and 
 
 | Who | What they made | Where it is | How it is marked |
 |---|---|---|---|
-| **surucuonur** (the entrant) | Direction and every decision; ran the machine; started the Muse Spark sessions; reviewed the results | every commit | Author and committer of every commit |
+| **surucuonur** (the entrant) | Direction and every decision; ran the machine; started the Muse agent's sessions; reviewed the results | every commit | Author and committer of every commit |
 | **Claude Code** (Claude Opus 5.5, Anthropic) | The benchmark, grader and provenance code, the measurements, every write-up, and Muse Spark's brief and round skill | `bench/`, `claude/`, `tools/`, `.agents/skills/`, `README.md`, this page, and the Markdown in `results/` | Commits co-authored by `Claude Opus 5.5 <noreply@anthropic.com>`, which GitHub shows as the `claude` account; a byline under each document's title |
-| **Muse Spark** (`muse-spark-1.3-contributor`; Meta Model API), working in Muse Code, Meta's own coding agent | Its analysis of the code, hypotheses, kernels and notes, the logs of both phases, and the transcripts of its sessions, every agent of the swarm included | `muse-spark/`, committed on the branch `muse-agent` and merged with `--no-ff` | Commits co-authored by `Muse Spark (Meta Model API)`, subjects starting "Muse Spark:"; the transcript records the model behind every model call |
+| **The Muse agent**, Meta's model working in Muse Code, Meta's own coding agent: **Muse Spark** (`muse-spark-1.3-contributor`, Meta Model API) in round 1, **Muse Wonder Full** (`muse-wonder-full-1.0`, Muse Code subscription) from round 2 | Its analysis of the code, hypotheses, kernels and notes, the logs of both phases, and the transcripts of its sessions, every agent of the swarm included | `muse-spark/`: round 1 at its top, each later round in `muse-spark/round-<N>/`; committed on the branch `muse-agent` and merged with `--no-ff` | Commits co-authored by `Muse Spark (Meta Model API)` in round 1 and `Muse Wonder Full (Muse Code)` from round 2, subjects starting with that name; the transcript records the model behind every model call |
 | **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, and Meta's MobileMoE-S weights | `third_party/` (pinned submodules) and the installed wheels; the weights are downloaded, not committed | Their own authors and licences |
 
 ## How the work is kept apart
@@ -18,34 +18,38 @@ The hackathon rules require judges to tell what was built during the event, and 
 Every commit is authored and committed by surucuonur. The `Co-Authored-By` trailer says whose work the content is:
 
 ```
-Claude's work                         Muse Spark's work
--------------                         -----------------
+Claude's work                         The Muse agent's work
+-------------                         ---------------------
 branch: main                          branch: muse-agent
 Author: surucuonur                    Author: surucuonur
 Co-Authored-By: Claude Opus 5.5       Co-Authored-By: Muse Spark (Meta Model API)
-  <noreply@anthropic.com>               <muse-spark@meta-model-api.invalid>
-Claude-Session: <session link>        changes only muse-spark/
-never changes muse-spark/
+  <noreply@anthropic.com>               <muse-spark@meta-model-api.invalid>      (round 1)
+Claude-Session: <session link>        Co-Authored-By: Muse Wonder Full (Muse Code)
+never changes muse-spark/               <muse-wonder-full@muse-code.invalid>     (round 2 on)
+                                      changes only muse-spark/
 ```
 
-Muse Spark works in Muse Code, Meta's own coding agent, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)). That script is the only way to start one. Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md), which Claude wrote and committed before the round that uses it. Its version number is in its header and its history in [its changelog](.agents/skills/muse-round/CHANGELOG.md), and each round records the version it ran. In it, Muse Spark works as a swarm ([ADR 0007](claude/adr/0007-muse-spark-swarm.md)):
+The Muse agent works in Muse Code, Meta's own coding agent, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)). That script is the only way to start one. It ran Muse Spark in round 1 and runs Muse Wonder Full from round 2 ([ADR 0008](claude/adr/0008-muse-wonder-full.md)). Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md), which Claude wrote and committed before the round that uses it. Its version number is in its header and its history in [its changelog](.agents/skills/muse-round/CHANGELOG.md), and each round records the version it ran. In it, the Muse agent works as a swarm ([ADR 0007](claude/adr/0007-muse-spark-swarm.md)):
 - explorers map the code and the measurements into a shared analysis;
 - builders write and grade competing kernels;
 - the lead coordinates, and only the lead commits;
-- both phases are tracked in shared documents in `muse-spark/`.
+- both phases are tracked in shared documents in the round's folder.
+
+Rounds build on each other ([ADR 0009](claude/adr/0009-rounds-build-on-each-other.md)). Each round writes in its own folder, and once it is finished Claude tags its last commit `muse-round-<N>`, which freezes its files: round 1's tag is `muse-round-1`, on `60308aa`. From round 2 on, a round starts from the earlier rounds' results and Claude's G3, and each new attempt must beat its slot's best attempt so far in the same grader run.
 
 Six layers keep its work and Claude's from mixing:
 
-1. **Place.** Muse Spark has its own git worktree on `muse-agent` and writes only in `muse-spark/`. Its worktree has no `.env`. The launcher gives `muse` a home folder of its own, `~/.muse-spark`, so Muse Code finds none of surucuonur's personal skills and rules, Claude's included, and keeps its settings and session logs there. The API key goes only to the `muse` process.
-2. **Identity.** Every Muse Spark commit carries the Muse Spark co-author, written by Muse Spark as the skill shows. The `.invalid` address is reserved and belongs to no one (RFC 2606); Muse Spark has no GitHub account, so we neither claim nor invent one.
-3. **Hooks.** `tools/githooks/` refuses mixed commits: Muse Spark's co-author off `muse-agent`, Claude's on it, `muse-agent` commits without Muse Spark's co-author or outside `muse-spark/`, other commits inside it (merges of `muse-agent` excepted), and any staged API key.
+1. **Place.** The Muse agent has its own git worktree on `muse-agent` and writes only in `muse-spark/`, in the current round's folder. Its worktree has no `.env`. The launcher gives `muse` a home folder of its own, `~/.muse-spark`, so Muse Code finds none of surucuonur's personal skills and rules, Claude's included, and keeps its settings, account login and session logs there. In round 1 the API key went only to the `muse` process; from round 2 the session signs in to surucuonur's Muse Code subscription, and the launcher passes no key at all.
+2. **Identity.** Every Muse agent commit carries its model's co-author, which the launcher gives the lead in its first prompt and the lead writes as the skill shows. The `.invalid` addresses are reserved and belong to no one (RFC 2606); Meta's models have no GitHub account, so we neither claim nor invent one.
+3. **Hooks.** `tools/githooks/` refuses mixed commits: a Muse agent's co-author off `muse-agent`, Claude's on it, `muse-agent` commits without a Muse agent's co-author or outside `muse-spark/`, other commits inside it (merges of `muse-agent` excepted), and any staged API key. On `muse-agent` it also refuses any change to a finished round's files, and new files outside the current round's folder and `muse-spark/transcripts/`.
 4. **Audit.** `tools/provenance_check.py` re-checks the whole history against the same rules, so a commit made around the hooks is caught.
 5. **Evidence.** Muse Code logs every model call, tool run and edit of the lead, its helpers and Muse Code's own reminder agents. `tools/export_transcript.py` saves each session in `muse-spark/transcripts/`.
    - **What it keeps:** every agent's conversation, how each tool call was approved, and the model of every model call.
    - **What it drops:** Muse Code's own instructions.
    - It refuses a session that contains a key.
    - The audit checks that a Meta model made every call.
-6. **Independent grading.** The grader (`bench/grader/`) is Claude's; Muse Spark may run it but not change it, and it runs one GPU job at a time. Its results in the write-up come from re-running it, and G3, on the main checkout after the merge.
+   - It writes into the worktree from any checkout, and skips sessions already exported.
+6. **Independent grading.** The grader (`bench/grader/`) is Claude's; the Muse agent may run it but not change it, and it runs one GPU job at a time. Its results in the write-up come from re-running it, and G3, on the main checkout after the merge.
 
 **The removed API stage.** Before the agent session, Muse Spark was called through a Claude-written API pipeline: 2 calls, a strategy and one routing+combine kernel. That stage was removed so all of Muse Spark's results come from one method. Its commits remain in the history: `d14c4a3` (the brief), `48cb61f` and `8c0a9b0` (Muse Spark's answers), `6c0a0ba` and `2c71eb4` (their logs). The audit lists them under "before".
 
@@ -111,9 +115,12 @@ Commit ids changed as a result. Raw run records (`results/runs/2026-10-29-baseli
 # Who authored, committed and co-authored each commit
 git log --all --format='%h %an | committer %cn | %(trailers:key=Co-Authored-By,valueonly,separator=%x2C )'
 
-# Only Muse Spark's commits, and which files they change
-git log --all --stat --grep='Co-Authored-By: Muse Spark'
+# Only the Muse agent's commits, and which files they change
+git log --all --stat --grep='Co-Authored-By: Muse \(Spark\|Wonder Full\)'
 
-# The full audit: identities, folder rules, transcript models, secret scan
+# The files each finished round froze
+git tag --list -n1 'muse-round-*'
+
+# The full audit: identities, folder rules, frozen rounds, transcript models, secret scan
 .venv/bin/python tools/provenance_check.py
 ```

@@ -8,7 +8,7 @@ You are `verifier`. The implementation phase builds only on inefficiencies you c
 
 Repeat until done:
 
-1. **Find open entries:** `grep -l 'Status:\*\* open' muse-spark/exploration/ineff-*.md`.
+1. **Find open entries:** `grep -l 'Status:\*\* open' <round>/exploration/ineff-*.md`.
 2. **Check each claim** the cost and the predicted saving rest on:
    - open the cited file at the cited lines;
    - find the cited table row;
