@@ -117,4 +117,28 @@ verifier, 2026-11-04T03:23:12Z — **confirmed**, with one wave-arithmetic corre
 
 ## From other agents
 
-(none yet)
+builder-1-b, 2026-11-04T03:35:55Z — round-2 `kernels/experts/attempt-1`
+widened the fused per-pair kernel 256 → 512 threads/pair (waves 7 → 4,
+per-block `simd_sum` order untouched) and graded chained: 1-row
+104.3 µs/layer vs the starting point's 132.9 (other harness) — the
+lever bought ~29 µs but still loses to the compiled reference (77.6).
+With 4 pairs there are only 4 threadgroups however wide they are, so
+at most 4 of 16 cores hold work; the remaining 1-row cost is
+threadgroup count, not wave serialization. Widening threads/pair
+again (1,024) is predicted to buy little; the next lever is more
+threadgroups per call, which needs the pair's blocks split across
+groups (a device-memory hidden intermediate), i.e. leaving the single
+fused kernel. Full numbers in the attempt's `notes.md`.
+
+builder-1-a, 2026-11-04T03:37:04Z — round-2
+`kernels/experts/attempt-2` did that split (one 32-thread group per
+(pair, 32-output block); 48 gate/up + 96 down groups at 1 row;
+bit-exact at all six sizes) and graded chained 103.6 / 326.8 /
+887.6 µs/layer vs compiled 73.1 / 232.0 / 804.5. The 1-row gain
+over the starting point is real but small, and 8/32 rows regressed
+hard (from 175.9 / 587.6): one simdgroup per group leaves each
+block's serial K chain without the 8-way in-group load overlap
+attempt-4 has, and the 6 KB of prefill tile memory allocated in
+the same kernels caps resident decode groups. Splitting helps
+only if several blocks stay in flight per group and decode
+threadgroup memory stays near attempt-4's 3,840 B.

@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 2
-- **Updated:** 2026-11-04T03:32:10Z
-- **Next:** builders to compete (directions in implementation README)
+- **Version:** 3
+- **Updated:** 2026-11-04T03:43:13Z
+- **Next:** boundary checks for attempt-1 and attempt-2; hardening from attempt-1
 
 ## Inefficiency
 
@@ -175,7 +175,56 @@ Any prefill branch must stay inside both limits at all six sizes.
 
 ## Builders
 
-*(none yet)*
+### builder-1-b — direction (b): branched single kernel, 512 threads/pair
+
+- Attempt: `muse-spark/round-2/kernels/experts/attempt-1` (starting
+  point `muse-spark/kernels/experts/attempt-4`, copied qvm path).
+  Single fused kernel branched in-Metal on `rows >= 60`: below, the
+  starting point's qvm arithmetic unchanged per block, widened to 512
+  threads/pair (gate/up 1 wave, down 2 waves); at/above, per-pair
+  bfloat16-dequant + contiguous BK=32 accumulation (`qmm_accum`), same
+  silu/rounding points.
+- Predicted (chained µs/layer at 1/8/32): 85 / 165 / 565. Measured
+  (grader, this run): **104.3 / 193.3 / 535.7**, vs reference
+  87.6 / 231.2 / 820.6 and compiled 77.6 / 235.7 / 791.6 in the same
+  run. Starting point chained (other harness): 132.9 / 175.9 / 587.6.
+- **G1 pass; G2 pass — differ 0, max_ulp 0.0 at all six sizes**
+  (decode exact via unchanged qvm blocks; prefill exact via the
+  scalar BK=32 mimic). `beats_compiled` false: wins 8/32 rows, loses
+  1 row (104.3 vs compiled 77.6). Baseline `none` — no
+  `wins_vs_baseline`/`beats_baseline`.
+- Learned: threads-per-pair widening is nearly exhausted at 1 row
+  (256→512 bought ~29 µs chained; prediction missed +23%). The binding
+  limit is 4 threadgroups per call on 16 cores, which a fused per-pair
+  kernel cannot raise; and territory §E's frag-tree warning did not
+  bite — serial BK-order adds matched BlockMMA bitwise on all tested
+  layers (see attempt notes).
+
+### builder-1-a — direction (a): size-branched kernels, decode block-split
+
+- Attempt: `muse-spark/round-2/kernels/experts/attempt-2` (starting
+  point `muse-spark/kernels/experts/attempt-4`). Two kernels, each
+  branched in-Metal on `rows >= 60`: gate/up kernel with one
+  32-thread threadgroup per (pair, 32-output block) (48 groups at
+  1 row) and down kernel likewise (96 groups), decode keeping
+  attempt-4's `qvm_block` + full-bf16 silu per block; prefill using
+  per-pair `qmm_block` (bfloat16-rounded dequantized weights,
+  BK=32 sequential 8-wide `simdgroup_multiply_accumulate` steps).
+- Predicted (chained µs/layer at 1/8/32): 40 / 165 / 610. Measured
+  (grader, this run): **103.6 / 326.8 / 887.6**, vs reference
+  76.1 / 244.6 / 797.1 and compiled 73.1 / 232.0 / 804.5 in the same
+  run. Starting point chained (other harness): 132.9 / 175.9 / 587.6.
+- **G1 pass; G2 pass — differ 0, max_ulp 0.0 at all six sizes**
+  (per-pair MMA-order replication is bit-exact at prefill).
+  `beats_compiled` false at every decode size. Baseline `none` —
+  no `wins_vs_baseline`/`beats_baseline`.
+- Learned: block-splitting to 1-simdgroup groups fixes only the
+  1-row group starvation (132.9 → 103.6) and spends the 8/32-row
+  wins: per-group memory parallelism collapses (one block's serial
+  K chain per group, vs 8 concurrent in attempt-4) and the prefill
+  tiles' 6 KB of threadgroup memory is paid in the decode branch
+  too, capping resident groups. Next: 4-simdgroup groups (4 blocks
+  each) with tile memory overlaid on the decode buffers.
 
 ## Boundary checks
 

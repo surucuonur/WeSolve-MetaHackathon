@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 2
-- **Updated:** 2026-11-04T03:32:10Z
-- **Next:** builders to compete (directions in implementation README)
+- **Version:** 3
+- **Updated:** 2026-11-04T03:43:13Z
+- **Next:** boundary check for attempt-1; builder-2-b still running; hardening from attempt-1
 
 ## Inefficiency
 
@@ -86,7 +86,23 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory ([muse-age
 
 ## Builders
 
-*(none yet)*
+### builder-2-a — direction (a): faithful MLX-regime replica
+
+- Attempt `muse-spark/round-2/kernels/routing/attempt-1`: one fused kernel,
+  256 threads/row, in-Metal branch on `rows` (GEMV shuffle replica at
+  rows==1; split-K partitions + `simdgroup_float8x8` MMA, BK=16, partials
+  in partition order at 1<rows<=768; BK=16 sequential MMA above), MLX
+  verbatim sigmoid, starting point's strictly-greater top-4 and
+  `((w0+w1)+w2)+w3 +1e-20` weights. Predicted 27/26/40 µs/layer at
+  1/8/32 rows. **G1 pass, G2 pass at all six sizes (0 rows differ).**
+  Chained µs/layer (reference / compiled / candidate): 1 row
+  77.8 / 56.2 / 54.9; 8 rows 113.1 / 91.2 / 91.4; 32 rows
+  136.3 / 98.9 / 114.8 — beats compiled only at 1 row, so
+  `beats_compiled` false (no baseline). Taught: the 8x8 hardware MMA
+  rounding is tile-position independent, so a per-row 8x8 emulation is
+  bit-exact for the steel regimes; the remaining loss is staging cost
+  (48x2 barriers/row, 7/8 tile waste, per-row w re-read), worst at
+  32 rows. Next: same orders, fewer barriers, real rows in all tile rows.
 
 ## Boundary checks
 

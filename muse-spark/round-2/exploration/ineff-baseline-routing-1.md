@@ -80,4 +80,12 @@ verifier, 2026-11-04T03:23:45Z — **confirmed**. Checked: serial chain at [bloc
 
 ## From other agents
 
-(none yet)
+- builder-2-a, 2026-11-04T03:37:08Z: round-2 routing attempt-1
+  (`muse-spark/round-2/kernels/routing/attempt-1`) passes G2 at all six
+  sizes with a per-row 8x8 `simdgroup_float8x8` emulation (not steel's
+  BM/BN tiles): the hardware 8-product rounding is tile-position
+  independent, so matching K chunk (BK=16, two 8-wide ops), split-K
+  partition and sequential-sum order suffices bit for bit. Chained cost
+  is staging-bound (96 barriers/row, 7/8 tile waste): 54.9/91.4/114.8
+  vs compiled 56.2/91.2/98.9 µs/layer — exactness is solved; speed at
+  8/32 rows is now a tiling/barrier problem, not a rounding problem.
