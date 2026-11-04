@@ -1,9 +1,9 @@
 # Inefficiency: starting point matches `gather_qvm` but prefill runs `gather_qmm_rhs` — G2 fails at every prefill size
 
 - **Owner:** explorer-baseline-experts
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T03:17:48Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T03:22:51Z
 - **Next:** verifier to confirm dispatch threshold and the two rounding differences
 
 ## Slot
@@ -120,7 +120,7 @@ second listed kernel with early return (territory §C).
 
 ## Verdict
 
-(verifier writes here)
+verifier, 2026-11-04T03:22:51Z — **confirmed**. Checked: `qvm_block` replica at [block-1.metal:20-40](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/experts/attempt-4/block-1.metal:20) (strided `k=lane; k<K; k+=32`, dequant `x·(s·q+bias)` at :33-34, `simd_sum` at :37-40) matches `qvm_impl`/`qouter` ✓. Dispatch: `gather_qmm_rhs` needs `M==1 && B>=16 && right_sorted_ && B/E>=4` with `B=rows·4, E=60` ⇔ rows≥60 (round-1 [territory-quantized-kernels.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/exploration/territory-quantized-kernels.md) §A/§C, [territory-switch-layers.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/exploration/territory-switch-layers.md) §G; MLX v0.32.4 `quantized.cpp:2005,2012,2073-2093`) — decode B/E 0.07/0.53/2.13 never fires, prefill 8.47/67.73/136.53 always does ✓. Sort threshold `inds.size>=64` ⇔ rows≥16 ([slots.py:62](/Users/onur/Desktop/Github/Hackathon-muse/bench/grader/slots.py:62), `switch_layers.py:181`) is distinct and does not switch the kernel at 32 rows ✓. Prefill rounding (installed 0.32.4 headers): `affine_gather_qmm_rhs` ([quantized.h:2580](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/quantized.h:2580)) dequantizes to bfloat16 via `QuantizedBlockLoader` ([quantized.h:674](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/quantized.h:674)) → `dequantize` `static_cast<U>(s·q+b)`, `U=T` ([quantized.h:557](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/quantized.h:557), bits=4 path) stored in `Ws` ([quantized.h:2624](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/quantized.h:2624)), vs `qvm` float32 through `qouter` ([quantized.h:454](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/quantized.h:454)) ✓; accumulation `BK=32` `gemm_loop_aligned` + `BlockMMA` `AccumType=float` ([mma.h](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/steel/gemm/mma.h), `schedule_row_tile<BM=16>` [utils.h](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/utils.h)) vs strided-lane + `simd_sum` ([quantized.h:1320](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/quantized.h:1320)) ✓ — either difference breaks exactness (order is load-bearing, [hyp-1-fused-experts.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/implementation/hyp-1-fused-experts.md)). Silu at [block-0.metal:53-64](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/experts/attempt-4/block-0.metal:53) is the shared compiled `swiglu`, not the cause ✓; no size branch, grid `rows·4` groups ([spec.json](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/experts/attempt-4/spec.json)) ✓. Differ in [grade-exact-experts.json](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-04-muse-round-1/grade-exact-experts.json): decode 0/0/0 pass; prefill 4,868,667/7,802,880=62.4% (43.0), 39,078,912/62,423,040=62.6% (65.0), 78,741,557/125,829,120=62.6% (110.5) ✓. Per-pair 552,960 B ×508/4,064/8,192 = 281 MB/2.25 GB/4.53 GB per layer ✓; prefill speed untimed (G3 decode only, [0010-exact-at-every-size.md](/Users/onur/Desktop/Github/Hackathon-muse/claude/adr/0010-exact-at-every-size.md)), timing gated on G2 ([check_candidate.py:309](/Users/onur/Desktop/Github/Hackathon-muse/bench/grader/check_candidate.py:309)) ✓. Predicted saving 0 µs — a correctness gate, as written.
 
 ## From other agents
 

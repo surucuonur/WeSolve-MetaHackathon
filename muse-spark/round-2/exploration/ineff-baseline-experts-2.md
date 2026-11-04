@@ -1,9 +1,9 @@
 # Inefficiency: chained 1-row latency — 4 threadgroups with wave/barrier serialization cannot fill the GPU
 
 - **Owner:** explorer-baseline-experts
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T03:17:48Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T03:23:12Z
 - **Next:** verifier to confirm chained/independent numbers and the wave arithmetic
 
 ## Slot
@@ -113,7 +113,7 @@ comparison is even run (`check_candidate.py:308-337`).
 
 ## Verdict
 
-(verifier writes here)
+verifier, 2026-11-04T03:23:12Z — **confirmed**, with one wave-arithmetic correction. Checked: grid `rows·1024` threads / 256 = `rows·4` threadgroups, `pair` at [block-0.metal:6](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/experts/attempt-4/block-0.metal:6), 4 groups / 1,024 threads at 1 row on the 16-core GPU ([muse-agent-brief.md](/Users/onur/Desktop/Github/Hackathon-muse/claude/muse-agent-brief.md)) ✓; barrier phases at [block-0.metal:18-21,28-38,40-50,51,56-64,65,68-75](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/experts/attempt-4/block-0.metal:18) ✓. Reference grid `(M,(N+63)/64,B)` 64-thread groups → gate/up 24, down 48 threadgroups at 1 row ([territory-quantized-kernels.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/exploration/territory-quantized-kernels.md) §A) ✓. Chained definition via `link` ([check_candidate.py:178-213](/Users/onur/Desktop/Github/Hackathon-muse/bench/grader/check_candidate.py:178)) ✓; doubling 128→256 threads ([attempt-4/notes.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/experts/attempt-4/notes.md)) ✓. Numbers from [console-chain.txt](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-04-muse-round-1/console-chain.txt) (552,960 B/pair): 1 row chained 132.9 vs 80.3 (gap +52.6, 66% slower), independent 61.0 vs 86.0 (29% faster); bytes 4×552,960=2,211,840 B → floor 11.1 µs, 16.6 GB/s chained (8% of 200 GB/s peak, [GLOSSARY.md](/Users/onur/Desktop/Github/Hackathon-muse/claude/GLOSSARY.md)), 36.2 GB/s independent; ×20 = 1.05 ms/step matching G3 +1.16 ms vLLM ([muse-round-1.md](/Users/onur/Desktop/Github/Hackathon-muse/claude/findings/muse-round-1.md) §3–§4) ✓. 8 rows 175.9 vs 239.6 (−63.7), 32 pairs/17.7 MB → 100.6 GB/s ✓; 32 rows 587.6 vs 797.6 (−210.0), 128 pairs/70.8 MB → 120.5 GB/s ✓. Old-grader cross-check 92.1/165.4/529.9 vs compiled 139.5/221.4/762.4 ([grade-experts.json](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-04-muse-round-1/grade-experts.json)) and own run 50.0/157.8/515.4 ✓. Predicted saving (132.9−80.3)×20 = 1.05 ms/step at 1 row, 0 at 8/32 (already ahead 1.27/4.20 ms/step) ✓. **Wrong (non-load-bearing):** “Gate/up waste 4 simdgroup-slots of 24 (16.7%)” — gate wastes 4 of 16 slots in its 2 waves and up wastes 4 of 16 (8 of 32 across gate+up, 25%); down wastes 0. The chained gap and saving do not use this figure. Duplicate of [ineff-g3-2](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/exploration/ineff-g3-2.md) (same cause) — logged for the lead; this entry is the fuller kernel-side claim.
 
 ## From other agents
 

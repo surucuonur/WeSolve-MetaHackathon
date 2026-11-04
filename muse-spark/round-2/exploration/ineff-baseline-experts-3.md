@@ -1,9 +1,9 @@
 # Inefficiency: per-pair weight re-reads persist in the starting point (465 MB excess at 32 rows)
 
 - **Owner:** explorer-baseline-experts
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T03:17:48Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T03:23:32Z
 - **Next:** verifier to confirm byte arithmetic against GPU counters
 
 ## Slot
@@ -115,7 +115,7 @@ at 32) or to round 1's joint ceiling (443 MB at streaming rate ≈
 
 ## Verdict
 
-(verifier writes here)
+verifier, 2026-11-04T03:23:32Z — **confirmed**, with two corrections that do not change the floor. Checked: per-pair offsets `eW=e·36864, eS=e·9216` at [block-0.metal:23](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/experts/attempt-4/block-0.metal:23) with gate/up/down at :31/:43/:70 — each pair streams its expert independently ✓; `x` half removed (`tg_x` once per pair at :18-20 vs `qvm_impl` re-streaming, [territory-quantized-kernels.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/exploration/territory-quantized-kernels.md) §A ~55 KB vs 3.75 KB) ✓; fusion banks launch/intermediate savings ([ineff-switch-layers-2](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/exploration/ineff-switch-layers-2.md) confirmed) while re-reads persist, restating [ineff-runs-1](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/exploration/ineff-runs-1.md) / [ineff-quantized-kernels-1](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/exploration/ineff-quantized-kernels-1.md) for the starting point ✓. Counters ([tables.md](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-02-gpu-counters/tables.md) :26 1-row experts 51 vs 44 MB, :32 32-row 908 vs 443 MB): 1-row excess 7 MB → 0.04 ms; 8-row modelled 32×552,960×20=353.9 MB, distinct unmeasured ✓; 32-row excess 908−443=465 MB (51.2% re-reads), per-layer 70.8 MB pair-model vs 22.2 MB distinct (443/20), chained 587.6 µs/layer = 120.5 GB/s on pair traffic (60% of peak) ✓. Floors: 7/200=0.04, 465/200=2.33 ms/step ✓; 8-row estimate (32−25)×552,960×20≈77 MB → 0.39 ms marked estimate ✓. Grouped evidence: ~55 GB/s duty-cycle ceiling, grouped lost at 8 rows and tied/won only at 32 ([README.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/exploration/README.md) *What building taught* #1; [ineff-quantized-kernels-1.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/exploration/ineff-quantized-kernels-1.md) builder note; [hyp-1-fused-experts.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/implementation/hyp-1-fused-experts.md) Decision) ✓; starting point already ahead chained by 63.7/210.0 µs/layer (1.27/4.20 ms/step, [console-chain.txt](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-04-muse-round-1/console-chain.txt)) ✓; grouped bar 22.2 MB÷120.5 GB/s≈185 µs/layer ✓; 0 banked today, up to ~2.3 ms/step at 32 rows if the rate holds, negative at 8 rows on round-1 evidence ✓. **Wrong 1:** “same time on distinct bytes alone would be 177 GB/s-equivalent” — 22.15 MB in 587.6 µs is 37.7 GB/s; the usable bar is the 185 µs figure above. **Clarification 2:** per-layer 70.8 MB is the pair-model (×20 = 1,416 MB/step, the counters’ “per-pair model” column); 908 MB/step is the counter-measured saved bytes. The 465 MB excess and 2.33 ms floor are on the counter basis (908−443), as in confirmed [ineff-runs-1](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/exploration/ineff-runs-1.md); on the model basis the excess would be 973 MB. Neither correction changes the predicted saving (0 banked; floor conditional on holding ≥120.5 GB/s).
 
 ## From other agents
 

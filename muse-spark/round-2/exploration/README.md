@@ -1,17 +1,19 @@
 # Exploration: round 2 — analysis
 
-**Version:** v2 · 2026-11-04T03:19:40Z · skill version 5
+**Version:** v3 · 2026-11-04T03:27:48Z · skill version 5
 
 ## Tracker
 
 | Territory | Agent | Status | Inefficiencies | Updated |
 |---|---|---|---|---|
-| `baseline-experts` | `explorer-baseline-experts` | done | `ineff-baseline-experts-1` (open), `-2` (open), `-3` (open) | 2026-11-04 03:19Z |
-| `baseline-routing` | `explorer-baseline-routing` | exploring | — | 2026-11-04 03:19Z |
-| `baseline-combine` | `explorer-baseline-combine` | done | `ineff-baseline-combine-1` (open), `-2` (open) | 2026-11-04 03:19Z |
-| `g3` | `explorer-g3` | done | `ineff-g3-1` (open), `ineff-g3-2` (superseded by ineff-baseline-experts-2) | 2026-11-04 03:19Z |
-| `quantized-kernels` | `explorer-quantized-kernels` | exploring | — | 2026-11-04 03:19Z |
-| `grader` | `explorer-grader` | done | — (notes on baseline-experts, baseline-combine) | 2026-11-04 03:19Z |
+| `baseline-experts` | `explorer-baseline-experts` | done | `ineff-baseline-experts-1` (confirmed), `-2` (confirmed), `-3` (confirmed) | 2026-11-04 03:27Z |
+| `baseline-routing` | `explorer-baseline-routing` | done | `ineff-baseline-routing-1` (confirmed), `-2` (confirmed), `-3` (confirmed), `-4` (confirmed) | 2026-11-04 03:27Z |
+| `baseline-combine` | `explorer-baseline-combine` | done | `ineff-baseline-combine-1` (confirmed), `-2` (confirmed) | 2026-11-04 03:27Z |
+| `g3` | `explorer-g3` | done | `ineff-g3-1` (confirmed), `ineff-g3-2` (superseded by ineff-baseline-experts-2) | 2026-11-04 03:27Z |
+| `quantized-kernels` | `explorer-quantized-kernels` | done | `ineff-quantized-kernels-1` (confirmed), `-2` (confirmed) | 2026-11-04 03:27Z |
+| `grader` | `explorer-grader` | done | — (notes on baseline-experts, baseline-combine, baseline-routing) | 2026-11-04 03:27Z |
+
+Verdicts: 12 confirmed, 0 refuted, 1 superseded, 0 open. All 6 territory entries `done`.
 
 ## Starting point
 
@@ -90,5 +92,6 @@ Each territory below is opened by the line of this section that names it. Explor
 
 ## Versions
 
+- v3 · 2026-11-04T03:27:48Z · checkpoint: all explorers done, verifier 12 confirmed 0 refuted · changed: territory-baseline-routing v2, territory-quantized-kernels v2, ineff-baseline-routing-1 v2, ineff-baseline-routing-2 v2, ineff-baseline-routing-3 v1, ineff-baseline-routing-4 v1, ineff-quantized-kernels-1 v2, ineff-quantized-kernels-2 v2, ineff-baseline-combine-1 v2, ineff-baseline-combine-2 v2, ineff-baseline-experts-1 v2, ineff-baseline-experts-2 v2, ineff-baseline-experts-3 v2, ineff-g3-1 v2
 - v2 · 2026-11-04T03:19:40Z · checkpoint: baseline-experts, baseline-combine, g3, grader done; g3-2 superseded by baseline-experts-2 · changed: territory-baseline-experts v2, territory-baseline-combine v2, territory-g3 v2, territory-grader v2, ineff-baseline-experts-1 v1, ineff-baseline-experts-2 v1, ineff-baseline-experts-3 v1, ineff-baseline-combine-1 v1, ineff-baseline-combine-2 v1, ineff-g3-1 v1, ineff-g3-2 v2
 - v1 · 2026-11-04T03:14:21Z · opened round 2: starting point (no baselines, 3 starting points, 4 ranked leftovers, refuted claims, 6 territories) · changed: none

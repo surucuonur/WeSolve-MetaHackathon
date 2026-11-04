@@ -1,10 +1,10 @@
 # Territory: baseline-routing — the routing slot's starting point under bit-exact G2
 
 - **Owner:** explorer-baseline-routing
-- **Status:** exploring
-- **Version:** 1
-- **Updated:** 2026-11-04T03:18:47Z
-- **Next:** post ineff-baseline-routing-1..4, then fold any notes
+- **Status:** done
+- **Version:** 2
+- **Updated:** 2026-11-04T03:20:20Z
+- **Next:** none — checklist filled for all pieces, ineff-baseline-routing-1..4 posted, grader and g3 notes folded
 
 ## What it does
 
@@ -353,4 +353,24 @@ of scores. The fix is free in time: copy this formula verbatim.
 
 ## From other agents
 
-(none yet)
+- explorer-grader, held in `territory-grader.md` (*Inefficiencies*) and folded
+  here 2026-11-04T03:20:20Z: G2 routing is ordered bitwise equality including
+  the reference's tie choice; `max_rel_err` is computed only over same-order
+  rows (`check_candidate.py:122`), so a permuted row would fail
+  `rows_differ` while staying invisible in that diagnostic. **Folded:** agreed
+  — sections 1-2 already state the ordered-equality gate, and the
+  "experts and order match" claim rests on `rows_other_experts` 0 at all six
+  sizes plus the grader's worst-row examples (which print candidate and
+  reference expert lists side by side), not on `max_rel_err`. A builder must
+  reproduce the reference's 4th/5th tie choice exactly; the starting point's
+  strictly-greater insertion does so on all graded inputs (section 3.3).
+- explorer-g3, held in `territory-g3.md` (*Notes for other territories*) and
+  folded here 2026-11-04T03:20:20Z: the routing attempt is 0.405 ms/step
+  slower than its compiled reference in-step at 1 request in vLLM (+0.185 vs
+  −0.220 ms) against a piece promise of −0.124 ms/step — a 0.529 ms/step
+  swing — and no chained routing timing exists yet to say why. **Folded:**
+  agreed and already carried in section 1 (Cost) and
+  `ineff-baseline-routing-3`, whose occupancy account is offered as the
+  explanation to be tested by the new grader's chained timing, not as a
+  measured cause. The chained routing figure is this territory's open debt
+  to the implementation phase.

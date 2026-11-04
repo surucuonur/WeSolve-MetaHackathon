@@ -1,9 +1,9 @@
 # Inefficiency: baseline-combine-2 — ~17 µs/layer dispatch floor
 
 - **Owner:** explorer-baseline-combine
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T03:18:04Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T03:22:29Z
 - **Next:** verifier to confirm; no builder action expected beyond keeping the exact fix (ineff-baseline-combine-1) on this kernel
 
 ## Slot
@@ -82,3 +82,5 @@ check (round 1 vLLM: attempt-1 alone −0.51 / −0.71 / −0.39 ms vs the
 compiled reference's −0.29 / −0.26 / −0.27 ms, `muse-round-1.md` §3).
 
 ## Verdict
+
+verifier, 2026-11-04T03:22:29Z — **confirmed**. Checked: 5→1 kernels/layer (20 vs 100/step) from [spec.json](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/combine/attempt-1/spec.json) and [tables.md:140](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-01-breakdown/tables.md:140) (`combine` 100 = AsType 40 + Multiply 20 + Sum 20 + Add 20) ✓. Flat ~17 µs/layer: Claude re-grade 18.6/17.0/18.9 vs compiled 23.8/26.1/32.0 and eager 23.1/22.5/39.5 ([grade-combine.json](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-04-muse-round-1/grade-combine.json)) ✓; round-1 own 17.2/17.0/18.5 and attempt-2 17.9/16.1/18.1 ([attempt-1/notes.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/combine/attempt-1/notes.md), [attempt-2/notes.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/combine/attempt-2/notes.md)) — same floor, with/without barrier/staging ✓. Chained `link` pricing at [check_candidate.py:178-213](/Users/onur/Desktop/Github/Hackathon-muse/bench/grader/check_candidate.py:178) applies to every timed function ✓. Grids 3/24/96 threadgroups (rows·768/256) ✓. Bytes (4·768·2+4·4+768·2+768·2)=9,232 B/row → 9,232/73,856/295,424 B = 0.05/0.37/1.48 µs at 200 GB/s ([GLOSSARY.md](/Users/onur/Desktop/Github/Hackathon-muse/claude/GLOSSARY.md)) ✓; compute ~7·768≈5k/43k/172k FLOP ≤0.03 µs at 5.2 TFLOPS ✓; remainder ≥15 µs/layer (≥85%) is neither bytes nor arithmetic ✓. Knock-out disagreement 0.61/0.33 ms/step ([tables.md:335](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-01-breakdown/tables.md:335)) ✓. Banked saving (23.8−18.6)/(26.1−17.0)/(32.0−18.9)×20 = 0.104/0.182/0.262 ms/step, own-run 0.114/0.184/0.190 ✓; no-body-change-below-floor prediction follows (traffic+compute <1.6 µs at 32 rows). Chained figure still requires G2 ([check_candidate.py:309](/Users/onur/Desktop/Github/Hackathon-muse/bench/grader/check_candidate.py:309)) as caveated.

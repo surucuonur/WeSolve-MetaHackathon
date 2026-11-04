@@ -1,9 +1,9 @@
 # Inefficiency: the router product's float32 accumulation order matches MLX at no row count
 
 - **Owner:** explorer-baseline-routing
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T03:19:36Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T03:23:45Z
 - **Next:** verifier to confirm the three dispatch regimes against MLX v0.32.4 `matmul.cpp`
 
 ## Slot
@@ -76,7 +76,7 @@ saving above is the headroom it makes claimable, not a promise.
 
 ## Verdict
 
-(empty — verifier writes here)
+verifier, 2026-11-04T03:23:45Z — **confirmed**. Checked: serial chain at [block-0.metal:31-34](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/routing/attempt-1/block-0.metal:31) (`acc += xsh[d]·w_router[e·768+d]`, d=0..767, left-to-right grouping) vs reference `mx.sigmoid(x.astype(f32) @ w_router.T)` ([slots.py:45](/Users/onur/Desktop/Github/Hackathon-muse/bench/grader/slots.py:45)) ✓. Three regimes in MLX v0.32.4 `Matmul::eval_gpu` (M=rows, N=60, K=768, A not transposed, B transposed; fetched `matmul.cpp` tag v0.32.4 + installed headers, derivation in [territory-baseline-routing.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/exploration/territory-baseline-routing.md) §3.1): rows=1 → GEMV (`min(M,N)==1` → `gemv`, `gemv_wide` skipped for f32 out), kernel `gemv_float32_bm4_bn1_sm1_sn32_tm4_tn4` — 32 lanes × 24 products (lane l: d=i·128+l·4+0..3, i=0..5, [gemv.h:162-182](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/gemv.h:162)) then shuffle tree sn=16,8,4,2,1 ([gemv.h:202-208](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/gemv.h:202)) ✓; rows 8/32/127 → steel split-K Case 1 (`_tm·_tn≤2048` on `…s`, `_tk=48≥8`, `K≥max(M,N)`), partitions `min(max(2,next_pow2(_tk/(_tm·_tn))),32)` = 32 at 8/32, 8 at 127, BK=16 MMA chunks, partials summed sequentially ([steel_gemm_splitk.h:186-189](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_splitk.h:186)), last partition absorbs remainder (:140-155) ✓; rows 1,016/2,048 → regular steel GEMM (768<M, split-K off), BM=64/BN=64/BK=16 fallback ✓. Serial reordering cannot reproduce the MMA 8-product hardware accumulation — bit-exactness needs the same ops/tiling per regime, as written ✓. Differ in [grade-exact-routing.json](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-04-muse-round-1/grade-exact-routing.json): 20/159/638 decode (100%/99.4%/99.7% of 20/160/640), 2,518/16,187/32,743 prefill (99.1%/79.7%/79.9% of 2,540/20,320/40,960), `rows_other_experts` 0 everywhere, max rel err 2.6e-06 decode / 8.7e-06 prefill ✓. Headroom (31.5−25.3)/(42.7−24.3)/(87.6−68.9)=6.2/18.4/18.7 µs/layer ×20 = 0.12/0.37/0.37 ms/step ([muse-round-1.md](/Users/onur/Desktop/Github/Hackathon-muse/claude/findings/muse-round-1.md) §1) ✓, with chained-timing and 1-row G3 (+0.185 vs −0.220 ms, ≈0.41 ms/step slower than compiled) caveats as written — exactness alone banks nothing at 1 row without [ineff-baseline-routing-3](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/exploration/ineff-baseline-routing-3.md).
 
 ## From other agents
 

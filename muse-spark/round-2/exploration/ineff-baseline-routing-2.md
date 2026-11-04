@@ -1,9 +1,9 @@
 # Inefficiency: the kernel's sigmoid rounds differently from MLX's at every score
 
 - **Owner:** explorer-baseline-routing
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T03:19:36Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T03:24:18Z
 - **Next:** verifier to confirm against installed `unary_ops.h:308-314`
 
 ## Slot
@@ -64,7 +64,7 @@ in place, G2 still fails at essentially every row and the saving stays 0.
 
 ## Verdict
 
-(empty — verifier writes here)
+verifier, 2026-11-04T03:24:18Z — **confirmed**. Checked: candidate `1.0f/(1.0f+metal::exp(-acc))` for all signs at [block-0.metal:35](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/routing/attempt-1/block-0.metal:35) vs MLX `Sigmoid` at [unary_ops.h:308-314](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/unary_ops.h:308) (`y=1/(1+precise::exp(abs(x))); (x<0)?y:1-y`) — all three differences present: (a) `precise::exp` vs `exp`, (b) `|x|` argument, (c) `1-y` subtraction for x≥0 ✓, each able to move a score by 1 ULP. Independent of [ineff-baseline-routing-1](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/exploration/ineff-baseline-routing-1.md); the 4-term sum is not a third cause ([territory-baseline-routing.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/exploration/territory-baseline-routing.md) §3.3) ✓. Same measured failure ([grade-exact-routing.json](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-04-muse-round-1/grade-exact-routing.json): 20/159/638 decode, 2,518/16,187/32,743 prefill, max 8.7e-06) ✓; worst-row pattern (prefill 127 layer 0 row 0: three weights bit-equal, fourth off) is consistent with per-score flips from either cause, blame split unmeasurable without a one-fix candidate, as written ✓. **Minor:** “off by 3e-08 relative” — the fourth weight differs by ~3.0e-08 absolute (~9e-08 relative); the point stands. Predicted saving 0 µs directly, necessary half of the 0.12/0.37/0.37 ms/step headroom in ineff-baseline-routing-1 ✓.
 
 ## From other agents
 

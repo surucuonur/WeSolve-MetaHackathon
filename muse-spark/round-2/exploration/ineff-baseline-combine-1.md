@@ -1,9 +1,9 @@
 # Inefficiency: baseline-combine-1 — FMA contraction breaks bit-exactness
 
 - **Owner:** explorer-baseline-combine
-- **Status:** open
-- **Version:** 1
-- **Updated:** 2026-11-04T03:17:47Z
+- **Status:** confirmed
+- **Version:** 2
+- **Updated:** 2026-11-04T03:22:03Z
 - **Next:** verifier to confirm; builder fix is contraction suppression, not reordering
 
 ## Slot
@@ -104,3 +104,5 @@ must replace this prediction before any saving is banked, and G3
 decides end to end.
 
 ## Verdict
+
+verifier, 2026-11-04T03:22:03Z — **confirmed**. Checked: candidate expression `float(y)·w` chain and `bfloat(acc)+shared` at [block-0.metal:20-25](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/kernels/combine/attempt-1/block-0.metal:20) ✓; reference `ref_combine` at [slots.py:51-52](/Users/onur/Desktop/Github/Hackathon-muse/bench/grader/slots.py:51) runs as separate kernels — `Multiply` is plain `x * y` ([binary_ops.h:208-213](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/binary_ops.h:208)), `Sum` is `a + b` init 0 ([reduction/ops.h:120](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/reduction/ops.h:120)) folded by `col_reduce_small` as ((p₀+p₁)+p₂)+p₃, so no contraction is possible in the reference ✓ (territory checklist B–D). Contraction-not-association: round-1 CPU emulation (all 120 pure trees ≤1.0 ULP, zero fingerprint matches; FMA-chain reproduces (0.0, 2.0, 1.0) exactly) at [hyp-3-fused-combine.md](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/implementation/hyp-3-fused-combine.md) *The 2.0-ULP touch* ✓; attempt-2's `acc +=` loop shares the fingerprint ✓. ULP floor `|r|=0.001` at [check_candidate.py:84-99](/Users/onur/Desktop/Github/Hackathon-muse/bench/grader/check_candidate.py:84) ✓. Differ counts in [grade-exact-combine.json](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-04-muse-round-1/grade-exact-combine.json): 0 / 2 (2.0) / 2 (1.0) decode, 6 (1.0) / 50 (16.0) / 130 (32.0) prefill ✓ — fails 5 of 6 sizes; rates 0 / 16.3 / 4.1 / 3.1 / 3.2 / 4.1 ppm (rows·768·20) ✓ “3–16 ppm”. Token flip 7 of 32 vLLM sequences ([muse-round-1.md](/Users/onur/Desktop/Github/Hackathon-muse/claude/findings/muse-round-1.md) §2) ✓. Timing gated on G2 ([check_candidate.py:309](/Users/onur/Desktop/Github/Hackathon-muse/bench/grader/check_candidate.py:309), timing only if `g2`) ✓. Cost gaps (23.8−18.6)=5.2, (26.1−17.0)=9.1, (32.0−18.9)=13.1 µs/layer ×20 = 0.104 / 0.182 / 0.262 ms/step from [grade-combine.json](/Users/onur/Desktop/Github/Hackathon-muse/results/runs/2026-11-04-muse-round-1/grade-combine.json) ✓; vLLM alone −0.514/−0.705/−0.390 vs compiled −0.288/−0.260/−0.272 (§3) ✓. Predicted <0.5 µs/layer fix cost is consistent with traffic 0.05/0.37/1.48 µs and compute ≤0.03 µs (see ineff-baseline-combine-2) and the two round-1 organizations within 1 µs; net 0.10/0.18/0.26 ms/step on the independent basis holds, with the chained-timing caveat as written.
