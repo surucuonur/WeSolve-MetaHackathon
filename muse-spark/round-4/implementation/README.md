@@ -1,6 +1,6 @@
 # Implementation: round 4
 
-**Version:** v20 · 2026-11-04T23:05:30Z · skill version 10
+**Version:** v21 · 2026-11-04T23:07:00Z · skill version 10
 
 ## Tracker
 
@@ -41,9 +41,11 @@ Against the earlier predictions (PREDICTION): experts predicted −1.49 ms/step 
 **Check** (checker-final, 2026-11-04T23:04:37Z): 1 defect. No verdict or table number changes; fix the sentence and re-check.
 - `implementation/README.md:37` (combine, decode): the claim that the 8/32-request medians “meet or beat” the −0.16 / −0.30 / −0.53 PREDICTION in both runs and that the 32×1024 median flips sign between runs does not reproduce from the cited files. Ready-1 `muse-combine` at 32×128 is −0.36 ms/step vs base ([ready-verdict.json](../checks/ready-1/ready-verdict.json), difference-of-medians; table at `implementation/README.md:31`), which does not meet the −0.53 prediction at 32; and the 32×1024 decode median is positive in both runs (+1.12 at `implementation/README.md:31`, +0.58 at `implementation/README.md:34`), so it does not flip sign (the 1-request decode does: +0.03 → −0.44). Fix-consistency note (outside scope): `hyp-3-combine-setcopy.md:109` carries the same claim.
 - Passing: both `--audit` runs print “ready-verdict.json agrees with this audit” (ready-1 and ready-2; each exit 1, FAIL is the standing verdict, not a defect); all 84 table cells in *Ready to test* and every ready-check number in `summary.md` reproduce by difference-of-medians against that file's `base` medians; every variant's phases are `not slower` vs base and vs compiled as stated, same tokens everywhere; `muse-all` numbers cite the `muse-all` variant, not a sum of single slots (the ≈−2.16 / +2.5 interaction is the cited `ineff-g3-2` additive PREDICTION beside its +0.32 measurement); predictions in *Ready to test* (`implementation/README.md:37`) and `summary.md:8` are labelled PREDICTION and stand beside their measurements; every slot named for G3 is the reference, with no `ready` attempt and no baseline (all hypotheses `dropped`); attempt counts recount from the kernel folders — this round experts 2 / routing 3 / combine 1, totals 18 / 15 / 7 (rounds 1–3 totals 16 / 12 / 6 from `muse-spark/round-3/summary.md:7` plus this round).
+- **Re-check** (checker-final, 2026-11-04T23:06:20Z): `check: pass` — the first-check defect is fixed and the full final check (steps 1–5 plus ready/baseline/audit/end-to-end) was re-run. Fix verified at `implementation/README.md:37` against `ready-1/ready-verdict.json` and `ready-2/ready-verdict.json` (difference-of-medians vs `base`): the 8-request medians beat the −0.30 PREDICTION in both runs, the 32×128 median beats −0.53 in ready-2 but not ready-1, the 1-request median flips sign and the 32×1024 median is positive in both; the same fix at `hyp-3-combine-setcopy.md:109` reproduces identically. Both `--audit` runs again print “ready-verdict.json agrees with this audit” (each exit 1, FAIL stands); all 84 table cells and every ready-check number in `summary.md` reproduce; no remaining defect.
 
 ## Versions
 
+- v21 · 2026-11-04T23:07:00Z · checker-final re-check pass: round 4 finished, all slots keep reference · changed: none
 - v20 · 2026-11-04T23:05:30Z · checker-final defect fixed (combine prediction sentence), re-check next · changed: hyp-3-combine-setcopy v6
 - v19 · 2026-11-04T23:01:20Z · final: tracker, hypothesis paragraphs, Ready to test (all reference; both ready checks FAIL, verdicts stand) · changed: hyp-1-experts-minrows v10, hyp-2-routing-margin v8, hyp-3-combine-setcopy v5
 - v18 · 2026-11-04T23:00:30Z · all hypotheses dropped on ready verdicts · changed: hyp-1-experts-minrows v10, hyp-2-routing-margin v8, hyp-3-combine-setcopy v5
