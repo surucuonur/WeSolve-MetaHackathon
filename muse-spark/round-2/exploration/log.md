@@ -43,3 +43,4 @@
 2026-11-04T03:25:52Z | verifier | confirmed ineff-quantized-kernels-2: gather_mm_offsets recomputed 3x/layer (60/chunk, 40 redundant, <=0.26 ms upper, prefill only)
 2026-11-04T03:27:19Z | verifier | done: 12 confirmed, 0 refuted, 1 superseded duplicate (ineff-g3-2 by ineff-baseline-experts-2); no open entries, all 6 explorers done
 2026-11-04T03:28:07Z | lead | checkpoint v3: exploration done, verifier 12 confirmed 0 refuted 1 superseded
+2026-11-04T03:29:03Z | lead | exploration v4 final analysis written
