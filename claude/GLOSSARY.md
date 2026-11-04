@@ -108,7 +108,7 @@ Meta's most capable model family, in preview; its standard variant runs on Meta'
 The higher-capability variant of Muse Wonder, available only in Muse Code with a subscription; not used in this project.
 
 **Muse agent**:
-The Meta model that chooses which pieces of the decode step to replace and writes their kernels, on the branch `muse-agent`: Muse Spark in rounds 1 and 3, Muse Wonder in round 2, Muse Wonder Full in round 4. It is never the model under study.
+The Meta model that chooses which pieces of the decode step to replace and writes their kernels, on the branch `muse-agent`: Muse Spark in rounds 1 and 3, Muse Wonder in rounds 2 and 4. It is never the model under study.
 _Avoid_: Muse (alone), Meta agent
 
 **Muse Code**:

@@ -3,7 +3,7 @@
 # from Claude's work (PROVENANCE.md, claude/adr/0006-muse-spark-in-muse-code.md).
 #
 #   tools/muse-agent/start.sh [exec] [muse flags]   # run from anywhere; you start it, Claude only when asked
-#   tools/muse-agent/start.sh login   # once, for the subscription that Muse Wonder Full needs
+#   MUSE_AUTH=account tools/muse-agent/start.sh login   # only for a subscription model, once
 #
 # The session's first prompt is fixed here (PROMPT): run the round skill,
 # .agents/skills/muse-round/SKILL.md, as the model it names, with the co-author
@@ -12,19 +12,19 @@
 # session runs headless (muse exec) instead of in the terminal UI.
 #
 # This script is the only way to start one. It
-# - runs MUSE_MODEL (default muse-wonder-full-1.0, Muse Wonder Full, for the
-#   last round; ADR 0014) at reasoning effort MUSE_EFFORT (default max), both
-#   passed explicitly so the session log records them;
+# - runs MUSE_MODEL (default muse-wonder-1.0, Muse Wonder, for the last round,
+#   as in round 2; ADR 0014; round 3 ran muse-spark-1.3-contributor, ADR 0012)
+#   at reasoning effort MUSE_EFFORT (default max), both passed explicitly so
+#   the session log records them;
 # - signs in as MUSE_AUTH says:
-#   - account (default): a Muse Code subscription, which Muse Wonder Full
-#     needs. META_API_KEY is unset, because an API key always takes priority
-#     over the account login. Sign in once with `start.sh login`. Contributor
-#     mode MUSE_CONTRIBUTOR (default on) is a subscription setting, passed only
-#     here;
-#   - key: the pay-as-you-go API key (MODEL_API_KEY) from
+#   - key (default): the pay-as-you-go API key (MODEL_API_KEY) from
 #     legal-agent-workshop/agent/.env, given only to muse, as META_API_KEY; it
-#     is never printed or stored. Rounds 1 to 3 ran this way, round 3 with
-#     MUSE_MODEL=muse-spark-1.3-contributor (ADR 0012);
+#     is never printed or stored. Every round so far ran this way;
+#   - account: a Muse Code subscription, which Muse Wonder Full
+#     (muse-wonder-full-1.0) needs. META_API_KEY is unset, because an API key
+#     always takes priority over the account login. Sign in once with
+#     `MUSE_AUTH=account start.sh login`. Contributor mode MUSE_CONTRIBUTOR
+#     (default on) is a subscription setting, passed only here;
 # - works in its own git worktree on branch muse-agent, created from the tag
 #   muse-code-era (the commit that registers the skill and ADR 0006);
 # - fast-forwards muse-agent to main when main already contains it (after a
@@ -52,11 +52,11 @@ set -euo pipefail
 
 MAIN="$(cd "$(dirname "$0")/../.." && pwd)"
 WT="${MUSE_WORKTREE:-$(dirname "$MAIN")/Hackathon-muse}"
-MODEL="${MUSE_MODEL:-muse-wonder-full-1.0}"
+MODEL="${MUSE_MODEL:-muse-wonder-1.0}"
 EFFORT="${MUSE_EFFORT:-max}"
 APPROVAL="${MUSE_APPROVAL:-never}"
 CONTRIBUTOR="${MUSE_CONTRIBUTOR:-on}"
-AUTH="${MUSE_AUTH:-account}"
+AUTH="${MUSE_AUTH:-key}"
 MUSE_HOME="${MUSE_HOME:-$HOME/.muse-spark}"  # also read by tools/provenance.py
 TAG="muse-code-era"
 ENV_FILE="$MAIN/legal-agent-workshop/agent/.env"  # also scanned by tools/provenance.py

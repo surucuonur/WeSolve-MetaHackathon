@@ -2,9 +2,9 @@
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../PROVENANCE.md).*
 
-The Muse agent, Meta's model working in Muse Code (Muse Spark in round 1, Muse Wonder in round 2, Muse Spark's contributor model in round 3 and Muse Wonder Full in round 4, the last; [ADR 0008](adr/0008-muse-wonder.md), [ADR 0012](adr/0012-muse-spark-contributor-unattended.md), [ADR 0014](adr/0014-muse-wonder-full-last-round.md)), speeds up MobileMoE-S's decode step and prefill as a **swarm**: several agents in one Muse Code session, each covering part of the problem, sharing what they find in documents that all of them read. This page explains how one round runs, step by step, and where to watch it.
+The Muse agent, Meta's model working in Muse Code (Muse Spark in round 1, Muse Wonder in round 2, Muse Spark's contributor model in round 3 and Muse Wonder again in round 4, the last; [ADR 0008](adr/0008-muse-wonder.md), [ADR 0012](adr/0012-muse-spark-contributor-unattended.md), [ADR 0014](adr/0014-muse-wonder-last-round.md)), speeds up MobileMoE-S's decode step and prefill as a **swarm**: several agents in one Muse Code session, each covering part of the problem, sharing what they find in documents that all of them read. This page explains how one round runs, step by step, and where to watch it.
 
-- **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 9. This page describes it.
+- **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 10. This page describes it.
 - **Why it is built this way:** [ADR 0007](adr/0007-muse-spark-swarm.md) records the decision.
 - **The diagrams:** [diagrams/muse-swarm.drawio](diagrams/muse-swarm.drawio) opens in draw.io, with one page each for the overview, exploration and implementation. The images below are exported from it.
 
@@ -30,7 +30,7 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
 
 ![Exploration: explorers write entries and log lines in the shared folder; the verifier confirms or refutes inefficiencies; the lead checkpoints and commits](diagrams/muse-swarm-exploration.svg)
 
-1. **The lead opens the phase.** It writes `<round>/exploration/README.md` with its version line (v1, skill version 9), a tracker table and an empty log, and commits it as `exploration v1`. From round 2 on, the README opens with the round's **starting point** (see *Rounds build on each other*).
+1. **The lead opens the phase.** It writes `<round>/exploration/README.md` with its version line (v1, skill version 10), a tracker table and an empty log, and commits it as `exploration v1`. From round 2 on, the README opens with the round's **starting point** (see *Rounds build on each other*).
 2. **The explorers and the verifier start at once,** one explorer per territory. Round 1 started with eight:
    - **Code:**
      - the model's layer around the slots (`mobilemoe.py`);
