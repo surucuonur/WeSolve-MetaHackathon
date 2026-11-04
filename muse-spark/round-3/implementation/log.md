@@ -50,3 +50,6 @@
 2026-11-04T18:19:22Z | builder-3-d | start: hyp-3 direction (b) fix — copy attempt-2 to attempt-4 with 10 rows/group
 2026-11-04T18:19:22Z | builder-3-d | claimed muse-spark/round-3/kernels/routing/attempt-4 for hyp-3 direction (b) 10-rows/group fix of attempt-2
 2026-11-04T18:19:37Z | lead | v12: routing-3 G2 pass, decode same x3, prefill slower (ledger)
+2026-11-04T18:21:55Z | builder-3-d | graded attempt-4: G1 fail (threadgroup 600 > pipeline max 576 — cap moved from attempt-2's 640), no G2/timing; recorded in notes.md, hyp-3 section, ineff-baseline-routing-1 note
+2026-11-04T18:21:55Z | builder-3-d | done: one attempt graded and recorded; next change is 8-rows-per-group (480 threads) copy in a new attempt
+2026-11-04T18:22:23Z | lead | v13: routing-4 G1 fail (cap 576); ledger, fix at 8 rows/group next

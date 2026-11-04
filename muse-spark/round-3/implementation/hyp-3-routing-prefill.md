@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 5
-- **Updated:** 2026-11-04T18:19:19Z
-- **Next:** builder-3-d (attempt-4, 10-rows/group fix) still building; best remains attempt-1 (re-grade decision after attempt-4)
+- **Version:** 6
+- **Updated:** 2026-11-04T18:22:08Z
+- **Next:** builder-3-e tries 8 rows/group (480 threads) as attempt-5; best remains attempt-1 (re-grade decision after attempt-5)
 
 ## Inefficiency
 
@@ -146,6 +146,34 @@ serial chain, fails G2).
   round-2 attempt-4 (lead must bless the flag; verdict-neutral, adds
   the paired column) to isolate copy cost and residency saving.
 
+### builder-3-d — direction (b) fix: 10 rows per threadgroup (600 threads)
+
+Copy of attempt-2 with exactly attempt-2's notes' prescribed fix:
+kernel 1 goes from 16 to 10 rows per threadgroup (600 threads, grid
+stays `rows*60`, 60 still divides 600 so groups stay row-aligned with
+no bounds checks); `xst`/`sc` to 10×64, `Rg` cap and row stride 16→10,
+`wsh[4096]` and the `w`-staging bound unchanged (K-chunk geometry);
+threadgroup 24,576 → 21,504 B; `block-0`/`block-1` byte-identical
+(`diff` empty). Predicted 53 / 117 / 124 / 55 / 220 / 400 µs/layer
+(decode = attempt-4 + 3 µs copy launch, byte-identical code; prefill =
+10x-cut traffic floors ~13 / ~102 / ~205 + barrier/wave allowances —
+tied at 1,016, `slower` at 2,048 under the 0.5-µs/barrier guess, where
+the chained timing decides).
+
+- **attempt-4** (`muse-spark/round-3/kernels/routing/attempt-4/`):
+  G1 fail, no G2, no timing (`grade.json`: `Thread group size (600)
+  is greater than  the maximum allowed threads per threadgroup (576)`).
+  Taught: the pipeline cap moves with the kernel — attempt-2's kernel
+  reported 640, this near-identical recompile reports 576, so "design
+  under 640" was wrong advice; both caps are whole-SIMD multiples
+  (20×32, 18×32), pointing at register allocation shifting ~11% under
+  recompilation (inferred — threadgroup memory shrank, so it cannot
+  explain a lower cap; the GEMM direction itself is unrefuted, the
+  kernel never ran). Next: a copied new attempt with 8 rows/group
+  (480 threads, inside round-1 attempt-2's proven-passing band); if
+  the cap drops below 480 again, attack per-thread registers next
+  (e.g. shrink `part[16]`), not just the group size (see notes.md).
+
 ## Boundary checks
 
 ### attempt-1 — pass (boundary-3, 2026-11-04T18:14:51Z)
@@ -173,6 +201,7 @@ Still unverified (inherited can't-see items, for **Unverified**): hand-off exact
 - attempt-1 (max_rows 32): G1+G2 pass, decode `faster` x3, prefill `same`/`same`/`slower` (2,048 rows: 8/30 wins, exactly the 22-loss threshold; candidate medians within 2.7% of compiled on literally identical code — paired noise, not a slowdown). Cause (suspected): noise on identical code; the builder's proposed next change is a re-grade of a byte-identical copy under a new number. Approach: hand-off (no kernel change can move identical-code timing).
 - attempt-2 (GEMM-shaped sharing, 16 rows/group): G1 fail — kernel 1 asks 960 threads/group (16 rows × 60 experts), pipeline max is 640; no G2, no timing. Cause: compile error (threadgroup size), not a speed cause; fix is 10 rows/group (600 threads) in a copied attempt.
 - attempt-3 (drop `parts` where partitions = 1, two-kernel split at rows = 768): G1+G2 pass, decode `same` × 3 (66.1/96.1/109.5 vs 64.7/95.4/103.9; 14/15/9 wins — the ~2–3 µs copy launch flips `faster` to `same`), prefill `slower` × 3 (266.0/1,098.3/2,097.3 vs 96.9/235.3/299.7 — the traffic re-read dominates; shape residual removal consistent with −15%/−17% but drift-confounded). Cause: per-row re-read untouched plus copy-launch wiring cost at decode. Approach: narrower staged footprint. (Declined: the proposed `--baseline` re-grade — this round has no baselines, so no `--baseline` runs.)
+- attempt-4 (GEMM-shaped sharing, 10 rows/group): G1 fail — 600 threads/group against a pipeline max of 576 (the cap moved with the kernel: attempt-2's recompile reported 640); no G2, no timing. Cause: compile error (register allocation shifting the pipeline cap ~11% under recompilation, inferred). Fix: 8 rows/group (480 threads) in a copied attempt — inside round-1 attempt-2's proven-passing band.
 
 ## Unverified
 
