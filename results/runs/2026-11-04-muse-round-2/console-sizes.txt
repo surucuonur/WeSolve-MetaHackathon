@@ -1,0 +1,77 @@
+routing muse-spark/round-2/kernels/routing/attempt-4 rows     2: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows     2: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows     2: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows     3: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows     3: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows     3: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows     5: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows     5: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows     5: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows    15: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows    15: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows    15: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows    16: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows    16: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows    16: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows    17: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows    17: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows    17: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows    31: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows    31: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows    31: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows    33: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows    33: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows    33: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows    40: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows    40: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows    40: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows    59: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows    59: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows    59: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows    60: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows    60: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows    60: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows    61: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows    61: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows    61: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows    64: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows    64: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows    64: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows    65: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows    65: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows    65: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows   100: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows   100: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows   100: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows   128: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows   128: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows   128: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows   129: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows   129: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows   129: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows   200: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows   200: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows   200: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows   256: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows   256: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows   256: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows   257: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows   257: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows   257: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows   500: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows   500: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows   500: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows   768: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows   768: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows   768: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows   769: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows   769: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows   769: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows  1024: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows  1024: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows  1024: pass {"differ": 0, "max_ulp": 0.0}
+routing muse-spark/round-2/kernels/routing/attempt-4 rows  1500: pass {"rows_differ": 0, "rows_other_experts": 0, "max_rel_err": 0.0}
+combine muse-spark/round-2/kernels/combine/attempt-1 rows  1500: pass {"differ": 0, "max_ulp": 0.0}
+experts muse-spark/round-2/kernels/experts/attempt-7 rows  1500: pass {"differ": 0, "max_ulp": 0.0}
+sizes that fail: {"routing muse-spark/round-2/kernels/routing/attempt-4": [], "combine muse-spark/round-2/kernels/combine/attempt-1": [], "experts muse-spark/round-2/kernels/experts/attempt-7": []}
+sizes exit 0

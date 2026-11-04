@@ -32,6 +32,11 @@ A Meta model working in Muse Code, Meta's own coding agent, works as a swarm of 
 - The grader had tested decode sizes only, allowed small rounding differences, and timed calls the GPU could overlap.
 - From round 2 the grader asks for bit-exact outputs at decode and prefill sizes, and chains the layers when timing ([ADR 0010](claude/adr/0010-exact-at-every-size.md)).
 
+**Round 2, measured** ([claude/findings/muse-round-2.md](claude/findings/muse-round-2.md)): Muse Wonder's kernels are bit-exact with MLX's at every size tested, and leave the model's tokens unchanged.
+- **The routing kernel** passes every rule: it shortens the vLLM decode step by 0.43 to 0.54 ms (2 to 9%) at 1, 8 and 32 requests.
+- **The combine kernel** slows the step with 32 requests, so the submitted pair gains 13% with 1 request and loses 2% with 32.
+- **An experts kernel round 2 didn't submit** is 17.5% faster with 32 requests and 5% slower with 1.
+
 ## How Meta's models are used
 
 - **MobileMoE-S** (open weights) is the model under study, served by vLLM through vllm-metal. The baseline serves the int4 `facebook/MobileMoE-S-QAT` ([why](claude/adr/0002-int4-qat-baseline.md)); the bfloat16 `facebook/MobileMoE-S-SFT` is used to check the port.

@@ -7,7 +7,10 @@ Variants, applied at runtime to MoE.__call__ in every layer:
   muse-<slot>         the Muse agent's attempt for the slot
   compiled-all        with several slots: all their references compiled at once
   muse-all            with several slots: all the attempts at once
-  claude-fixed-<slot> a separately labelled Claude version, only if one exists
+  <name>              each --variant NAME:SLOT=FOLDER[+SLOT=FOLDER...]: other
+                      attempts, timed in the same run but outside muse-all,
+                      such as an earlier round's or one not submitted; the
+                      FOLDER `compiled` is that slot's compiled reference
 
 G2 end to end: each variant's greedy tokens over 24 generated tokens, at 1
 and 32 requests, must equal base's. G3: the steady decode step period, as
@@ -15,6 +18,7 @@ repeat_fixes.py measures it (3 repeats, shuffled), at 1, 8 and 32 requests.
 
   .venv/bin/python bench/grader/time_candidates.py plain results/runs/<date>-muse <slot>=<attempt dir> ...
   .venv/bin/python bench/grader/time_candidates.py vllm  results/runs/<date>-muse <slot>=<attempt dir> ...
+      [--variant NAME:SLOT=FOLDER[+SLOT=FOLDER...] ...]
 """
 
 import argparse
@@ -69,9 +73,31 @@ def attempt_arg(value):
     return slot, Path(folder)
 
 
+def variant_arg(value):
+    """NAME:SLOT=FOLDER[+SLOT=FOLDER...] -> (name, [(slot, folder), ...])."""
+    name, sep, spec = value.partition(":")
+    if not sep or not name:
+        raise argparse.ArgumentTypeError(
+            f"{value!r}: give NAME:SLOT=FOLDER[+SLOT=FOLDER...]"
+        )
+    return name, [attempt_arg(a) for a in spec.split("+")]
+
+
+def implementations(attempts):
+    """make_moe_call keyword arguments for (slot, folder) pairs; `compiled` is the reference."""
+    fns = {}
+    for slot, folder in attempts:
+        if str(folder) == "compiled":
+            fns |= {p: mx.compile(slots.REFERENCE[p]) for p in parts(slot)}
+        else:
+            fns |= implementation(load(folder, slot))
+    return fns
+
+
 class Variants:
-    def __init__(self, attempts, claude_fixed=()):
-        """*attempts*: (slot, folder) pairs whose slots share no part."""
+    def __init__(self, attempts, extra=()):
+        """*attempts*: (slot, folder) pairs whose slots share no part; *extra*:
+        (name, attempts) pairs, each its own variant."""
         self.original = mobilemoe.MoE.__call__
         self.calls = {"base": self.original}
         compiled, muse = {}, {}
@@ -85,10 +111,10 @@ class Variants:
         if len(attempts) > 1:
             self.calls["compiled-all"] = slots.make_moe_call(**compiled)
             self.calls["muse-all"] = slots.make_moe_call(**muse)
-        for slot, folder in claude_fixed:
-            self.calls[f"claude-fixed-{slot}"] = slots.make_moe_call(
-                **implementation(load(folder, slot))
-            )
+        for name, more in extra:
+            if name in self.calls:
+                raise SystemExit(f"--variant {name}: that name is taken")
+            self.calls[name] = slots.make_moe_call(**implementations(more))
         self.names = list(self.calls)
 
     def apply(self, name):
@@ -129,8 +155,9 @@ def main():
         help="the Muse agent's attempt folder per slot",
     )
     ap.add_argument(
-        "--claude-fixed", type=attempt_arg, action="append", default=[],
-        metavar="SLOT=FOLDER", help="Claude's labelled version of a slot",
+        "--variant", type=variant_arg, action="append", default=[],
+        metavar="NAME:SLOT=FOLDER[+SLOT=FOLDER...]",
+        help="another set of attempts to time, outside muse-all",
     )
     ap.add_argument("--tokens", type=int, default=256, help="output tokens per run")
     args = ap.parse_args()
@@ -149,7 +176,7 @@ def main():
 
         model, _ = load_model(Path(bd.MODEL))
         mx.eval(model.parameters())
-        variants = Variants(args.attempts, args.claude_fixed)
+        variants = Variants(args.attempts, args.variant)
         checks = plain_checks(model, variants)
         run = lambda r, p, s: bd.run_plain(model, r, p, args.tokens, s)  # noqa: E731
     else:
@@ -168,7 +195,7 @@ def main():
         )
         run = lambda r, p, s: bd.run_vllm(llm, r, p, args.tokens, s)  # noqa: E731
         run(1, 16, 0)  # warm-up; captures the runner
-        variants = Variants(args.attempts, args.claude_fixed)
+        variants = Variants(args.attempts, args.variant)
         checks = rf.vllm_checks(llm, variants)
 
     rf.time_variants(args.engine, variants, checks, run, log)

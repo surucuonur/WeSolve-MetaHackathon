@@ -1,0 +1,183 @@
+W1103 23:32:14.386000 43927 torch/_library/triton.py:53] Triton not available, find_triton_kernels = []
+(MainProcess pid=43927) WARNING 11-03 23:32:14 [arg_utils.py:1945] The global random seed is set to 0. Since VLLM_ENABLE_V1_MULTIPROCESSING is set to False, this may affect the random state of the Python process that launched vLLM.
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+vllm check        base rows  1: 967 kernels
+vllm check compiled-routing rows  1: 907 kernels, exact True
+vllm check muse-routing rows  1: 767 kernels, exact True
+vllm check compiled-combine rows  1: 927 kernels, exact True
+vllm check muse-combine rows  1: 887 kernels, exact True
+vllm check compiled-all rows  1: 867 kernels, exact True
+vllm check    muse-all rows  1: 687 kernels, exact True
+vllm check compiled-experts rows  1: 967 kernels, exact True
+vllm check experts-a7-unsubmitted rows  1: 847 kernels, exact True
+vllm check  compiled-3 rows  1: 867 kernels, exact True
+vllm check all+experts-a7 rows  1: 567 kernels, exact True
+vllm check  round1-all rows  1: 567 kernels, exact True
+vllm check        base rows 32: 1087 kernels
+vllm check compiled-routing rows 32: 1027 kernels, exact True
+vllm check muse-routing rows 32: 887 kernels, exact True
+vllm check compiled-combine rows 32: 1047 kernels, exact True
+vllm check muse-combine rows 32: 1007 kernels, exact True
+vllm check compiled-all rows 32: 987 kernels, exact True
+vllm check    muse-all rows 32: 807 kernels, exact True
+vllm check compiled-experts rows 32: 1087 kernels, exact True
+vllm check experts-a7-unsubmitted rows 32: 847 kernels, exact True
+vllm check  compiled-3 rows 32: 987 kernels, exact True
+vllm check all+experts-a7 rows 32: 567 kernels, exact True
+vllm check  round1-all rows 32: 567 kernels, exact False
+vllm rep0        base rows  1:   5.512 ms/step
+vllm rep0 experts-a7-unsubmitted rows  1:   5.734 ms/step
+vllm rep0 compiled-routing rows  8:  14.297 ms/step
+vllm rep0    muse-all rows  1:   4.716 ms/step
+vllm rep0    muse-all rows  8:  13.768 ms/step
+vllm rep0 compiled-all rows  1:   5.130 ms/step
+vllm rep0  compiled-3 rows  1:   4.858 ms/step
+vllm rep0    muse-all rows 32:  30.997 ms/step
+vllm rep0 compiled-routing rows 32:  30.337 ms/step
+vllm rep0 compiled-experts rows  1:   5.621 ms/step
+vllm rep0  round1-all rows  1:   6.477 ms/step
+vllm rep0 compiled-experts rows  8:  14.557 ms/step
+vllm rep0 all+experts-a7 rows  1:   5.083 ms/step
+vllm rep0 muse-combine rows  1:   5.092 ms/step
+vllm rep0  compiled-3 rows  8:  13.989 ms/step
+vllm rep0  round1-all rows 32:  28.635 ms/step
+vllm rep0 muse-routing rows  8:  14.093 ms/step
+vllm rep0 compiled-combine rows  8:  14.417 ms/step
+vllm rep0 muse-routing rows  1:   5.118 ms/step
+vllm rep0        base rows  8:  14.684 ms/step
+vllm rep0 muse-routing rows 32:  29.933 ms/step
+vllm rep0 muse-combine rows 32:  31.547 ms/step
+vllm rep0        base rows 32:  30.470 ms/step
+vllm rep0 experts-a7-unsubmitted rows 32:  25.181 ms/step
+vllm rep0 compiled-all rows 32:  30.317 ms/step
+vllm rep0 compiled-routing rows  1:   5.170 ms/step
+vllm rep0 all+experts-a7 rows  8:  14.792 ms/step
+vllm rep0 compiled-all rows  8:  14.020 ms/step
+vllm rep0 muse-combine rows  8:  14.328 ms/step
+vllm rep0 all+experts-a7 rows 32:  25.898 ms/step
+vllm rep0 compiled-experts rows 32:  30.240 ms/step
+vllm rep0 experts-a7-unsubmitted rows  8:  13.522 ms/step
+vllm rep0 compiled-combine rows 32:  30.210 ms/step
+vllm rep0  round1-all rows  8:  14.651 ms/step
+vllm rep0  compiled-3 rows 32:  30.273 ms/step
+vllm rep0 compiled-combine rows  1:   5.101 ms/step
+vllm rep1 experts-a7-unsubmitted rows  1:   5.743 ms/step
+vllm rep1 compiled-routing rows  8:  14.404 ms/step
+vllm rep1        base rows  1:   5.442 ms/step
+vllm rep1        base rows  8:  14.505 ms/step
+vllm rep1 compiled-all rows 32:  30.257 ms/step
+vllm rep1 experts-a7-unsubmitted rows  8:  13.278 ms/step
+vllm rep1 muse-combine rows  8:  14.330 ms/step
+vllm rep1 all+experts-a7 rows  1:   5.036 ms/step
+vllm rep1 compiled-combine rows 32:  30.303 ms/step
+vllm rep1    muse-all rows 32:  31.061 ms/step
+vllm rep1 all+experts-a7 rows  8:  15.155 ms/step
+vllm rep1 all+experts-a7 rows 32:  25.986 ms/step
+vllm rep1    muse-all rows  1:   4.470 ms/step
+vllm rep1  round1-all rows 32:  28.621 ms/step
+vllm rep1 experts-a7-unsubmitted rows 32:  25.115 ms/step
+vllm rep1  compiled-3 rows  1:   4.871 ms/step
+vllm rep1 compiled-routing rows 32:  30.320 ms/step
+vllm rep1 compiled-experts rows 32:  30.297 ms/step
+vllm rep1 muse-routing rows 32:  29.893 ms/step
+vllm rep1        base rows 32:  30.346 ms/step
+vllm rep1 muse-combine rows 32:  31.521 ms/step
+vllm rep1 compiled-combine rows  8:  14.274 ms/step
+vllm rep1  compiled-3 rows  8:  14.125 ms/step
+vllm rep1  round1-all rows  1:   6.359 ms/step
+vllm rep1 compiled-all rows  1:   5.038 ms/step
+vllm rep1 compiled-combine rows  1:   5.092 ms/step
+vllm rep1 muse-routing rows  8:  14.090 ms/step
+vllm rep1    muse-all rows  8:  13.822 ms/step
+vllm rep1 muse-routing rows  1:   4.968 ms/step
+vllm rep1 compiled-all rows  8:  14.044 ms/step
+vllm rep1 compiled-experts rows  1:   5.365 ms/step
+vllm rep1 compiled-routing rows  1:   5.169 ms/step
+vllm rep1  compiled-3 rows 32:  30.271 ms/step
+vllm rep1 compiled-experts rows  8:  14.791 ms/step
+vllm rep1  round1-all rows  8:  15.042 ms/step
+vllm rep1 muse-combine rows  1:   5.030 ms/step
+vllm rep2  compiled-3 rows  8:  13.990 ms/step
+vllm rep2  round1-all rows  1:   6.365 ms/step
+vllm rep2 muse-routing rows 32:  29.942 ms/step
+vllm rep2  round1-all rows  8:  14.631 ms/step
+vllm rep2 muse-routing rows  1:   4.910 ms/step
+vllm rep2 compiled-all rows  1:   4.947 ms/step
+vllm rep2 compiled-experts rows  1:   5.375 ms/step
+vllm rep2 compiled-routing rows  1:   5.176 ms/step
+vllm rep2    muse-all rows 32:  30.915 ms/step
+vllm rep2 all+experts-a7 rows  1:   5.034 ms/step
+vllm rep2        base rows 32:  30.513 ms/step
+vllm rep2 all+experts-a7 rows 32:  25.960 ms/step
+vllm rep2        base rows  1:   5.418 ms/step
+vllm rep2 experts-a7-unsubmitted rows 32:  25.124 ms/step
+vllm rep2 experts-a7-unsubmitted rows  8:  13.307 ms/step
+vllm rep2 compiled-routing rows  8:  14.300 ms/step
+vllm rep2 muse-routing rows  8:  14.037 ms/step
+vllm rep2 muse-combine rows 32:  31.433 ms/step
+vllm rep2 muse-combine rows  1:   5.069 ms/step
+vllm rep2 compiled-routing rows 32:  30.390 ms/step
+vllm rep2 all+experts-a7 rows  8:  14.804 ms/step
+vllm rep2  compiled-3 rows 32:  30.310 ms/step
+vllm rep2 compiled-all rows 32:  30.291 ms/step
+vllm rep2 compiled-all rows  8:  13.995 ms/step
+vllm rep2 compiled-experts rows 32:  30.250 ms/step
+vllm rep2        base rows  8:  14.524 ms/step
+vllm rep2  compiled-3 rows  1:   4.991 ms/step
+vllm rep2    muse-all rows  1:   4.825 ms/step
+vllm rep2 muse-combine rows  8:  14.254 ms/step
+vllm rep2    muse-all rows  8:  13.790 ms/step
+vllm rep2  round1-all rows 32:  28.588 ms/step
+vllm rep2 experts-a7-unsubmitted rows  1:   5.734 ms/step
+vllm rep2 compiled-combine rows 32:  30.287 ms/step
+vllm rep2 compiled-combine rows  8:  14.205 ms/step
+vllm rep2 compiled-experts rows  8:  14.502 ms/step
+vllm rep2 compiled-combine rows  1:   5.427 ms/step
+
+vllm: median step ms over 3 repeats (change against base)
+  rows  1        base:   5.442 [5.418-5.512]
+  rows  1 compiled-routing:   5.170 [5.169-5.176] (-0.272 ms, -5.0%)
+  rows  1 muse-routing:   4.968 [4.910-5.118] (-0.474 ms, -8.7%)
+  rows  1 compiled-combine:   5.101 [5.092-5.427] (-0.340 ms, -6.3%)
+  rows  1 muse-combine:   5.069 [5.030-5.092] (-0.372 ms, -6.8%)
+  rows  1 compiled-all:   5.038 [4.947-5.130] (-0.404 ms, -7.4%)
+  rows  1    muse-all:   4.716 [4.470-4.825] (-0.726 ms, -13.3%)
+  rows  1 compiled-experts:   5.375 [5.365-5.621] (-0.066 ms, -1.2%)
+  rows  1 experts-a7-unsubmitted:   5.734 [5.734-5.743] (+0.292 ms, +5.4%)
+  rows  1  compiled-3:   4.871 [4.858-4.991] (-0.571 ms, -10.5%)
+  rows  1 all+experts-a7:   5.036 [5.034-5.083] (-0.406 ms, -7.5%)
+  rows  1  round1-all:   6.365 [6.359-6.477] (+0.923 ms, +17.0%)
+  rows  8        base:  14.524 [14.505-14.684]
+  rows  8 compiled-routing:  14.300 [14.297-14.404] (-0.225 ms, -1.5%)
+  rows  8 muse-routing:  14.090 [14.037-14.093] (-0.434 ms, -3.0%)
+  rows  8 compiled-combine:  14.274 [14.205-14.417] (-0.251 ms, -1.7%)
+  rows  8 muse-combine:  14.328 [14.254-14.330] (-0.197 ms, -1.4%)
+  rows  8 compiled-all:  14.020 [13.995-14.044] (-0.505 ms, -3.5%)
+  rows  8    muse-all:  13.790 [13.768-13.822] (-0.735 ms, -5.1%)
+  rows  8 compiled-experts:  14.557 [14.502-14.791] (+0.032 ms, +0.2%)
+  rows  8 experts-a7-unsubmitted:  13.307 [13.278-13.522] (-1.217 ms, -8.4%)
+  rows  8  compiled-3:  13.990 [13.989-14.125] (-0.534 ms, -3.7%)
+  rows  8 all+experts-a7:  14.804 [14.792-15.155] (+0.280 ms, +1.9%)
+  rows  8  round1-all:  14.651 [14.631-15.042] (+0.127 ms, +0.9%)
+  rows 32        base:  30.470 [30.346-30.513]
+  rows 32 compiled-routing:  30.337 [30.320-30.390] (-0.133 ms, -0.4%)
+  rows 32 muse-routing:  29.933 [29.893-29.942] (-0.537 ms, -1.8%)
+  rows 32 compiled-combine:  30.287 [30.210-30.303] (-0.183 ms, -0.6%)
+  rows 32 muse-combine:  31.521 [31.433-31.547] (+1.051 ms, +3.4%)
+  rows 32 compiled-all:  30.291 [30.257-30.317] (-0.179 ms, -0.6%)
+  rows 32    muse-all:  30.997 [30.915-31.061] (+0.527 ms, +1.7%)
+  rows 32 compiled-experts:  30.250 [30.240-30.297] (-0.220 ms, -0.7%)
+  rows 32 experts-a7-unsubmitted:  25.124 [25.115-25.181] (-5.345 ms, -17.5%)
+  rows 32  compiled-3:  30.273 [30.271-30.310] (-0.197 ms, -0.6%)
+  rows 32 all+experts-a7:  25.960 [25.898-25.986] (-4.510 ms, -14.8%)
+  rows 32  round1-all:  28.621 [28.588-28.635] (-1.849 ms, -6.1%)
+vllm exit 0 (VLLM_METAL_KV_COMMIT_PROBE=0)

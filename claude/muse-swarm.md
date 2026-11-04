@@ -4,7 +4,7 @@
 
 The Muse agent, Meta's model working in Muse Code (Muse Spark in round 1, Muse Wonder Full from round 2; [ADR 0008](adr/0008-muse-wonder.md)), improves the MobileMoE-S decode step as a **swarm**: several agents in one Muse Code session, each covering part of the problem, sharing what they find in documents that all of them read. This page explains how one round runs, step by step, and where to watch it.
 
-- **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 5. This page describes it.
+- **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 6. This page describes it.
 - **Why it is built this way:** [ADR 0007](adr/0007-muse-spark-swarm.md) records the decision.
 - **The diagrams:** [diagrams/muse-swarm.drawio](diagrams/muse-swarm.drawio) opens in draw.io, with one page each for the overview, exploration and implementation. The images below are exported from it.
 
@@ -29,7 +29,7 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
 
 ![Exploration: explorers write entries and log lines in the shared folder; the verifier confirms or refutes inefficiencies; the lead checkpoints and commits](diagrams/muse-swarm-exploration.svg)
 
-1. **The lead opens the phase.** It writes `<round>/exploration/README.md` with its version line (v1, skill version 5), a tracker table and an empty log, and commits it as `exploration v1`. From round 2 on, the README opens with the round's **starting point** (see *Rounds build on each other*).
+1. **The lead opens the phase.** It writes `<round>/exploration/README.md` with its version line (v1, skill version 6), a tracker table and an empty log, and commits it as `exploration v1`. From round 2 on, the README opens with the round's **starting point** (see *Rounds build on each other*).
 2. **The explorers and the verifier start at once,** one explorer per territory. Round 1 started with eight:
    - **Code:**
      - the model's layer around the slots (`mobilemoe.py`);
@@ -101,7 +101,7 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
 From round 2 on, a round starts where the earlier ones stopped ([ADR 0009](adr/0009-rounds-build-on-each-other.md)).
 - **Finished rounds are frozen.** After a round's transcripts are committed, Claude tags its last commit `muse-round-<N>` (round 1: `muse-round-1`). The hooks then refuse any change to that round's files, and new files anywhere but the current round's folder and the transcripts.
 - **The starting point.** The lead first reads the earlier rounds' final documents, the best attempts' notes and Claude's G3 report on the previous round. It writes the plan at the top of the round's exploration README:
-  - per slot, the best attempt so far that passes G2, the **baseline**, or where none does, the attempt to start from; and how its G3 effect compared with its prediction;
+  - per slot, the best attempt so far that passes G2 and that Claude's G3 accepted, the **baseline**, or where there is none, the attempt to start from; and how its G3 effect compared with its prediction;
   - what is left to build;
   - the refuted claims;
   - the territories to explore again.

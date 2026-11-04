@@ -1,0 +1,55 @@
+{
+ "slot": "combine",
+ "g1": true,
+ "g2": true,
+ "beats_compiled": true,
+ "correctness": {
+  "combine rows 1": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "combine rows 8": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "combine rows 32": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "combine prefill rows 127": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "combine prefill rows 1016": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "combine prefill rows 2048": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  }
+ },
+ "timing_us_per_layer": {
+  "rows 1": {
+   "reference": 62.9,
+   "compiled": 55.8,
+   "candidate": 44.3
+  },
+  "rows 8": {
+   "reference": 65.7,
+   "compiled": 60.1,
+   "candidate": 46.3
+  },
+  "rows 32": {
+   "reference": 62.3,
+   "compiled": 47.3,
+   "candidate": 42.2
+  }
+ }
+}

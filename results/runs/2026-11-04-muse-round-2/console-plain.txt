@@ -1,0 +1,171 @@
+plain check        base rows  1: 866 kernels
+plain check compiled-routing rows  1: 806 kernels, exact True
+plain check muse-routing rows  1: 666 kernels, exact True
+plain check compiled-combine rows  1: 826 kernels, exact True
+plain check muse-combine rows  1: 786 kernels, exact True
+plain check compiled-all rows  1: 766 kernels, exact True
+plain check    muse-all rows  1: 586 kernels, exact True
+plain check compiled-experts rows  1: 866 kernels, exact True
+plain check experts-a7-unsubmitted rows  1: 746 kernels, exact True
+plain check  compiled-3 rows  1: 766 kernels, exact True
+plain check all+experts-a7 rows  1: 466 kernels, exact True
+plain check  round1-all rows  1: 466 kernels, exact True
+plain check        base rows 32: 986 kernels
+plain check compiled-routing rows 32: 926 kernels, exact True
+plain check muse-routing rows 32: 786 kernels, exact True
+plain check compiled-combine rows 32: 946 kernels, exact True
+plain check muse-combine rows 32: 906 kernels, exact True
+plain check compiled-all rows 32: 886 kernels, exact True
+plain check    muse-all rows 32: 706 kernels, exact True
+plain check compiled-experts rows 32: 986 kernels, exact True
+plain check experts-a7-unsubmitted rows 32: 746 kernels, exact True
+plain check  compiled-3 rows 32: 886 kernels, exact True
+plain check all+experts-a7 rows 32: 466 kernels, exact True
+plain check  round1-all rows 32: 466 kernels, exact False
+plain rep0        base rows  1:   4.740 ms/step
+plain rep0 experts-a7-unsubmitted rows  1:   5.268 ms/step
+plain rep0 compiled-routing rows  8:  13.408 ms/step
+plain rep0    muse-all rows  1:   3.967 ms/step
+plain rep0    muse-all rows  8:  12.922 ms/step
+plain rep0 compiled-all rows  1:   4.289 ms/step
+plain rep0  compiled-3 rows  1:   4.458 ms/step
+plain rep0    muse-all rows 32:  29.052 ms/step
+plain rep0 compiled-routing rows 32:  28.600 ms/step
+plain rep0 compiled-experts rows  1:   4.709 ms/step
+plain rep0  round1-all rows  1:   5.898 ms/step
+plain rep0 compiled-experts rows  8:  13.564 ms/step
+plain rep0 all+experts-a7 rows  1:   4.430 ms/step
+plain rep0 muse-combine rows  1:   4.316 ms/step
+plain rep0  compiled-3 rows  8:  13.237 ms/step
+plain rep0  round1-all rows 32:  26.521 ms/step
+plain rep0 muse-routing rows  8:  13.114 ms/step
+plain rep0 compiled-combine rows  8:  13.297 ms/step
+plain rep0 muse-routing rows  1:   4.279 ms/step
+plain rep0        base rows  8:  13.611 ms/step
+plain rep0 muse-routing rows 32:  28.244 ms/step
+plain rep0 muse-combine rows 32:  29.677 ms/step
+plain rep0        base rows 32:  28.609 ms/step
+plain rep0 experts-a7-unsubmitted rows 32:  23.539 ms/step
+plain rep0 compiled-all rows 32:  28.447 ms/step
+plain rep0 compiled-routing rows  1:   4.478 ms/step
+plain rep0 all+experts-a7 rows  8:  14.624 ms/step
+plain rep0 compiled-all rows  8:  13.241 ms/step
+plain rep0 muse-combine rows  8:  13.358 ms/step
+plain rep0 all+experts-a7 rows 32:  24.326 ms/step
+plain rep0 compiled-experts rows 32:  28.598 ms/step
+plain rep0 experts-a7-unsubmitted rows  8:  12.334 ms/step
+plain rep0 compiled-combine rows 32:  28.530 ms/step
+plain rep0  round1-all rows  8:  14.397 ms/step
+plain rep0  compiled-3 rows 32:  28.443 ms/step
+plain rep0 compiled-combine rows  1:   4.661 ms/step
+plain rep1 experts-a7-unsubmitted rows  1:   5.275 ms/step
+plain rep1 compiled-routing rows  8:  13.439 ms/step
+plain rep1        base rows  1:   4.739 ms/step
+plain rep1        base rows  8:  13.623 ms/step
+plain rep1 compiled-all rows 32:  28.481 ms/step
+plain rep1 experts-a7-unsubmitted rows  8:  12.595 ms/step
+plain rep1 muse-combine rows  8:  13.512 ms/step
+plain rep1 all+experts-a7 rows  1:   4.627 ms/step
+plain rep1 compiled-combine rows 32:  28.500 ms/step
+plain rep1    muse-all rows 32:  28.971 ms/step
+plain rep1 all+experts-a7 rows  8:  14.626 ms/step
+plain rep1 all+experts-a7 rows 32:  24.252 ms/step
+plain rep1    muse-all rows  1:   3.842 ms/step
+plain rep1  round1-all rows 32:  26.590 ms/step
+plain rep1 experts-a7-unsubmitted rows 32:  23.605 ms/step
+plain rep1  compiled-3 rows  1:   4.263 ms/step
+plain rep1 compiled-routing rows 32:  28.520 ms/step
+plain rep1 compiled-experts rows 32:  28.565 ms/step
+plain rep1 muse-routing rows 32:  28.081 ms/step
+plain rep1        base rows 32:  28.485 ms/step
+plain rep1 muse-combine rows 32:  29.499 ms/step
+plain rep1 compiled-combine rows  8:  13.490 ms/step
+plain rep1  compiled-3 rows  8:  12.978 ms/step
+plain rep1  round1-all rows  1:   5.770 ms/step
+plain rep1 compiled-all rows  1:   4.237 ms/step
+plain rep1 compiled-combine rows  1:   4.632 ms/step
+plain rep1 muse-routing rows  8:  13.260 ms/step
+plain rep1    muse-all rows  8:  12.765 ms/step
+plain rep1 muse-routing rows  1:   4.254 ms/step
+plain rep1 compiled-all rows  8:  13.095 ms/step
+plain rep1 compiled-experts rows  1:   4.695 ms/step
+plain rep1 compiled-routing rows  1:   4.497 ms/step
+plain rep1  compiled-3 rows 32:  28.378 ms/step
+plain rep1 compiled-experts rows  8:  13.579 ms/step
+plain rep1  round1-all rows  8:  14.973 ms/step
+plain rep1 muse-combine rows  1:   4.313 ms/step
+plain rep2  compiled-3 rows  8:  13.166 ms/step
+plain rep2  round1-all rows  1:   5.794 ms/step
+plain rep2 muse-routing rows 32:  28.054 ms/step
+plain rep2  round1-all rows  8:  14.287 ms/step
+plain rep2 muse-routing rows  1:   4.212 ms/step
+plain rep2 compiled-all rows  1:   4.269 ms/step
+plain rep2 compiled-experts rows  1:   4.587 ms/step
+plain rep2 compiled-routing rows  1:   4.385 ms/step
+plain rep2    muse-all rows 32:  28.924 ms/step
+plain rep2 all+experts-a7 rows  1:   4.367 ms/step
+plain rep2        base rows 32:  28.434 ms/step
+plain rep2 all+experts-a7 rows 32:  24.466 ms/step
+plain rep2        base rows  1:   4.980 ms/step
+plain rep2 experts-a7-unsubmitted rows 32:  23.642 ms/step
+plain rep2 experts-a7-unsubmitted rows  8:  12.361 ms/step
+plain rep2 compiled-routing rows  8:  13.388 ms/step
+plain rep2 muse-routing rows  8:  13.141 ms/step
+plain rep2 muse-combine rows 32:  29.654 ms/step
+plain rep2 muse-combine rows  1:   4.320 ms/step
+plain rep2 compiled-routing rows 32:  28.572 ms/step
+plain rep2 all+experts-a7 rows  8:  14.564 ms/step
+plain rep2  compiled-3 rows 32:  28.510 ms/step
+plain rep2 compiled-all rows 32:  28.413 ms/step
+plain rep2 compiled-all rows  8:  13.228 ms/step
+plain rep2 compiled-experts rows 32:  28.605 ms/step
+plain rep2        base rows  8:  13.845 ms/step
+plain rep2  compiled-3 rows  1:   4.244 ms/step
+plain rep2    muse-all rows  1:   3.790 ms/step
+plain rep2 muse-combine rows  8:  13.511 ms/step
+plain rep2    muse-all rows  8:  12.851 ms/step
+plain rep2  round1-all rows 32:  26.618 ms/step
+plain rep2 experts-a7-unsubmitted rows  1:   5.269 ms/step
+plain rep2 compiled-combine rows 32:  28.544 ms/step
+plain rep2 compiled-combine rows  8:  13.304 ms/step
+plain rep2 compiled-experts rows  8:  13.591 ms/step
+plain rep2 compiled-combine rows  1:   4.444 ms/step
+
+plain: median step ms over 3 repeats (change against base)
+  rows  1        base:   4.740 [4.739-4.980]
+  rows  1 compiled-routing:   4.478 [4.385-4.497] (-0.262 ms, -5.5%)
+  rows  1 muse-routing:   4.254 [4.212-4.279] (-0.486 ms, -10.3%)
+  rows  1 compiled-combine:   4.632 [4.444-4.661] (-0.108 ms, -2.3%)
+  rows  1 muse-combine:   4.316 [4.313-4.320] (-0.424 ms, -9.0%)
+  rows  1 compiled-all:   4.269 [4.237-4.289] (-0.472 ms, -10.0%)
+  rows  1    muse-all:   3.842 [3.790-3.967] (-0.898 ms, -19.0%)
+  rows  1 compiled-experts:   4.695 [4.587-4.709] (-0.045 ms, -1.0%)
+  rows  1 experts-a7-unsubmitted:   5.269 [5.268-5.275] (+0.529 ms, +11.2%)
+  rows  1  compiled-3:   4.263 [4.244-4.458] (-0.477 ms, -10.1%)
+  rows  1 all+experts-a7:   4.430 [4.367-4.627] (-0.310 ms, -6.5%)
+  rows  1  round1-all:   5.794 [5.770-5.898] (+1.054 ms, +22.2%)
+  rows  8        base:  13.623 [13.611-13.845]
+  rows  8 compiled-routing:  13.408 [13.388-13.439] (-0.215 ms, -1.6%)
+  rows  8 muse-routing:  13.141 [13.114-13.260] (-0.482 ms, -3.5%)
+  rows  8 compiled-combine:  13.304 [13.297-13.490] (-0.319 ms, -2.3%)
+  rows  8 muse-combine:  13.511 [13.358-13.512] (-0.112 ms, -0.8%)
+  rows  8 compiled-all:  13.228 [13.095-13.241] (-0.395 ms, -2.9%)
+  rows  8    muse-all:  12.851 [12.765-12.922] (-0.772 ms, -5.7%)
+  rows  8 compiled-experts:  13.579 [13.564-13.591] (-0.045 ms, -0.3%)
+  rows  8 experts-a7-unsubmitted:  12.361 [12.334-12.595] (-1.263 ms, -9.3%)
+  rows  8  compiled-3:  13.166 [12.978-13.237] (-0.457 ms, -3.4%)
+  rows  8 all+experts-a7:  14.624 [14.564-14.626] (+1.001 ms, +7.3%)
+  rows  8  round1-all:  14.397 [14.287-14.973] (+0.774 ms, +5.7%)
+  rows 32        base:  28.485 [28.434-28.609]
+  rows 32 compiled-routing:  28.572 [28.520-28.600] (+0.087 ms, +0.3%)
+  rows 32 muse-routing:  28.081 [28.054-28.244] (-0.404 ms, -1.4%)
+  rows 32 compiled-combine:  28.530 [28.500-28.544] (+0.045 ms, +0.2%)
+  rows 32 muse-combine:  29.654 [29.499-29.677] (+1.168 ms, +4.1%)
+  rows 32 compiled-all:  28.447 [28.413-28.481] (-0.038 ms, -0.1%)
+  rows 32    muse-all:  28.971 [28.924-29.052] (+0.486 ms, +1.7%)
+  rows 32 compiled-experts:  28.598 [28.565-28.605] (+0.113 ms, +0.4%)
+  rows 32 experts-a7-unsubmitted:  23.605 [23.539-23.642] (-4.880 ms, -17.1%)
+  rows 32  compiled-3:  28.443 [28.378-28.510] (-0.042 ms, -0.1%)
+  rows 32 all+experts-a7:  24.326 [24.252-24.466] (-4.159 ms, -14.6%)
+  rows 32  round1-all:  26.590 [26.521-26.618] (-1.895 ms, -6.7%)
+plain exit 0

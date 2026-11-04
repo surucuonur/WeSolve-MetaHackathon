@@ -136,7 +136,7 @@ The plan each round from round 2 on begins with, drawn from the earlier rounds a
 _Avoid_: recap, retrospective
 
 **Baseline** (of a slot):
-A slot's best attempt so far that passes the current G2, named in Claude's measurement of the previous round, which every new attempt for that slot must beat in the same grader run. A slot may have none.
+A slot's best attempt so far that passes the current G2 and that Claude's G3 accepted, named in Claude's measurement of the previous round; every new attempt for that slot must beat it in the same grader run. A slot may have none.
 _Avoid_: reference (that is the original MLX code and its compiled version)
 
 **Swarm**:

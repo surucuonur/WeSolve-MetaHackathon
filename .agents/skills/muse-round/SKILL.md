@@ -7,7 +7,7 @@ description: Run one round of the Muse agent on the MobileMoE-S decode kernels a
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. Committed on main and tagged `muse-code-era` before the first Muse Code session; each later version is committed before the round that uses it. [Who made what](../../../PROVENANCE.md).*
 
-**Skill version 5.** This file, the role cards and tracking.md are versioned together; [CHANGELOG.md](CHANGELOG.md) lists every version. Each round records the version it ran (see *Versions* in tracking.md).
+**Skill version 6.** This file, the role cards and tracking.md are versioned together; [CHANGELOG.md](CHANGELOG.md) lists every version. Each round records the version it ran (see *Versions* in tracking.md).
 
 You are the **lead** of a Muse Code session in your own worktree on the branch `muse-agent`. The first prompt names the Meta model you run as, the name your commit subjects start with, and the co-author line every commit ends with. `claude/muse-agent-brief.md` fixes the task, the slots, the tools and limits, the grader command and the pass criteria (G1, G2). Four ADRs change it in five ways:
 
@@ -15,7 +15,7 @@ You are the **lead** of a Muse Code session in your own worktree on the branch `
 2. **No attempt limit and no stop rule** (ADR 0006). The brief's *When a slot stops* no longer applies: you decide when a slot is done. Every graded attempt is committed, so the history shows every try.
 3. **A swarm** ([ADR 0007](../../../claude/adr/0007-muse-spark-swarm.md)). Helpers explore and build; you coordinate and commit.
 4. **Files** (ADR 0007, [ADR 0009](../../../claude/adr/0009-rounds-build-on-each-other.md)). Each round writes in its own **round folder**: round 1 at the top of `muse-spark/`, round N from 2 on in `muse-spark/round-<N>/`. It holds `exploration/` and `implementation/`, the round's shared documents, which replace `strategy.md`; `kernels/<slot-folder>/attempt-<M>/`; and `summary.md`. tracking.md writes it `<round>/`.
-5. **Rounds build on each other** (ADR 0009). A finished round's files are frozen: read them and cite them, and the hooks refuse any change to them. From round 2 on, a slot may have a **baseline**, the best attempt so far that passes the current G2, and a new attempt must beat it in the same grader run. A slot without one has a **starting point** instead: an earlier attempt to build from, which Claude's measurement names.
+5. **Rounds build on each other** (ADR 0009). A finished round's files are frozen: read them and cite them, and the hooks refuse any change to them. From round 2 on, a slot may have a **baseline**: the best attempt so far that passes the current G2 and that Claude's G3 accepted, faster than the unchanged model and the compiled reference at 1, 8 and 32 requests. A new attempt must beat it in the same grader run. A slot without one has a **starting point** instead: an earlier attempt to build from, which Claude's measurement names, with what kept it from being a baseline.
 
 The rest of the brief stands. The goal: kernels that pass G1 and G2, beat the compiled reference at 1, 8 and 32 rows and, where the slot has a baseline, beat it too, faster because they remove a cause you can name. The Muse agent was Muse Spark in round 1 and is Muse Wonder from round 2 ([ADR 0008](../../../claude/adr/0008-muse-wonder.md)); documents written in earlier rounds say "Muse Spark".
 
@@ -77,7 +77,7 @@ Commit it as exploration v1. **Done** when every slot has its baseline or starti
 
 ### 2. Exploration
 
-1. **Set up the folder.** Write `<round>/exploration/README.md` with a heading, its version line (v1, with skill version 5), the tracker (one row per territory) and `## Versions`, and an empty `log.md`.
+1. **Set up the folder.** Write `<round>/exploration/README.md` with a heading, its version line (v1, with skill version 6), the tracker (one row per territory) and `## Versions`, and an empty `log.md`.
 2. **Start the explorers and the verifier,** all at once.
    - **Round 1** starts with these territories:
 

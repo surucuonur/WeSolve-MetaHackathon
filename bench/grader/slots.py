@@ -211,13 +211,14 @@ def load_expert_weights():
 PROMPT_REQUESTS = (1, 8, 32)
 
 
-def capture_prefill(model, requests, with_weights=None):
+def capture_prefill(model, requests, with_weights=None, tokens=None):
     """Every layer's slot inputs in the first chunk of a prefill, as load_inputs.
 
     The same MoE.__call__ runs the prefill. With 128-token prompts and
     breakdown.py's 2,048-token chunks, 1, 8 and 32 requests give the slots
     127, 1,016 and 2,048 rows; from 60 rows MLX's own experts kernel changes
-    (gather_qmm_rhs). The prompts are time_candidates.py's.
+    (gather_qmm_rhs). The prompts are time_candidates.py's. *tokens* sets the
+    chunk's length per request instead, for requests x tokens rows.
     """
     import sys
 
@@ -238,8 +239,8 @@ def capture_prefill(model, requests, with_weights=None):
         return ref_combine(y, weights, shared)
 
     mx.random.seed(requests)
-    ids = mx.random.randint(0, 100000, (requests, 128))
-    chunk = min(bd.PREFILL_TOKENS // requests, ids.shape[1] - 1)
+    ids = mx.random.randint(0, 100000, (requests, max(128, (tokens or 0) + 1)))
+    chunk = tokens or min(bd.PREFILL_TOKENS // requests, 127)
     original = mobilemoe.MoE.__call__
     mobilemoe.MoE.__call__ = make_moe_call(routing, combine)
     try:
