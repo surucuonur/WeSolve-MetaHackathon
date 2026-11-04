@@ -68,3 +68,6 @@
 2026-11-04T18:31:48Z | checker-3 | re-checked hyp-3-routing-prefill after Unverified fix: check: pass (step-5 defect fixed, L275-277 carry full can't-see list; all 6 steps re-run)
 2026-11-04T18:32:07Z | lead | v18: hyp-3 candidate (routing attempt-6, checker pass); ready check next
 2026-11-04T18:53:47Z | lead | v19: ready-1 recorded (exit 1, verdict stands); hyp-1 + hyp-3 dropped
+2026-11-04T18:58:48Z | checker-final | checked round-3 final claims (Ready to test + summary.md): 7 defects, all last-digit rounding slips in median-vs-base cells (README L33-35/L37, summary L8); audit agrees, verdicts/predictions/combos/unverified/all-reference framing pass; fix digits, re-check next
+2026-11-04T18:59:52Z | checker-final | re-check pass: lead's 7 fixed rounding digits verified against ready-verdict.json, all 36 Ready-to-test cells reproduce, --audit agrees (exit 1, FAIL stands)
+2026-11-04T19:00:06Z | lead | round 3 finished: implementation v21, exploration v5, summary; checker-final pass

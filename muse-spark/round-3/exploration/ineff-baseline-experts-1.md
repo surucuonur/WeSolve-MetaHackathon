@@ -175,4 +175,50 @@ verifier, 2026-11-04T17:46:33Z — **confirmed**. Every claim the cost and the s
 
 ## From other agents
 
-(none yet)
+builder-2-c, 2026-11-04T18:05:23Z — direction (c) grouped/tiled replica
+graded as `muse-spark/round-3/kernels/experts/attempt-3`: G1 fail, no
+G2/timing. Cause is a Metal reserved word (`uint half` in
+`block-3.metal:dequant_tile_4bit`; `half` is the half-float type),
+not the grouped design (counting-sort + fused grouped MMA + select),
+whose prefill predictions (900/4,100/11,500 us/layer, `faster`
+everywhere) are untested, not refuted. One-line rename (`half` ->
+`part`) is the next change; full verdict in the attempt's `notes.md`
+and `grade.json`.
+
+builder-2-b, 2026-11-04T18:05:14Z — direction (b) priced, and it
+is not the lever. Attempt-2
+(`muse-spark/round-3/kernels/experts/attempt-2/`, G1+G2 pass,
+differ 0 all six) widened the prefill branch to 8 outputs per
+thread with 8 accumulators (8× fewer W/S/B issues, same
+per-output order): prefill timed 20,444/156,416/303,543
+µs/layer vs the starting point's 15,220/119,154/240,681, and
+within-run vs-compiled 18.4/23.1/18.6× vs 15.8/27.7/20.1× —
+no speedup (this run's machine was slower than the basis
+run's; the byte-identical decode path slowed too, so the
+within-run ratio is the signal). Cause: each k step's 8 FMAs
+depend on that step's loads and the k loop is unrolled
+nowhere, so the serial load→FMA depth stayed 768 while active
+threads fell 384→48 per group — the widening removed the
+cross-thread latency hiding without shortening any chain. A
+scalar-branch speedup must unroll or pipeline across k, not
+across outputs; the no-cross-row-reuse cause stands as the
+structural fix. Full arithmetic in the attempt's `notes.md`
+(§Miss analysis).
+
+builder-2-d, 2026-11-04T18:09:35Z — direction (c) passes G2 and prices
+the grouped design. Attempt-4
+(`muse-spark/round-3/kernels/experts/attempt-4/`, attempt-3 + `half` ->
+`part` rename only): G1 pass, G2 pass with `differ == 0` at all six
+sizes — the grouped prefill path (counting-sort + fused grouped MMA +
+select) is bit-exact, refuting the frag-mapping suspect. Prefill timed
+2,684/9,311/17,229 µs/layer vs compiled 1,006/4,073/7,417 (`slower`
+x3, 2.67/2.29/2.32x) — the scalar branch is gone (cross-run 5.7x/12.8x/
+14.0x faster than the starting point's 15,220/119,154/240,681) but the
+"compiled rate minus banked waste" prediction missed ~3x. Candidate
+causes, unprofiled: (1) `x` gathered 12x per tile (`g`-outer/`k`-inner
+nest, `block-2.metal:54-78`: 288 KB vs 24 KB gathers per tile group);
+(2) scalar-fed MMA (~34 TG loads + 2 barriers per `mma_step`) at 64
+threads/group behind ~19 KB TG; (3) partial-tile padding at small
+sizes. Decode verdicts match the starting point (slower/faster/faster)
+but overhead missed (+30/+44/+69 vs +3/+3/+4 predicted; ~24 µs/layer
+at 1 row unexplained). Full arithmetic in the attempt's `notes.md`.

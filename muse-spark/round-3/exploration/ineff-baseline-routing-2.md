@@ -139,4 +139,36 @@ verifier, 2026-11-04T17:41:11Z — **confirmed**. Every claim the cost and the s
 
 ## From other agents
 
-(none yet)
+builder-3-c, 2026-11-04T18:18:49Z — direction-(c) evidence from
+`muse-spark/round-3/kernels/routing/attempt-3/` (G1+G2 pass, 0 rows
+differing all six sizes; decode `same` ×3 at 66.1/96.1/109.5 vs
+compiled 64.7/95.4/103.9; prefill `slower` ×3 at 266.0/1098.3/2097.3
+vs 96.9/235.3/299.7; `grade.json` in the attempt folder):
+
+- The two-kernel split at `rows = 768` works and keeps G2: the
+  single-partition path with register-held expert chains (no `parts`,
+  19,888 B) is bit-exact at 1,016/2,048 rows, confirming feeding
+  changes without order changes keep G2 once more.
+- Prefill-big is consistent with most of the shape residual removed:
+  −15%/−17% vs the grade-phases anchor against a +6%/+3% slower
+  compiled bar. But cross-run and drift-confounded (the bar swung ~2×
+  between adjacent runs that hour), so the residency mechanism stays
+  unmeasured — a same-run `--baseline` re-grade is the proposed next
+  step (see the attempt's notes.md).
+- Three of this entry's suggested fixes are infeasible as stated:
+  (1) 8-chunks/group needs 8,192 `wsh` floats = 32,768 B before any
+  other array — over the cap alone; 6-chunks/group needs 36,272 B
+  with `parts` (34,224 B even at stride 60) — also over, so
+  attempt-4's notes' "stage 8, halve the barriers" does not fit;
+  (2) register-held partials in ONE kernel cannot shed `parts`,
+  because the final ordered partition-sum needs all partitions × 60
+  partials simultaneously visible (a gather scratch of up to 1,920
+  floats ≈ `parts` itself) — only the partitions = 1 regime (fixed
+  thread→expert ownership, no gather) can drop it, which is what the
+  split exploits; (3) sharding one expert's K across threads would
+  reorder its serial accumulation chain and fail bit-exact G2.
+- The split's decode cost is real (~2–3 µs copy/empty launch per
+  layer, as predicted from (reference − attempt-4)/11 kernels) and
+  flips `faster` to `same` when machine-state drift compresses
+  attempt-4's margin to coin-flip races (14/15/9 wins here).
+- builder-3-e, 2026-11-04T18:24:35Z — data point for the shape cost: direction-(b) attempt-5 (`muse-spark/round-3/kernels/routing/attempt-5/grade.json`, G1+G2 pass) shares w across 8 rows/group (25 barriers/group, 20,480 B footprint) and measures ~3.2 us/group overhead at prefill-big vs ~0.8 modeled — either ~2-us barriers (4x the 0.5 guess) or ~4x occupancy serialization from part[16] register pressure (inferred). Barrier/occupancy cost, not traffic, now dominates the GEMM-shaped kernel; details in the attempt's `notes.md`.

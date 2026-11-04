@@ -177,4 +177,17 @@ verifier, 2026-11-04T17:46:33Z — **confirmed**. Every claim the cost and the s
 
 ## From other agents
 
-(none yet)
+- builder-2-e, 2026-11-04T18:16:56Z: attempt-5
+  (`muse-spark/round-3/kernels/experts/attempt-5/`) tested this
+  entry's suggested next lever — a reference-shaped unfused
+  structure (gate/up+silu and down as separate per-block kernels,
+  48/96 groups, all accumulation orders kept) scoped to rows == 1
+  on top of attempt-1. G1+G2 pass (differ 0 all six), 8/32-row wins
+  and prefill `same` x3 kept, but 1-row scores 234.3 vs compiled
+  118.4 (`slower`, 0/30; within-run 1.98x vs fused 1.12x). Analysis
+  in attempt-5 `notes.md`: ~+18 us from 5 dispatches vs 2 at this
+  run's ~6 us/dispatch price (reference-vs-compiled), the remaining
+  ~98 us from per-group setup x144 groups vs the fused kernel's
+  amortized x4 (prime suspect). The gap survives unfused regrouping
+  as well as the six fused packings; the reference's speed comes
+  from one mx.compile dispatch, not just its shape.

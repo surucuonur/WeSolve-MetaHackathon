@@ -1,6 +1,6 @@
 # Exploration: round 3 — analysis
 
-**Version:** v4 · 2026-11-04T17:52:03Z · skill version 8
+**Version:** v5 · 2026-11-04T18:54:08Z · skill version 8
 
 ## Tracker
 
@@ -162,8 +162,21 @@ This round refuted nothing: the verifier confirmed all 10 inefficiencies.
 
 Each territory entry lists what it read and what each file gave: [territory-baseline-experts.md](territory-baseline-experts.md), [territory-baseline-routing.md](territory-baseline-routing.md), [territory-baseline-combine.md](territory-baseline-combine.md), [territory-g3.md](territory-g3.md), [territory-quantized-kernels.md](territory-quantized-kernels.md), [territory-grader.md](territory-grader.md).
 
+## What building taught
+
+The analysis corrected by what the attempts showed (see `../implementation/README.md`):
+
+1. **`max_rows` hand-offs bank prefill at `same`, exactly as designed.** Experts attempt-1 (`max_rows` 59) turned prefill `slower` × 3 into `same` × 3 with decode untouched; routing attempt-1/6 (`max_rows` 32) did the same. Claude's handoff-check pattern reproduces on both slots. The hand-off is graded like the rest and works — the blocker in both slots is elsewhere (experts 1-row decode, routing ready-check spread).
+2. **Exactness without volatiles is easy in two shapes; the in-step prize is real but spread-gated.** Both combine decontractions (noinline barriers, pragma FP_CONTRACT OFF) are bit-exact at all six sizes and faster everywhere in-grader. The ready-check medians show the +1.05 ms gone (−0.44 ms at 32 requests) — but one 1×128 rep at 5.892 ms fails G3's faster-in-every-workload bar. The mechanism (7 store→load pairs) is removed; what remains is paired spread on 7 plain ops, which no kernel change addresses.
+3. **The experts 1-row gap is structural, not a packing problem.** The unfused reference-shaped path (attempt-5) came out 2× worse than fused (234.3 vs 118.4): the reference's speed comes from one `mx.compile` dispatch amortizing per-group setup, not just its shape. Fused plateau (92–110 across six round-2 packings) plus unfused backfire leaves no third approach in the spec surface — there is no hand-off below a row count, only `max_rows` above it.
+4. **Grouped sharing is exact but overhead-dominated in both slots.** The routing GEMM kernel (attempt-5) is bit-exact and shares correctly (0.65×/0.43×/0.42× the staged-path anchor) but per-group overhead runs ~4× the model, leaving it 1.44–3.50× off at prefill; the experts grouped replica (attempt-4) is bit-exact at 2.3× off. Sharing works; barriers/occupancy eat it.
+5. **Pipeline threadgroup caps move with the kernel.** Routing's GEMM kernel reported max 640, then 576 on a near-identical recompile (whole-SIMD multiples, register allocation shifting ~11%). "Design under the reported cap" is wrong advice — design well under it, and treat per-thread registers as the hidden constraint (round 2's experts attempts hit the same wall at 512 threads).
+6. **Identical-code paired verdicts can hit exactly the `slower` threshold.** Routing attempt-1 went 8/30 at 2,048 rows on code that IS the compiled reference (medians within 2.7%). The committed one-run re-grade (attempt-6, 19/30, +0.2%) is the honest test — and the verdict it gives stands.
+7. **Per-slot spread gates compose favorably: `muse-all` passes where neither passes alone.** Routing+combine together beat base and compiled-all at every workload (decode `faster`, request `faster`, prompt `not slower`, same tokens) while each alone fails one overlap. The ready check earns its keep in both directions: it fails two would-be submissions Claude's G3 would likely fail, and it measures the combination that works.
+
 ## Versions
 
+- v5 · 2026-11-04T18:54:08Z · What building taught (hand-offs bank same, spread gates, structural 1-row, sharing overhead, moving caps, identical-code noise, muse-all passes) · changed: none (README only)
 - v4 · 2026-11-04T17:52:03Z · final analysis: context, territory map, 8 ranked inefficiencies in two phases, composition rule, recommendations, refuted claims · changed: ineff-baseline-experts-1 v2, ineff-baseline-experts-2 v2, ineff-baseline-combine-1 v2, ineff-g3-1 v2, ineff-g3-2 v2, ineff-g3-3 v2, ineff-quantized-kernels-1 v2, ineff-quantized-kernels-2 v2
 - v3 · 2026-11-04T17:46:24Z · checkpoint: all 6 territories done; routing-1/-2 confirmed (lead's premature-confirm flag was a mid-edit read, verdicts stand); combine + quantized-kernels posted · changed: territory-baseline-combine v2, territory-quantized-kernels v2, ineff-baseline-routing-1 v2, ineff-baseline-routing-2 v2, ineff-baseline-combine-1 v1, ineff-quantized-kernels-1 v1, ineff-quantized-kernels-2 v1
 - v2 · 2026-11-04T17:41:39Z · checkpoint: baseline-experts, baseline-routing, g3, grader done; 7 inefficiencies posted; routing premature confirms flagged to verifier · changed: territory-baseline-experts v2, territory-baseline-routing v2, territory-g3 v2, territory-grader v2, ineff-baseline-experts-1 v1, ineff-baseline-experts-2 v1, ineff-baseline-routing-1 v2, ineff-baseline-routing-2 v2, ineff-g3-1 v1, ineff-g3-2 v1, ineff-g3-3 v1

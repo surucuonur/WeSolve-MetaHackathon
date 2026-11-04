@@ -2,8 +2,8 @@
 
 - **Owner:** lead
 - **Status:** dropped
-- **Version:** 12
-- **Updated:** 2026-11-04T18:53:18Z
+- **Version:** 13
+- **Updated:** 2026-11-04T18:59:13Z
 - **Next:** none — slot keeps the reference; attempt-6 stands as the next round's starting point
 
 ## Inefficiency
@@ -260,7 +260,7 @@ Best attempt: `muse-spark/round-3/kernels/routing/attempt-6` (byte-identical to 
 
 Predicted change in whole requests (PREDICTION — stands beside the ready check's measured value once it runs): the decode step keeps the starting point's measured G3 (byte-identical decode path: −0.47/−0.43/−0.54 ms/step at 1/8/32 requests in vLLM); prompt time returns from 1.07–1.10× slower to compiled parity, recovering the +3.3/+19.1/+77.7/+662.5 ms prompt excess at 1×128/8×128/32×128/32×1024; whole-request throughput rises everywhere the decode win already shows (the −3.5% at 32×1024 was the prompt excess). Basis: [ineff-g3-3.md](../exploration/ineff-g3-3.md) prompt excess table and the prefill-piece composition rule (within ~15% where measurable).
 
-Ready-check outcome ([ready-verdict.json](../checks/ready-1/ready-verdict.json)): `muse-routing` FAILS (vs base pass — decode `faster`, request `faster`; vs compiled-routing fail — every phase `not slower`, none `slower`; same tokens true). Measured decode medians vs base: −0.39/−0.31/−0.59/−0.48 ms; vs compiled-routing the 8×128 ranges overlap (14.208 [14.199–14.451] vs 14.409 [14.312–14.584]), so G3's faster-in-every-workload bar fails. Dropped: the decode path is byte-identical to round-2 attempt-4 (which passed G3 in its run) and above `max_rows` the candidate IS the compiled reference — no kernel change can tighten paired spread on this code. The slot keeps the reference.
+Ready-check outcome ([ready-verdict.json](../checks/ready-1/ready-verdict.json)): `muse-routing` FAILS (vs base pass — decode `faster`, request `faster`; vs compiled-routing fail — every phase `not slower`, none `slower`; same tokens true). Measured decode medians vs base: −0.38/−0.31/−0.59/−0.48 ms; vs compiled-routing the 8×128 ranges overlap (14.208 [14.199–14.451] vs 14.409 [14.312–14.584]), so G3's faster-in-every-workload bar fails. Dropped: the decode path is byte-identical to round-2 attempt-4 (which passed G3 in its run) and above `max_rows` the candidate IS the compiled reference — no kernel change can tighten paired spread on this code. The slot keeps the reference.
 
 ## Failure ledger
 
