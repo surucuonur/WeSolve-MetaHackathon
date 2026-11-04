@@ -1,16 +1,18 @@
 # Exploration: round 4 — analysis
 
-**Version:** v1 · 2026-11-04T21:40:34Z · skill version 10
+**Version:** v2 · 2026-11-04T21:48:45Z · skill version 10
 
 ## Tracker
 
 | Territory | Agent | Status | Inefficiencies | Updated |
 |---|---|---|---|---|
-| `baseline-experts` | `explorer-baseline-experts` | open | — | 2026-11-04 21:40Z |
-| `baseline-routing` | `explorer-baseline-routing` | open | — | 2026-11-04 21:40Z |
-| `baseline-combine` | `explorer-baseline-combine` | open | — | 2026-11-04 21:40Z |
-| `g3` | `explorer-g3` | open | — | 2026-11-04 21:40Z |
-| `grader` | `explorer-grader` | open | — | 2026-11-04 21:40Z |
+| `baseline-experts` | `explorer-baseline-experts` | done | `ineff-baseline-experts-1` (refuted), `-2` (confirmed) | 2026-11-04 21:48Z |
+| `baseline-routing` | `explorer-baseline-routing` | done | `ineff-baseline-routing-1` (confirmed), `-2` (confirmed) | 2026-11-04 21:48Z |
+| `baseline-combine` | `explorer-baseline-combine` | done | `ineff-baseline-combine-1` (confirmed), `-2` (confirmed) | 2026-11-04 21:48Z |
+| `g3` | `explorer-g3` | done | `ineff-g3-1` (confirmed), `-2` (confirmed) | 2026-11-04 21:48Z |
+| `grader` | `explorer-grader` | done | — (notes on baseline-experts, g3, baseline-routing) | 2026-11-04 21:48Z |
+
+Verdicts: 7 confirmed, 1 refuted, 0 superseded, 0 open. All 5 territory entries `done`.
 
 ## Starting point
 
@@ -78,6 +80,55 @@ Each territory is opened by the line of this section that names it. A `baseline-
 | `g3` | "All three together" and items 1–3 of *What is left* — where the end-to-end change differs from the piece timing (the pair at 32×1024, the untested three-slot interaction), and why. |
 | `grader` | Round 4's three rule changes (ADR 0015) — how `min_rows`, `handed off` and the set rule are implemented in `bench/grader/slots.py`, `check_candidate.py` and `check_ready.py`, and what each still can't see. |
 
+*Corrections exploration made to this Starting point.* None to the per-slot facts: every starting-point number was re-derived from its cited file by the explorers and the verifier. Two additions: (1) the experts per-pair re-read entry (`ineff-baseline-experts-1`) was refuted as written for mixing two byte bases and must be restated on the counter basis (floor 2.33 ms/step at 32 rows) before anyone prices it; (2) the grader territory confirms the exact grading of a `min_rows: 2, max_rows: 59` experts attempt — sizes 1, 127, 1,016 and 2,048 `handed off`, decode `faster` requires both 8 and 32 rows faster — and that the ready check's set verdict is read from its `muse-all` entry, not a top-level pass flag.
+
+## Context
+
+A decode step produces one token per request; in vLLM the unchanged step takes 5.457 / 14.337 / 30.061 / 39.410 ms at 1×128 / 8×128 / 32×128 / 32×1024 (Claude's round-3 G3 medians). The MoE block runs in all 20 layers of every step, in decode and prefill alike; the three slots mirror its split, and each starting point already fuses its slot to 1 kernel per layer and passes G2 bit-exact at all six graded sizes (1, 8, 32 decode rows; 127, 1,016, 2,048 prefill rows). What remains is not launch count or exactness: it is the experts 1-row hand-off the new `min_rows` unlocks, the routing+combine pair's ~1% margin over the compiled reference at 32×1024, and whether three replaced slots compose at 8 requests. No slot has a baseline, so every saving is against the compiled reference.
+
+## Territory map
+
+| Territory | Receives | Passes on | Measured cost |
+|---|---|---|---|
+| `baseline-experts` | `x` [rows,768] bf16 and `inds` [rows,4] from routing; expert weights [60,…] | `y` [rows,4,768] bf16 in `inds` order to combine | Starting point 1 kernel/layer; 1 row `slower` (96.9 vs 86.6 µs/layer), wins at 8/32 (168.9/554.7 vs 238.2/883.4); per-pair re-reads unpriced after refutation |
+| `baseline-routing` | `x` from post-attention norm; `w_router` [60,768] f32, `bias` [60] f32 | `inds` to experts, `weights` to combine (order is part of G2) | Starting point 1 kernel/layer; decode margins 17.7/15.8/19.7 µs/layer over compiled; per-row `w_router` excess 0/6.5/28.6 µs/layer |
+| `baseline-combine` | `y` from experts, `weights` from routing, `shared` [rows,768] from shared expert | `out` [rows,768] bf16 to residual/next layer | Starting point 1 kernel/layer; `faster` at all six sizes; chained floor ~32 µs/layer at decode, bytes+compute ≤1.5 µs of it |
+| `g3` | The three starting points' piece timings and Claude's G3 | Composition gaps and set predictions to implementation | Pair keeps −0.36 of −0.66 ms/step piece win at 32×1024; three-slot term +2.13–2.86 ms/step at 8 requests, untested |
+| `grader` | References from model code; captured decode inputs; prefill chunks | The round-4 contract (`min_rows`, `handed off`, set rule) to builders and boundary | The contract, not a cost: what counts as identical, and how each size and set is priced |
+
+How they feed each other: layernorm → `baseline-routing` (`inds`/`weights`) → `baseline-experts` (`y`) → `baseline-combine` (`out`) → residual. `grader` sits across all three (what counts as identical, and how time is priced). `g3` sits across the whole step and the whole request (whether per-slot prices compose).
+
+## Inefficiencies, ranked
+
+Confirmed inefficiencies inside the slots, ranked by predicted saving against the compiled reference (no slot has a baseline). Decode shares are of the decode step; prefill effects are stated per chunk. Each item says what removing it does to the other phase and whether a hand-off keeps that phase unchanged.
+
+1. **The experts 1-row block is a hand-off, not a kernel problem** (starting point, `territory-baseline-experts.md`). With `min_rows: 2, max_rows: 59` the 1-row size is `handed off` and decode needs only 8 and 32 rows `faster` — both already `faster` by 69.3 / 328.7 µs per layer. Predicted (PREDICTION, same-run margins × 20 layers): `beats_compiled` true with decode `faster`, prefill `handed off`; end-to-end (additive, from `ineff-g3-2.md`) −0.44 / −1.76 / −7.12 / −6.94 ms per step vs `compiled-all` at 1×128 / 8×128 / 32×128 / 32×1024 in a three-slot set — at 1 request the experts slot contributes nothing (handed off), so the set passes there only on the pair. Other phase: prefill unchanged by construction (handed off above 59 rows). Cost: the 1-row loss 96.9 vs 86.6 µs/layer disappears from the verdict, not from the machine — with 1 request the slot runs MLX's own code, exactly as the bar does.
+2. **The pair's 32×1024 margin** (`ineff-g3-1.md`, confirmed, Claude's). The routing+combine pair keeps only −0.36 of its −0.66 ms/step piece win vs the compiled reference at 32×1024, and the 0.9% median gap sits inside the 5-repeat spread: ~0.17 ms/step more separation would have passed Claude's run. No mechanism is confirmed and no single-slot change is priced to recover it; the pools any widening must come from are items 3–4. A decode saving bought with prefill time is not one: routing keeps `max_rows: 32`, combine stays faster at prefill sizes.
+3. **`w_router` re-read once per row** (`ineff-baseline-routing-1.md`, confirmed). Traffic excess 0 / 6.5 / 28.6 µs per layer at 1 / 8 / 32 rows against decode margins of 17.7 / 15.8 / 19.7 — the excess exceeds the whole 32-row margin. Upper bound 0 / 0.13 / 0.57 ms per step (overlap-discounted, prediction). Prefill: 0 at every size by hand-off construction (`max_rows: 32` kept). Round 1's tiled-sharing attempt was slower everywhere, so this banks only if a sharing design holds the chained rate.
+4. **The staged scalar path's shape cost** (`ineff-baseline-routing-2.md`, confirmed). 27 barriers, a 23%-duty tail third and serial tails at decode sizes; bounded single-digit µs per layer (prediction). Overlaps item 3 (do not add). Prefill: 0 by hand-off.
+5. **The experts serial K-chain headroom** (`ineff-baseline-experts-2.md`, confirmed). 8/32 rows sit 80.4 / 200.8 µs per layer above their own byte floor (headroom 1.61 / 4.02 ms per step, 0 banked): grouped designs lost in both earlier rounds on duty-cycle ceilings, so this is headroom, not a plan. It matters only if the `min_rows` set fails and a faster 8/32-row kernel is needed. Prefill: handed off, unchanged.
+6. **Combine is at its floor** (`ineff-baseline-combine-1.md` confirmed with achievable saving 0; `ineff-baseline-combine-2.md` confirmed at ≤0.5 µs per layer, below paired noise). No bit-exact change inside the slot widens its decode margin; the ~32 µs/layer chained floor is dispatch, not bytes or compute. Do not chase either. Round 4 carries the starting point into the set with a byte-identical re-grade (the round-3 attempt-6 precedent), not a new kernel.
+
+Carried as a constraint, not a ranked build: **the three-slot interaction** (`ineff-g3-2.md`, confirmed) — +2.13 to +2.86 ms/step at 8 requests in rounds 1–2 against a −2.16 ms/step additive prediction. No single-slot change removes it; the ready check's `muse-all` is its first test with these kernels, and the fallback if the triple loses is the measured routing+combine pair.
+
+## Recommendations
+
+Confirmed inefficiencies outside the slots stand as written in round 1's and round 2's exploration READMEs (attention K/V re-read per query head; split-K partial traffic from 14 rows; the 60 q/k/v `[0]` gathers; engine CPU per 1-row step). Claude's round-3 measurement did not test them and this round raises no new outside-slot item. They are for surucuonur's team.
+
+## Refuted claims
+
+- `ineff-baseline-experts-1.md` (this round, refuted): the 32-row per-pair re-read floor mixed the pair-model byte count (70.78 MB/layer) with counter distinct bytes (22.15 MB/layer); restate on the counter basis (floor 2.33 ms/step at 32 rows) before pricing. The re-read itself is real; its price as written is not.
+- Round 3's experts 1-row kernel fixes (vectorised scalar, attempt-2; unfused path, attempt-5): bought nothing and 2× worse. Round 4 hands 1 row off instead.
+- Routing attempt-1's 2,048-row `slower` on byte-identical code: paired noise (attempt-6 re-grade, 19/30 `same`); handed-off sizes are no longer timed.
+- `ineff-runs-3` (round 1): micro sorted/unsorted gaps measure kernel choice, not pair order.
+- The independent (overlapped) piece timing as a ranking: refuted by the chained measurement. Round 4 ranks chained only.
+- Scalar sums cannot reproduce MMA rounding: refuted by building in round 2.
+
+## Files read
+
+Each territory entry's *Files read* list: [territory-baseline-experts.md](territory-baseline-experts.md), [territory-baseline-routing.md](territory-baseline-routing.md), [territory-baseline-combine.md](territory-baseline-combine.md), [territory-g3.md](territory-g3.md), [territory-grader.md](territory-grader.md).
+
 ## Versions
 
+- v2 · 2026-11-04T21:48:45Z · final analysis: 5 territories done, 7 confirmed 1 refuted, 6 ranked items · changed: territory-baseline-experts v2, territory-baseline-routing v2, territory-baseline-combine v2, territory-g3 v2, territory-grader v4, ineff-baseline-experts-1 v2, ineff-baseline-experts-2 v2, ineff-baseline-routing-1 v2, ineff-baseline-routing-2 v2, ineff-baseline-combine-1 v2, ineff-baseline-combine-2 v2, ineff-g3-1 v2, ineff-g3-2 v2
 - v1 · 2026-11-04T21:40:34Z · opened round 4 starting point, 5 territories · changed: none
