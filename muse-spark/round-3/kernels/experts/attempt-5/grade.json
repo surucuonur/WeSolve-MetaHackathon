@@ -1,0 +1,86 @@
+{
+ "slot": "experts",
+ "g1": true,
+ "g2": true,
+ "beats_compiled": false,
+ "correctness": {
+  "experts rows 1": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "experts rows 8": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "experts rows 32": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "experts prefill rows 127": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "experts prefill rows 1016": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "experts prefill rows 2048": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  }
+ },
+ "timing_us_per_layer": {
+  "rows 1": {
+   "reference": 154.3,
+   "candidate": 234.3,
+   "compiled": 118.4,
+   "wins_vs_compiled": 0,
+   "vs_compiled": "slower"
+  },
+  "rows 8": {
+   "reference": 248.4,
+   "candidate": 252.7,
+   "compiled": 291.7,
+   "wins_vs_compiled": 25,
+   "vs_compiled": "faster"
+  },
+  "rows 32": {
+   "reference": 815.4,
+   "candidate": 560.4,
+   "compiled": 802.4,
+   "wins_vs_compiled": 30,
+   "vs_compiled": "faster"
+  },
+  "prefill rows 127": {
+   "reference": 971.8,
+   "candidate": 967.2,
+   "compiled": 968.0,
+   "wins_vs_compiled": 16,
+   "vs_compiled": "same"
+  },
+  "prefill rows 1016": {
+   "reference": 3957.9,
+   "candidate": 3952.1,
+   "compiled": 3950.5,
+   "wins_vs_compiled": 14,
+   "vs_compiled": "same"
+  },
+  "prefill rows 2048": {
+   "reference": 7373.8,
+   "candidate": 7362.5,
+   "compiled": 7358.5,
+   "wins_vs_compiled": 14,
+   "vs_compiled": "same"
+  }
+ },
+ "phases_vs_compiled": {
+  "decode": "slower",
+  "prefill": "not slower"
+ }
+}

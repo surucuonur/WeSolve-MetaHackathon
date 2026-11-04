@@ -1,0 +1,86 @@
+{
+ "slot": "combine",
+ "g1": true,
+ "g2": true,
+ "beats_compiled": true,
+ "correctness": {
+  "combine rows 1": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "combine rows 8": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "combine rows 32": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "combine prefill rows 127": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "combine prefill rows 1016": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "combine prefill rows 2048": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  }
+ },
+ "timing_us_per_layer": {
+  "rows 1": {
+   "reference": 59.1,
+   "candidate": 31.8,
+   "compiled": 36.9,
+   "wins_vs_compiled": 24,
+   "vs_compiled": "faster"
+  },
+  "rows 8": {
+   "reference": 45.1,
+   "candidate": 34.7,
+   "compiled": 41.1,
+   "wins_vs_compiled": 27,
+   "vs_compiled": "faster"
+  },
+  "rows 32": {
+   "reference": 62.9,
+   "candidate": 32.7,
+   "compiled": 45.7,
+   "wins_vs_compiled": 30,
+   "vs_compiled": "faster"
+  },
+  "prefill rows 127": {
+   "reference": 85.1,
+   "candidate": 38.2,
+   "compiled": 64.0,
+   "wins_vs_compiled": 30,
+   "vs_compiled": "faster"
+  },
+  "prefill rows 1016": {
+   "reference": 419.6,
+   "candidate": 100.9,
+   "compiled": 281.8,
+   "wins_vs_compiled": 30,
+   "vs_compiled": "faster"
+  },
+  "prefill rows 2048": {
+   "reference": 828.9,
+   "candidate": 198.0,
+   "compiled": 556.2,
+   "wins_vs_compiled": 29,
+   "vs_compiled": "faster"
+  }
+ },
+ "phases_vs_compiled": {
+  "decode": "faster",
+  "prefill": "faster"
+ }
+}
