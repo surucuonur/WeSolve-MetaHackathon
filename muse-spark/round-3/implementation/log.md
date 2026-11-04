@@ -53,3 +53,7 @@
 2026-11-04T18:21:55Z | builder-3-d | graded attempt-4: G1 fail (threadgroup 600 > pipeline max 576 — cap moved from attempt-2's 640), no G2/timing; recorded in notes.md, hyp-3 section, ineff-baseline-routing-1 note
 2026-11-04T18:21:55Z | builder-3-d | done: one attempt graded and recorded; next change is 8-rows-per-group (480 threads) copy in a new attempt
 2026-11-04T18:22:23Z | lead | v13: routing-4 G1 fail (cap 576); ledger, fix at 8 rows/group next
+2026-11-04T18:22:45Z | builder-3-e | claimed muse-spark/round-3/kernels/routing/attempt-5 (direction b fix: 8 rows/group, 480 threads)
+2026-11-04T18:24:35Z | builder-3-e | graded attempt-5: G1+G2 pass (first direction-b kernel to run), decode faster/same/same, prefill slower x3, beats_compiled false; recorded in notes.md, hyp-3 section, ineff notes
+2026-11-04T18:24:35Z | builder-3-e | done: one attempt graded and recorded; next change is multi-block streaming per group (one w-staging, 2-4 sequential 8-row blocks) in a copied attempt
+2026-11-04T18:25:06Z | lead | v14: routing-5 GEMM exact but off (ledger, line ends); hyp-3 hardening, one re-grade of attempt-1

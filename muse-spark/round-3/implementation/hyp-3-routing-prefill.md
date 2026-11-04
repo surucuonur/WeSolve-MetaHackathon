@@ -1,10 +1,10 @@
 # Hypothesis 3: routing prefill at compiled speed
 
 - **Owner:** lead
-- **Status:** building
-- **Version:** 6
-- **Updated:** 2026-11-04T18:22:08Z
-- **Next:** builder-3-e tries 8 rows/group (480 threads) as attempt-5; best remains attempt-1 (re-grade decision after attempt-5)
+- **Status:** hardening
+- **Version:** 7
+- **Updated:** 2026-11-04T18:24:53Z
+- **Next:** builder-3-f re-grades a byte-identical copy of attempt-1 (one run only — tests the identical-code-noise call at 2048 rows)
 
 ## Inefficiency
 
@@ -174,6 +174,40 @@ the chained timing decides).
   the cap drops below 480 again, attack per-thread registers next
   (e.g. shrink `part[16]`), not just the group size (see notes.md).
 
+### builder-3-e — direction (b) fix: 8 rows per threadgroup (480 threads)
+
+Copy of attempt-4 with exactly attempt-4's notes' prescribed fix:
+kernel 1 goes from 10 to 8 rows per threadgroup (480 threads, grid
+stays `rows*60`, 60 still divides 480 so groups stay row-aligned with
+no bounds checks); `xst`/`sc` to 8x64, `Rg` cap and row stride 10->8,
+`wsh[4096]` and the `w`-staging bound unchanged (K-chunk geometry);
+threadgroup 21,504 -> 20,480 B; `block-0`/`block-1` byte-identical
+(`diff` empty). Predicted 53 / 117 / 124 / 57 / 256 / 485 us/layer
+(decode = attempt-4 + 3 us copy launch, byte-identical code; prefill =
+8x-cut traffic floors ~16 / ~125 / ~252 + barrier/wave allowances).
+
+- **attempt-5** (`muse-spark/round-3/kernels/routing/attempt-5/`):
+  G1 pass; G2 pass all six, differ 0 — the first direction-(b)
+  kernel to compile AND prove exact. Measured (`grade.json`):
+  decode 1/8/32 rows: 72.6 / 123.3 / 111.9 vs compiled 76.2 /
+  120.4 / 107.7 — `faster` (24) / `same` (10) / `same` (16);
+  original 78.0 / 118.6 / 127.1. Prefill 127/1,016/2,048 rows:
+  147.3 / 561.6 / 1,052.7 vs compiled 102.1 / 222.6 / 300.8 —
+  `slower` (3/0/0); original 109.8 / 244.9 / 325.7.
+  `phases_vs_compiled` decode `not slower`, prefill `slower`;
+  `beats_compiled` false. Taught: the sharing works (0.65x/0.43x/
+  0.42x the staged-path anchor at prefill, removing over half the
+  gap) but per-group overhead runs ~4x the model (~3.2 us/group vs
+  ~0.8: barriers ~2 us each or ~4x occupancy serialization from
+  `part[16]` register pressure, inferred) — 1.44x/2.52x/3.50x
+  slower than compiled, which shares `w_router` across all rows
+  while this re-stages it every 8. Decode verdicts are drift
+  compression (`same` on coin flips), not code cost. Next: a copied
+  new attempt staging each `w` chunk once per group while streaming
+  2-4 sequential 8-row blocks of `x` through it (traffic/row and
+  barriers/row fall 2-4x, no more threads, G2-safe); then shrink
+  live `part[16]` if occupancy still binds (see notes.md).
+
 ## Boundary checks
 
 ### attempt-1 — pass (boundary-3, 2026-11-04T18:14:51Z)
@@ -202,6 +236,7 @@ Still unverified (inherited can't-see items, for **Unverified**): hand-off exact
 - attempt-2 (GEMM-shaped sharing, 16 rows/group): G1 fail — kernel 1 asks 960 threads/group (16 rows × 60 experts), pipeline max is 640; no G2, no timing. Cause: compile error (threadgroup size), not a speed cause; fix is 10 rows/group (600 threads) in a copied attempt.
 - attempt-3 (drop `parts` where partitions = 1, two-kernel split at rows = 768): G1+G2 pass, decode `same` × 3 (66.1/96.1/109.5 vs 64.7/95.4/103.9; 14/15/9 wins — the ~2–3 µs copy launch flips `faster` to `same`), prefill `slower` × 3 (266.0/1,098.3/2,097.3 vs 96.9/235.3/299.7 — the traffic re-read dominates; shape residual removal consistent with −15%/−17% but drift-confounded). Cause: per-row re-read untouched plus copy-launch wiring cost at decode. Approach: narrower staged footprint. (Declined: the proposed `--baseline` re-grade — this round has no baselines, so no `--baseline` runs.)
 - attempt-4 (GEMM-shaped sharing, 10 rows/group): G1 fail — 600 threads/group against a pipeline max of 576 (the cap moved with the kernel: attempt-2's recompile reported 640); no G2, no timing. Cause: compile error (register allocation shifting the pipeline cap ~11% under recompilation, inferred). Fix: 8 rows/group (480 threads) in a copied attempt — inside round-1 attempt-2's proven-passing band.
+- attempt-5 (GEMM-shaped sharing, 8 rows/group): G1+G2 pass — first direction-(b) kernel to run, and exact. Decode `faster`/`same`/`same` (72.6/123.3/111.9 vs 76.2/120.4/107.7; 24/10/16 wins), prefill `slower` × 3 (147.3/561.6/1,052.7 vs 102.1/222.6/300.8; 3/0/0 wins — 1.44/2.52/3.50×). Cause: per-group overhead ~4× the model (~3.2 vs ~0.8 µs/group — barriers or occupancy serialization, inferred); sharing itself works (0.65×/0.43×/0.42× the staged-path anchor). Approach: GEMM-shaped sharing. Line ends: two gaps away (prefill 1.4–3.5× plus decode `same`→`faster` at 8/32), while attempt-1 is one noise-test away — hardening continues on attempt-1.
 
 ## Unverified
 
