@@ -1,0 +1,119 @@
+W1104 14:37:11.961000 96993 torch/_library/triton.py:53] Triton not available, find_triton_kernels = []
+(MainProcess pid=96993) WARNING 11-04 14:37:12 [arg_utils.py:1945] The global random seed is set to 0. Since VLLM_ENABLE_V1_MULTIPROCESSING is set to False, this may affect the random state of the Python process that launched vLLM.
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] `rope_parameters`'s high_freq_factor field must be greater than low_freq_factor, got high_freq_factor=1.0 and low_freq_factor=1.0
+[transformers] `rope_parameters`'s original_max_position_embeddings field must be less than max_position_embeddings, got 8192 and max_position_embeddings=8192
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from 'models/MobileMoE-S-QAT-mlx-bfloat16' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+vllm check        base rows  1: 967 kernels
+vllm check compiled-routing rows  1: 907 kernels, exact True
+vllm check muse-routing rows  1: 767 kernels, exact True
+vllm check compiled-combine rows  1: 927 kernels, exact True
+vllm check muse-combine rows  1: 887 kernels, exact True
+vllm check compiled-all rows  1: 867 kernels, exact True
+vllm check    muse-all rows  1: 687 kernels, exact True
+vllm check        base rows 32: 1087 kernels
+vllm check compiled-routing rows 32: 1027 kernels, exact True
+vllm check muse-routing rows 32: 887 kernels, exact True
+vllm check compiled-combine rows 32: 1047 kernels, exact True
+vllm check muse-combine rows 32: 1007 kernels, exact True
+vllm check compiled-all rows 32: 987 kernels, exact True
+vllm check    muse-all rows 32: 807 kernels, exact True
+vllm rep0 compiled-all rows  1 prompt 1024:   5.391 ms/step
+vllm rep0        base rows  1 prompt 7936:   8.207 ms/step
+vllm rep0 compiled-routing rows  1 prompt 7936:   8.018 ms/step
+vllm rep0 muse-combine rows  1 prompt 1024:   5.240 ms/step
+vllm rep0 compiled-all rows  1 prompt 7936:   7.778 ms/step
+vllm rep0        base rows  1 prompt 1024:   5.854 ms/step
+vllm rep0 muse-routing rows  1 prompt 1024:   5.452 ms/step
+vllm rep0 muse-combine rows  1 prompt 7936:   7.579 ms/step
+vllm rep0 muse-routing rows  1 prompt 7936:   7.830 ms/step
+vllm rep0 compiled-combine rows  1 prompt 1024:   5.588 ms/step
+vllm rep0    muse-all rows  1 prompt 7936:   7.335 ms/step
+vllm rep0    muse-all rows  1 prompt 1024:   4.907 ms/step
+vllm rep0 compiled-combine rows  1 prompt 7936:   7.955 ms/step
+vllm rep0 compiled-routing rows  1 prompt 1024:   5.674 ms/step
+vllm rep1 compiled-all rows  1 prompt 1024:   5.400 ms/step
+vllm rep1 compiled-all rows  1 prompt 7936:   7.789 ms/step
+vllm rep1 compiled-combine rows  1 prompt 1024:   5.584 ms/step
+vllm rep1    muse-all rows  1 prompt 7936:   7.280 ms/step
+vllm rep1 compiled-routing rows  1 prompt 1024:   5.672 ms/step
+vllm rep1        base rows  1 prompt 7936:   8.263 ms/step
+vllm rep1 muse-routing rows  1 prompt 1024:   5.448 ms/step
+vllm rep1    muse-all rows  1 prompt 1024:   4.911 ms/step
+vllm rep1        base rows  1 prompt 1024:   5.859 ms/step
+vllm rep1 compiled-combine rows  1 prompt 7936:   7.940 ms/step
+vllm rep1 muse-routing rows  1 prompt 7936:   7.826 ms/step
+vllm rep1 muse-combine rows  1 prompt 1024:   5.233 ms/step
+vllm rep1 compiled-routing rows  1 prompt 7936:   7.975 ms/step
+vllm rep1 muse-combine rows  1 prompt 7936:   7.570 ms/step
+vllm rep2        base rows  1 prompt 7936:   8.129 ms/step
+vllm rep2        base rows  1 prompt 1024:   5.716 ms/step
+vllm rep2    muse-all rows  1 prompt 1024:   4.807 ms/step
+vllm rep2 compiled-combine rows  1 prompt 1024:   5.353 ms/step
+vllm rep2 muse-routing rows  1 prompt 1024:   5.349 ms/step
+vllm rep2 compiled-combine rows  1 prompt 7936:   7.883 ms/step
+vllm rep2 compiled-routing rows  1 prompt 7936:   7.981 ms/step
+vllm rep2 compiled-all rows  1 prompt 7936:   7.767 ms/step
+vllm rep2 muse-combine rows  1 prompt 1024:   5.186 ms/step
+vllm rep2    muse-all rows  1 prompt 7936:   7.244 ms/step
+vllm rep2 muse-routing rows  1 prompt 7936:   7.848 ms/step
+vllm rep2 muse-combine rows  1 prompt 7936:   7.582 ms/step
+vllm rep2 compiled-all rows  1 prompt 1024:   5.234 ms/step
+vllm rep2 compiled-routing rows  1 prompt 1024:   5.453 ms/step
+vllm rep3 muse-combine rows  1 prompt 1024:   5.149 ms/step
+vllm rep3 muse-routing rows  1 prompt 7936:   7.808 ms/step
+vllm rep3 muse-routing rows  1 prompt 1024:   5.213 ms/step
+vllm rep3    muse-all rows  1 prompt 1024:   4.752 ms/step
+vllm rep3        base rows  1 prompt 1024:   5.613 ms/step
+vllm rep3 compiled-routing rows  1 prompt 1024:   5.439 ms/step
+vllm rep3 compiled-all rows  1 prompt 1024:   5.217 ms/step
+vllm rep3 compiled-combine rows  1 prompt 1024:   5.445 ms/step
+vllm rep3 muse-combine rows  1 prompt 7936:   7.524 ms/step
+vllm rep3        base rows  1 prompt 7936:   8.200 ms/step
+vllm rep3 compiled-routing rows  1 prompt 7936:   8.015 ms/step
+vllm rep3    muse-all rows  1 prompt 7936:   7.251 ms/step
+vllm rep3 compiled-combine rows  1 prompt 7936:   7.922 ms/step
+vllm rep3 compiled-all rows  1 prompt 7936:   7.704 ms/step
+vllm rep4 compiled-all rows  1 prompt 1024:   5.296 ms/step
+vllm rep4 compiled-routing rows  1 prompt 1024:   5.516 ms/step
+vllm rep4 muse-routing rows  1 prompt 1024:   5.324 ms/step
+vllm rep4 muse-combine rows  1 prompt 7936:   7.539 ms/step
+vllm rep4 compiled-combine rows  1 prompt 7936:   7.874 ms/step
+vllm rep4        base rows  1 prompt 7936:   8.208 ms/step
+vllm rep4 muse-combine rows  1 prompt 1024:   5.246 ms/step
+vllm rep4    muse-all rows  1 prompt 7936:   7.284 ms/step
+vllm rep4 muse-routing rows  1 prompt 7936:   7.792 ms/step
+vllm rep4 compiled-combine rows  1 prompt 1024:   5.473 ms/step
+vllm rep4    muse-all rows  1 prompt 1024:   4.868 ms/step
+vllm rep4 compiled-all rows  1 prompt 7936:   7.746 ms/step
+vllm rep4 compiled-routing rows  1 prompt 7936:   7.970 ms/step
+vllm rep4        base rows  1 prompt 1024:   5.678 ms/step
+
+vllm: median step ms over 5 repeats (change against base)
+  rows  1 prompt 1024        base:   5.716 [5.613-5.859]
+  rows  1 prompt 1024 compiled-routing:   5.516 [5.439-5.674] (-0.200 ms, -3.5%)
+  rows  1 prompt 1024 muse-routing:   5.349 [5.213-5.452] (-0.367 ms, -6.4%)
+  rows  1 prompt 1024 compiled-combine:   5.473 [5.353-5.588] (-0.243 ms, -4.2%)
+  rows  1 prompt 1024 muse-combine:   5.233 [5.149-5.246] (-0.483 ms, -8.5%)
+  rows  1 prompt 1024 compiled-all:   5.296 [5.217-5.400] (-0.421 ms, -7.4%)
+  rows  1 prompt 1024    muse-all:   4.868 [4.752-4.911] (-0.848 ms, -14.8%)
+  rows  1 prompt 7936        base:   8.207 [8.129-8.263]
+  rows  1 prompt 7936 compiled-routing:   7.981 [7.970-8.018] (-0.226 ms, -2.8%)
+  rows  1 prompt 7936 muse-routing:   7.826 [7.792-7.848] (-0.381 ms, -4.6%)
+  rows  1 prompt 7936 compiled-combine:   7.922 [7.874-7.955] (-0.285 ms, -3.5%)
+  rows  1 prompt 7936 muse-combine:   7.570 [7.524-7.582] (-0.637 ms, -7.8%)
+  rows  1 prompt 7936 compiled-all:   7.767 [7.704-7.789] (-0.440 ms, -5.4%)
+  rows  1 prompt 7936    muse-all:   7.280 [7.244-7.335] (-0.927 ms, -11.3%)
+G3 muse-routing vs base: pass {'decode': 'faster', 'prompt': 'not slower', 'request': 'faster'}
+G3 muse-routing vs compiled-routing: fail {'decode': 'not slower', 'prompt': 'not slower', 'request': 'faster'}
+G3 muse-combine vs base: pass {'decode': 'faster', 'prompt': 'not slower', 'request': 'faster'}
+G3 muse-combine vs compiled-combine: pass {'decode': 'faster', 'prompt': 'not slower', 'request': 'faster'}
+G3 muse-all vs base: pass {'decode': 'faster', 'prompt': 'not slower', 'request': 'faster'}
+G3 muse-all vs compiled-all: pass {'decode': 'faster', 'prompt': 'not slower', 'request': 'faster'}
+EXIT=0

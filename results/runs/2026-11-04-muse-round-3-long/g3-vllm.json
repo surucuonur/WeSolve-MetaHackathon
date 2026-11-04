@@ -1,0 +1,131 @@
+{
+ "muse-routing": {
+  "base": {
+   "pass": true,
+   "phases": {
+    "decode": "faster",
+    "prompt": "not slower",
+    "request": "faster"
+   },
+   "settings": {
+    "1x1024": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "1x7936": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    }
+   }
+  },
+  "compiled-routing": {
+   "pass": false,
+   "phases": {
+    "decode": "not slower",
+    "prompt": "not slower",
+    "request": "faster"
+   },
+   "settings": {
+    "1x1024": {
+     "decode": "same",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "1x7936": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    }
+   }
+  },
+  "g3": false
+ },
+ "muse-combine": {
+  "base": {
+   "pass": true,
+   "phases": {
+    "decode": "faster",
+    "prompt": "not slower",
+    "request": "faster"
+   },
+   "settings": {
+    "1x1024": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "1x7936": {
+     "decode": "faster",
+     "prompt": "faster",
+     "request": "faster"
+    }
+   }
+  },
+  "compiled-combine": {
+   "pass": true,
+   "phases": {
+    "decode": "faster",
+    "prompt": "not slower",
+    "request": "faster"
+   },
+   "settings": {
+    "1x1024": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "1x7936": {
+     "decode": "faster",
+     "prompt": "faster",
+     "request": "faster"
+    }
+   }
+  },
+  "g3": true
+ },
+ "muse-all": {
+  "base": {
+   "pass": true,
+   "phases": {
+    "decode": "faster",
+    "prompt": "not slower",
+    "request": "faster"
+   },
+   "settings": {
+    "1x1024": {
+     "decode": "faster",
+     "prompt": "faster",
+     "request": "faster"
+    },
+    "1x7936": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    }
+   }
+  },
+  "compiled-all": {
+   "pass": true,
+   "phases": {
+    "decode": "faster",
+    "prompt": "not slower",
+    "request": "faster"
+   },
+   "settings": {
+    "1x1024": {
+     "decode": "faster",
+     "prompt": "same",
+     "request": "faster"
+    },
+    "1x7936": {
+     "decode": "faster",
+     "prompt": "faster",
+     "request": "faster"
+    }
+   }
+  },
+  "g3": true
+ }
+}

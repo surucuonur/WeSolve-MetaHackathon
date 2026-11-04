@@ -220,8 +220,14 @@ def main():
         "--settings", default=G3_SETTINGS, metavar="ROWSxPROMPT,...",
         help="request counts and prompt lengths to time (G3: the default)",
     )
+    ap.add_argument(
+        "--max-model-len", type=int, default=2048,
+        help="vLLM's tokens per request, prompt and output (G3: the default; the model allows 8,192)",
+    )
     args = ap.parse_args()
     settings = [tuple(int(n) for n in s.split("x")) for s in args.settings.split(",")]
+    if args.engine == "vllm" and max(p for _, p in settings) + args.tokens > args.max_model_len:
+        ap.error(f"a prompt of {max(p for _, p in settings)} and {args.tokens} output tokens exceed --max-model-len")
     taken = [p for slot, _ in args.attempts for p in parts(slot)]
     if len(taken) != len(set(taken)):
         ap.error(f"two attempts replace the same part: {sorted(taken)}")
@@ -247,7 +253,7 @@ def main():
         llm = LLM(
             model=bd.MODEL,
             trust_remote_code=True,
-            max_model_len=2048,
+            max_model_len=args.max_model_len,
             max_num_seqs=32,
             max_num_batched_tokens=2048,
             # 32 rows x 384 tokens need 240 MiB; 32 x 1,280 need 800 MiB
