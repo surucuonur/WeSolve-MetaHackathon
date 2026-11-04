@@ -1,6 +1,6 @@
 # Implementation: round 2
 
-**Version:** v3 · 2026-11-04T03:43:13Z · skill version 5
+**Version:** v4 · 2026-11-04T03:47:53Z · skill version 5
 
 ## Tracker
 
@@ -13,6 +13,7 @@ Ranked item 1 (`ineff-g3-1`, the three-together interaction) is not opened as a 
 
 ## Versions
 
+- v4 · 2026-11-04T03:47:53Z · boundary checks pass for experts attempt-1/2 and routing attempt-1 · changed: hyp-1-experts-exact v4, hyp-2-routing-exact v4
 - v3 · 2026-11-04T03:43:13Z · experts attempts 1+2 and routing attempt 1 graded, all G2 pass · changed: hyp-1-experts-exact v3, hyp-2-routing-exact v3
 - v2 · 2026-11-04T03:32:10Z · boundaries drawn, 4 builders started · changed: hyp-1-experts-exact v2, hyp-2-routing-exact v2
 - v1 · 2026-11-04T03:29:15Z · opened implementation, hyp-1 (experts) and hyp-2 (routing) in boundary · changed: none

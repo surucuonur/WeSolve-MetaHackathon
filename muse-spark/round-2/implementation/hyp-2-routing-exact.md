@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 3
-- **Updated:** 2026-11-04T03:43:13Z
-- **Next:** boundary check for attempt-1; builder-2-b still running; hardening from attempt-1
+- **Version:** 4
+- **Updated:** 2026-11-04T03:47:53Z
+- **Next:** hardening from attempt-1 (fewer barriers, shared w tiles); builder-2-b attempt-2 pending
 
 ## Inefficiency
 
@@ -104,9 +104,45 @@ At most 1,024 threads per threadgroup and 32 KB of threadgroup memory ([muse-age
   (48x2 barriers/row, 7/8 tile waste, per-row w re-read), worst at
   32 rows. Next: same orders, fewer barriers, real rows in all tile rows.
 
+### builder-2-b — direction (b): minimal-change scalar exact fix
+
+- Attempt `muse-spark/round-2/kernels/routing/attempt-2`: starting point's
+  single kernel unchanged except the scores — one 32-thread threadgroup per
+  row, serial strictly-greater top-4 and `((w0+w1)+w2)+w3 +1e-20` weights
+  kept verbatim; sigmoid replaced by MLX's verbatim
+  `1/(1+precise::exp(abs(acc)))`, `(acc<0)?y:1-y`; product reordered
+  scalar-wise with no MMA intrinsics: GEMV tree at `rows==1` (32 lane
+  partials, lane `l` over `d=i*128+l*4+0..3`, `i=0..5`, then shuffle tree
+  16,8,4,2,1 emulated on the partial array) and split-K partition order at
+  `rows>1` (32 partitions: 31×BK=16 + last absorbing the remaining 272,
+  each partial serial in `d`, partials summed sequentially from 0).
+  Predicted ≈31/25/45 µs per layer at 1/8/32 rows (attempt-1's 28.5/23.6/41.8
+  ×1.08 for the extra partial/tree adds; baseline `none`, so no
+  `beats_baseline`). **G1 pass. G2 pass at all three decode sizes
+  (rows_differ 0/0/0, max rel err 0.0), fail at prefill: 127 rows 2,453 of
+  2,540 differ (first: layer 0 row 0, experts [59,55,13,5] both, weights
+  1–3 ULP off), 1,016 rows 20,128 of 20,320, 2,048 rows 40,453 of 40,960;
+  `rows_other_experts` 0 at all six sizes.** No timing: the grader times
+  only correct attempts, so `beats_compiled` is false and the prediction is
+  unmeasured (attempt-1's chained candidate/compiled for context:
+  54.9/91.4/114.8 vs 56.2/91.2/98.9). Taught: **scalar reordering is
+  bit-exact at decode sizes** — the MMA 8-product accumulation rounds
+  identically to a serial scalar sum over the same K order at 8/32 rows,
+  and the GEMV lane/tree grouping reproduces 1 row exactly; the prefill
+  failures are the by-design wrong grouping there (32 partitions vs MLX's
+  8 at 127, split-K form vs regular GEMM above 768), not evidence against
+  scalar emulation. Next (one change): branch partition geometry on `rows`
+  (8×96 at 127; single chunk-after-chunk accumulator above 768), rest of
+  this kernel unchanged.
+
 ## Boundary checks
 
-*(none yet)*
+- **boundary-2, 2026-11-04T03:47:21Z — `muse-spark/round-2/kernels/routing/attempt-1`: pass** (static audit of [block-0.metal](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/kernels/routing/attempt-1/block-0.metal:17) and [spec.json](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/kernels/routing/attempt-1/spec.json); no new grader run — the grader is a builder-only GPU job, and G2 already passed at all six sizes above).
+  - **Row counts other than the six graded, both sides of every regime boundary.** No graded value is special-cased: the branch is `rows == 1` (GEMV) vs `rows <= 768` (split-K) vs above (regular) ([block-0.metal:34](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/kernels/routing/attempt-1/block-0.metal:34), [block-0.metal:57](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/kernels/routing/attempt-1/block-0.metal:57)), which is exactly MLX's dispatch (`min(M,N)==1` → GEMV; split-K while `K=768 >= rows`; regular above). Split-K partition counts are computed from `rows`, and I re-derived them against MLX v0.32.4 `steel_gemm_splitk_axpby` (`min(max(2, next_power_of_2(48/((M+31)/32*2))), 32)`, `gemm_k_iterations = 48/partitions`, last partition absorbing the remainder in [steel_gemm_splitk.h:140](/Users/onur/Desktop/Github/Hackathon-muse/.venv/lib/python3.12/site-packages/mlx/include/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_splitk.h:140)): 2–32 rows → 32 partitions (1 BK=16 chunk each, last partition 17 chunks, [block-0.metal:68](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/kernels/routing/attempt-1/block-0.metal:68) with `c1 = 48` for the last), 33–64 → 16×3 chunks, 65–128 → 8×6, 129–256 → 4×12, 257–768 → 2×24, each tiling all 48 chunks exactly once in order. So ungraded decode 2–7 and 9–31 rows take the graded 8/32-row path, 768 rows is still split-K (2×24), and 769+ rows take the regular path (one partition, 48 chunks accumulated in order, [block-0.metal:104](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/kernels/routing/attempt-1/block-0.metal:104)), matching steel's sequential BK=16 walk. The internal partition-count transitions at 33/65/129/257 rows (and the clamp-to-2 at 385 rows, where MLX's ratio falls to 1) all follow the same formula. Per element, each partition is accumulated with the same two 8-wide `simdgroup_float8x8` ops per BK=16 chunk and partials are added in partition order, so the rounding order is a function of `rows` only through the regime, as required.
+  - **Unwritten threadgroup reads.** None found. `xsh[768]` is fully written cooperatively before the barrier at [block-0.metal:32](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/kernels/routing/attempt-1/block-0.metal:32); in the GEMV branch every `scores[e]`, e<60, is written exactly once by lane 0 of one simdgroup before the barrier at line 118; in the MMA branch `Ash[128]` is fully written by `tid < 128` and each simdgroup's `Bsh` segment by its own lanes before the barrier at line 94, `Csh` is stored by every simdgroup before the barrier at line 108, and only `Csh[sg*64 + j]` for e<60 is read into `scores`. The sigmoid rewrite (barrier at line 126) and the thread-0 scan are separated by barriers, and padded experts 60–63 in the last tile are masked on both the `Bsh` load (line 92) and the `scores` store (line 112), so no padded value is ever read as a score.
+  - **Threadgroup memory and threads.** `xsh + scores + Ash + Bsh + Csh` = (768+60+128+1024+512) × 4 B = 9,968 B of the 32 KB limit ([block-0.metal:23](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/kernels/routing/attempt-1/block-0.metal:23)), and the threadgroup is 256 of at most 1,024 threads ([spec.json](/Users/onur/Desktop/Github/Hackathon-muse/muse-spark/round-2/kernels/routing/attempt-1/spec.json)). Not near either limit at any row count — both are row-count independent.
+  - **Timing dependence.** None found: `atomic_outputs` is false, there are no atomics or scheduling-dependent reductions; split-K partials are summed in fixed partition order in a sequential `p` loop (lines 75–106), the GEMV shuffle tree is fixed (lines 45–49), all cross-threadgroup-phase data passes through `threadgroup_barrier`s (lines 32, 94, 102, 108, 118, 126), and a single thread (tid 0) performs the top-4 scan and writes all outputs (lines 128–163), so no result can depend on thread timing.
+  - **Captured-input assumptions, including unseen ties.** The kernel recomputes all 60 scores from `x`, `w_router` and `bias` for every row; it carries no captured values, no near-tie epsilon and no score-range clipping — the sigmoid is MLX's verbatim `1/(1+precise::exp(abs(s)))` branch form (lines 120–124), which saturates to 0/1 exactly as the reference does for large-magnitude scores. The strictly-greater insertion scan (lines 131–147) scans experts in ascending index order, so on an exact tie — including an unseen exact tie between the 4th and 5th biased scores, or ties inside the top 4 — the earliest index wins and tied pairs are emitted earliest-first; that is the reference's behaviour, since `mx.argpartition` is directed to a full merge sort of `-(scores+bias)` whose comparisons are strict (`LessThan`, sort.h), making the sort stable. Near-ties that are not exact are decided on the score bits themselves, which the regime-exact product and verbatim sigmoid reproduce. The only fixed constants are the slot's own `D=768, E=60, K=4`, which the slot contract fixes at every size.
 
 ## Decision
 
