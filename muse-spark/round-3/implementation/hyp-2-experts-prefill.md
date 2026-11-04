@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** building
-- **Version:** 5
-- **Updated:** 2026-11-04T18:05:59Z
-- **Next:** builder-2-b (attempt-2) still building; builder-2-d fixes attempt-3's reserved word as attempt-4
+- **Version:** 6
+- **Updated:** 2026-11-04T18:06:32Z
+- **Next:** builder-2-d fixes attempt-3's reserved word as attempt-4; best so far is attempt-1 (max_rows, prefill same x3)
 
 ## Inefficiency
 
@@ -271,6 +271,7 @@ run the kernels.
 ## Failure ledger
 
 - attempt-3 (grouped/tiled replica): G1 fail — `uint half` in block-3.metal, `half` is a reserved Metal type name; no G2, no timing. Cause: compile error, not a speed cause; fix is a rename in a copied attempt.
+- attempt-2 (vectorized per-pair scalar): G1+G2 pass, prefill `slower` x3 (20,444/156,416/303,543 vs compiled 1,113/6,775/16,333; within-run ratios 18.4/23.1/18.6× vs starting point's 15.8/27.7/20.1× — no speedup). Cause: serial depth stayed 768 (no k-unrolling) while active threads fell 384→48/group, removing cross-thread latency hiding without shortening any chain. Approach: per-pair scalar widening.
 
 ## Unverified
 

@@ -22,3 +22,4 @@
 2026-11-04T18:06:14Z | builder-2-b | graded attempt-2: G1+G2 pass (differ 0 all six), decode slower/faster/faster, prefill slower x3, beats_compiled false — direction (b) buys nothing
 2026-11-04T18:06:14Z | builder-2-b | done: verdict in notes.md + hyp-2 section, miss analysis in notes.md + ineff-baseline-experts-1 note
 2026-11-04T18:06:25Z | lead | v5: combine-2 G2 pass, experts-3 G1 fail (ledger); boundary check + fix builder next
+2026-11-04T18:06:45Z | lead | v6: experts-2 G2 pass but prefill slower (ledger); best remains attempt-1
