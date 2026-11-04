@@ -1,8 +1,8 @@
 # Hypothesis 3: combine carried into the set, byte-identical
 
 - **Owner:** lead
-- **Status:** candidate
-- **Version:** 4
+- **Status:** dropped
+- **Version:** 10
 - **Updated:** 2026-11-04T22:05:00Z
 - **Next:** boundary-3 writes the Boundary section
 
@@ -105,6 +105,8 @@ G1+G2 pass (`muse-spark/round-4/kernels/combine/attempt-1/grade.json`: `g1` true
 **Best (only) attempt: `muse-spark/round-4/kernels/combine/attempt-1`** — the byte-identical copy of the starting point, graded in this round: G1 pass, G2 differ 0 at all six sizes, `beats_compiled` true with both phases `faster` (decode 39.3 / 45.5 / 43.2 vs compiled 47.1 / 60.5 / 69.6 µs per layer, 25 / 25 / 30 wins; prefill 43.9 / 95.1 / 178.8 vs 66.9 / 284.1 / 567.2, 29 / 30 / 29 wins). No hardening change exists to name: exploration confirms the slot is at its chained floor and no bit-exact change widens its margin, so a second builder direction would be a second byte-identical grade. The attempt goes to the ready check as the combine member of the set.
 
 **Predicted change in whole requests (PREDICTION):** this slot's own contribution, from its same-run margins × 20 layers, is about −0.16 / −0.30 / −0.53 ms per decode step at 1 / 8 / 32 requests against the compiled reference; the set's whole-request change is measured only by the ready check and is not a sum of slots.
+
+**Ready check (measured, whole request):** `../checks/ready-1/ready-verdict.json` FAILS this attempt alone and in the three-slot set, and `../checks/ready-2/ready-verdict.json` FAILS it alone and in the routing+combine pair (every phase `not slower` in both runs — range overlaps, same tokens everywhere). Decode medians vs base: ready-1 +0.03 / −1.15 / −0.36 / +1.12 ms, ready-2 −0.44 / −1.04 / −1.21 / +0.58 ms at 1×128 / 8×128 / 32×128 / 32×1024. Against the PREDICTION above (−0.16 / −0.30 / −0.53 vs compiled): the 8/32-request medians meet or beat it in both runs; the 1-request and 32×1024 medians flip sign between runs. **Dropped:** no ready check remains, and spread names no kernel change (the slot is at its floor). Slot keeps the reference.
 
 ## Failure ledger
 

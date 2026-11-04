@@ -1,8 +1,8 @@
 # Hypothesis 1: experts with `min_rows` — hand 1 row to the compiled reference
 
 - **Owner:** lead
-- **Status:** candidate
-- **Version:** 9
+- **Status:** dropped
+- **Version:** 10
 - **Updated:** 2026-11-04T21:49:10Z
 - **Next:** builders grading
 
@@ -322,6 +322,8 @@ G1+G2 pass (`grade.json`: differ 0 / max_ulp 0.0 at all six sizes; `beats_compil
 **Best attempt: `muse-spark/round-4/kernels/experts/attempt-1`** (`min_rows: 2`, `max_rows: 59`, kernels byte-identical to the starting point). It passes G1, G2 (differ 0 at all six sizes) and its boundary check (`pass`), with `beats_compiled` true: decode `faster` at 8 and 32 rows (157.6 / 571.1 vs compiled 232.1 / 832.6 µs per layer, 30 wins each), 1-row and all prefill sizes `handed off`. Attempt-2 (`max_rows: 32`) also passes everything and is faster at 32 rows (538.1) but slower at 8 (170.5 vs 157.6); attempt-1 is picked because the 8-request workload is where the untested three-slot interaction (+2.13 to +2.86 ms/step, `ineff-g3-2`) bites, and because it keeps the starting point's full 2–59 kernel window. No hardening change is named: the kernels are unchanged by design and every kernel-level 1-row fix is refuted; the remaining cause (the 8/32-row chain headroom, `ineff-baseline-experts-2`) is a different hypothesis if the set fails.
 
 **Predicted change in whole requests (PREDICTION):** this slot alone adds nothing with 1 request (1 row handed off — MLX's own code runs) and, additively from its same-run piece margins × 20 layers, about −1.49 ms per decode step at 8 requests and −5.23 ms at 32 requests against the compiled reference (`ineff-g3-2.md` arithmetic); prompts unchanged (handed off). The ready check replaces this prediction with a measurement; the three-slot interaction may take some of it back at 8 requests.
+
+**Ready check (measured, whole request):** `../checks/ready-1/ready-verdict.json` FAILS this attempt alone and in the three-slot set (`muse-all` fail vs base and vs compiled-all; every phase `not slower` — range overlaps, same tokens everywhere). Decode medians vs base +0.06 / −1.57 / −4.02 / −5.09 ms at 1×128 / 8×128 / 32×128 / 32×1024: alone it adds nothing at 1 request exactly as predicted (1 row handed off), and the set it could hide in is slower at 8×128 (+0.32 ms/step, the three-slot interaction). Against the PREDICTION above (−1.49 at 8, −5.23 at 32 vs compiled): the 8-request decode gain measured −1.57 vs base, the 32-request gains −4.02 / −5.09 — the kernel's speed is real; the verdict is spread plus the set's 8-request loss. **Dropped:** no ready check remains (two used), and no kernel change addresses 5-repeat spread. Slot keeps the reference.
 
 ## Failure ledger
 

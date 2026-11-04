@@ -1,8 +1,8 @@
 # Hypothesis 2: widen the routing decode margin
 
 - **Owner:** lead
-- **Status:** candidate
-- **Version:** 7
+- **Status:** dropped
+- **Version:** 10
 - **Updated:** 2026-11-04T21:49:10Z
 - **Next:** builders grading
 
@@ -157,6 +157,8 @@ unchanged (256 threads, 28,080 B; registers only).
 **Best attempt: `muse-spark/round-4/kernels/routing/attempt-1`** (direction b: dead `parts[]` zeroing removed by first-touch initialisation, everything else byte-identical to the starting point, `max_rows: 32`). It passes G1, G2 (0 rows differ at all six sizes) and its boundary check (`pass`), with `beats_compiled` true: decode `faster` at all three sizes (58.5 / 136.9 / 74.7 vs compiled 86.1 / 157.3 / 92.1 µs per layer, 30 / 26 / 30 wins), prefill `handed off`. Direction (a) (attempt-2, `w_router` shared across 4 rows) is bit-exact and passes, but its 32-row margin narrowed to 8.3 µs/layer against the starting point's ~19.7 — sharing cost more partition parallelism than the re-read was worth at decode sizes. The hardening attempt-3 (tail-group feeding on attempt-1) is bit-exact, passes its boundary check, and is `faster` everywhere, but its margins (16.9 / 11.6 / 13.0 µs/layer in its run) do not widen attempt-1's (27.6 / 20.4 / 17.4 in its run); chained absolutes drift between runs, and on same-run margins — the only transferable basis — no attempt beats attempt-1 at all three sizes. No further single change is named: the two priced pools (`ineff-baseline-routing-1`, `-2`) have each had their simplest exact attack, and both remaining ideas are the other direction's, already graded.
 
 **Predicted change in whole requests (PREDICTION):** from attempt-1's same-run margins × 20 layers, about −0.55 / −0.41 / −0.35 ms per decode step at 1 / 8 / 32 requests against the compiled reference, prompts unchanged (`max_rows: 32` hand-off). This replaces the starting point's contribution to the pair; whether the pair's 32×1024 gap (~0.17 ms/step short, `ineff-g3-1`) closes is measured only by the ready check, in the set.
+
+**Ready check (measured, whole request):** `../checks/ready-1/ready-verdict.json` FAILS this attempt alone and in the three-slot set, and `../checks/ready-2/ready-verdict.json` FAILS it alone and in the routing+combine pair (every phase `not slower` in both runs — range overlaps, same tokens everywhere). Decode medians vs base: ready-1 −0.45 / −0.14 / +0.51 / +0.33 ms, ready-2 −0.78 / −0.46 / −0.42 / −1.28 ms at 1×128 / 8×128 / 32×128 / 32×1024 (run-to-run sign flips at 32 rows; the machine's spread is the story). Against the PREDICTION above (−0.55 / −0.41 / −0.35 vs compiled): medians are in the predicted band in ready-2 and mixed in ready-1; no run separates the ranges. **Dropped:** no ready check remains, and spread names no kernel change. Slot keeps the reference.
 
 ## Failure ledger
 
