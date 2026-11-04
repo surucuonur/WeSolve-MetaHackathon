@@ -61,3 +61,5 @@
 2026-11-04T18:26:07Z | builder-3-f | graded attempt-6: G1+G2 pass, decode faster x3 (28/27/25), prefill same x3 (13/16/19) — 2048-row slower did NOT reproduce, beats_compiled true
 2026-11-04T18:26:07Z | builder-3-f | done: verdict in notes.md + hyp-3 section; identical-code-noise call confirmed, no miss to explain; next is lead decision on boundary/ready check
 2026-11-04T18:26:37Z | lead | v15: routing-6 beats_compiled true (noise not reproduced); boundary check next
+2026-11-04T18:27:02Z | boundary-3 | checked attempt-6: pass by adoption of attempt-1 pass (diff -q empty on block-0/block-1/spec.json; max_rows 32 int; 2048-row slower not reproduced, noise confirmed)
+2026-11-04T18:27:26Z | lead | v16: hyp-3 closing on attempt-6 (Decision), checker-3 next

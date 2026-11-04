@@ -1,6 +1,6 @@
 # Implementation: round 3
 
-**Version:** v15 · 2026-11-04T18:26:21Z · skill version 8
+**Version:** v16 · 2026-11-04T18:27:11Z · skill version 8
 
 ## Tracker
 
@@ -16,6 +16,7 @@ Ranked decode item 1 (`ineff-g3-2`, the three-way interaction at 8 requests) is 
 
 ## Versions
 
+- v16 · 2026-11-04T18:27:11Z · hyp-3 closing (attempt-6 best, boundary pass, Decision written, checker started) · changed: hyp-3-routing-prefill v9
 - v15 · 2026-11-04T18:26:21Z · routing attempt-6 graded (identical copy, 2048 slower not reproduced, beats_compiled true — best); boundary check next · changed: hyp-3-routing-prefill v8
 - v14 · 2026-11-04T18:24:53Z · routing attempt-5 graded (GEMM exact, prefill 1.4-3.5x off — line ends); hyp-3 hardening on attempt-1, one re-grade to test noise · changed: hyp-3-routing-prefill v7
 - v13 · 2026-11-04T18:22:08Z · routing attempt-4 graded (G1 fail, pipeline cap moved 640→576); ledger, one more fix at 8 rows/group · changed: hyp-3-routing-prefill v6

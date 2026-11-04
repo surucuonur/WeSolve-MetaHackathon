@@ -2,9 +2,9 @@
 
 - **Owner:** lead
 - **Status:** hardening
-- **Version:** 8
-- **Updated:** 2026-11-04T18:26:21Z
-- **Next:** boundary-3 checks attempt-6 (G2 pass, beats_compiled true); then Decision + checker-3
+- **Version:** 9
+- **Updated:** 2026-11-04T18:27:11Z
+- **Next:** checker-3 verifies the close; best is attempt-6, no further change worth making
 
 ## Inefficiency
 
@@ -250,9 +250,15 @@ G1+G2 pass (`grade.json`: 0 rows differing at all six sizes). Kernels byte-ident
 
 Still unverified (inherited can't-see items, for **Unverified**): hand-off exactness above `max_rows` at untested sizes (compiled-vs-reference beyond the six graded); sizes above 2,048; prefill beyond the first seeded-random chunk; other prompts, later decode steps, layers' drift, unseen exact 4th/5th ties; score magnitudes saturating the sigmoid differently; whole-request noise at 1 request. `check_sizes.py` not run (boundary tooling, not a gate; nothing kernel-visible left ungraded below the hand-off).
 
+### attempt-6 — pass by adoption of attempt-1's pass (boundary-3, 2026-11-04T18:26:53Z)
+
+G1+G2 pass (`grade.json`: 0 rows differing at all six sizes), decode `faster` × 3 (28/27/25), prefill `same` × 3 (13/16/19), `beats_compiled` true. I confirmed byte-identity myself: `diff -q` of `block-0.metal`, `block-1.metal` and `spec.json` between `muse-spark/round-3/kernels/routing/attempt-1/` and `muse-spark/round-3/kernels/routing/attempt-6/` is empty on all three (`diff -r` differs only in `grade.json` — the new run's own verdict — and `notes.md` — the new run's own write-up); `spec.json` carries `"max_rows": 32` (JSON int, not bool). Reason for adoption: the graded artifact (kernels + spec) is bit-for-bit the same bytes the attempt-1 check above verified line by line against this Boundary — same staged scalar decode path, same hand-off value at the bottom of the 32–126 window, same empty-by-construction 33–126 band, same 28,080 B threadgroup footprint, same barriers and emitted-order fold — so every attempt-1 finding (decode ≤ `max_rows`, no 60-row switch for this slot, ungraded decode counts in-kind, no unwritten threadgroup reads, no thread-timing dependence, no new input assumptions) transfers unchanged, and the inherited can't-see items transfer unchanged too. The only new datum is the fresh paired timing, which removes attempt-1's adopted noise note: the 2,048-row `slower` did not reproduce (19/30 wins, +0.2%), confirming it was verdict-level noise on identical code, not a boundary defect. No defect; nothing re-verified independently because there is nothing new to verify — re-running the same checks on the same bytes could only restate them.
+
 ## Decision
 
-(none yet)
+Best attempt: `muse-spark/round-3/kernels/routing/attempt-6` (byte-identical to attempt-1: starting-point staged kernels plus `"max_rows": 32`). It passes G1, G2 bit-exact at all six sizes (0 rows differing), its boundary check (pass by adoption of attempt-1's line-by-line pass, byte-identity verified), and `beats_compiled` (decode `faster` × 3, 28/27/25 wins; prefill `same` × 3, 13/16/19 wins; no baseline exists). It is the only attempt with `beats_compiled` true: the GEMM-sharing line proved exact but stays 1.44/2.52/3.50× off at prefill with decode `same` at 8/32 rows (attempt-5), and the narrower-footprint line added a copy launch that flipped decode to `same` (attempt-3). No further change is worth making: above `max_rows` the candidate IS the compiled reference, and at decode sizes it runs the already-winning staged path.
+
+Predicted change in whole requests (PREDICTION — stands beside the ready check's measured value once it runs): the decode step keeps the starting point's measured G3 (byte-identical decode path: −0.47/−0.43/−0.54 ms/step at 1/8/32 requests in vLLM); prompt time returns from 1.07–1.10× slower to compiled parity, recovering the +3.3/+19.1/+77.7/+662.5 ms prompt excess at 1×128/8×128/32×128/32×1024; whole-request throughput rises everywhere the decode win already shows (the −3.5% at 32×1024 was the prompt excess). Basis: [ineff-g3-3.md](../exploration/ineff-g3-3.md) prompt excess table and the prefill-piece composition rule (within ~15% where measurable).
 
 ## Failure ledger
 
@@ -265,8 +271,11 @@ Still unverified (inherited can't-see items, for **Unverified**): hand-off exact
 
 ## Unverified
 
-(at least the boundary's *can't see* list, once written)
+- Row counts the grader doesn't test (boundary's *can't see* list): rows ≤ 32 run the staged path's identical lines (verified at 1/8/32 plus, for the starting point, 25 check_sizes counts); rows 33+ hand off to the compiled reference by construction.
+- The 2,048-row `slower` verdict rate on identical code: one 8/30 event in two runs — the ready check and G3 re-time the attempt independently.
+- Prompt recovery magnitude rests on the prefill-piece composition rule (within ~15% where measurable); the ready check measures it.
+- Composition with the combine candidate (pairwise and three-way terms): the ready check times routing-alone and all-together.
 
 ## Checks
 
-(none yet)
+(checker-3 to write)
