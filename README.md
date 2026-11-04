@@ -25,12 +25,12 @@ A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by
 
 [claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs.
 
-Next: a Meta model working in Muse Code, Meta's own coding agent, works as a swarm of agents: Muse Spark in round 1, Muse Wonder Full from round 2. They analyse the code and these findings together, then write GPU kernels against the inefficiencies they confirm. An independent grader checks them, and each round must beat the best kernels of the rounds before it ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md), [ADR 0007](claude/adr/0007-muse-spark-swarm.md), [ADR 0008](claude/adr/0008-muse-wonder-full.md), [ADR 0009](claude/adr/0009-rounds-build-on-each-other.md)).
+Next: a Meta model working in Muse Code, Meta's own coding agent, works as a swarm of agents: Muse Spark in round 1, Muse Wonder Full from round 2. They analyse the code and these findings together, then write GPU kernels against the inefficiencies they confirm. An independent grader checks them, and each round must beat the best kernels of the rounds before it ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md), [ADR 0007](claude/adr/0007-muse-spark-swarm.md), [ADR 0008](claude/adr/0008-muse-wonder.md), [ADR 0009](claude/adr/0009-rounds-build-on-each-other.md)).
 
 ## How Meta's models are used
 
 - **MobileMoE-S** (open weights) is the model under study, served by vLLM through vllm-metal. The baseline serves the int4 `facebook/MobileMoE-S-QAT` ([why](claude/adr/0002-int4-qat-baseline.md)); the bfloat16 `facebook/MobileMoE-S-SFT` is used to check the port.
-- **The Muse agent** works in **Muse Code**, Meta's own coding agent, started only with `tools/muse-agent/start.sh`: **Muse Spark** (`muse-spark-1.3-contributor`; Meta Model API) in round 1, **Muse Wonder Full** (Muse Code subscription) from round 2.
+- **The Muse agent** works in **Muse Code**, Meta's own coding agent, started only with `tools/muse-agent/start.sh`: **Muse Spark** (`muse-spark-1.3-contributor`; Meta Model API) in round 1, **Muse Wonder** (`muse-wonder-1.0`; Meta Model API) from round 2.
   - Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md). In it, the Muse agent works as a swarm:
     - explorers, one per part of the code or the measurements, write a shared analysis;
     - competing builders write fused GPU kernels for the top inefficiencies and run the grader on them;
@@ -48,7 +48,7 @@ Every commit is made by **surucuonur**. The co-author on each commit shows whose
 |---|---|---|
 | **surucuonur** | Direction, decisions, running the machine, starting the Muse agent's sessions | every commit |
 | **Claude Code** (Claude Opus 5.5) | Benchmark, grader and provenance code, measurements, write-ups, the Muse agent's brief and round skill | `bench/`, `claude/`, `tools/`, `.agents/skills/`, this README. Commits co-authored by `claude`. |
-| **The Muse agent**, in Muse Code: Muse Spark (`muse-spark-1.3-contributor`) in round 1, Muse Wonder Full from round 2 | Its analysis, hypotheses, kernels, phase logs and session transcripts | `muse-spark/`, on the branch `muse-agent`. Commits co-authored by "Muse Spark" (round 1) or "Muse Wonder Full" (round 2 on). |
+| **The Muse agent**, in Muse Code: Muse Spark (`muse-spark-1.3-contributor`) in round 1, Muse Wonder from round 2 | Its analysis, hypotheses, kernels, phase logs and session transcripts | `muse-spark/`, on the branch `muse-agent`. Commits co-authored by "Muse Spark" (round 1) or "Muse Wonder" (round 2 on). |
 | **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, Meta's model weights | `third_party/` at pinned commits, plus the installed wheels |
 
 Git hooks refuse commits that mix the two, and `tools/provenance_check.py` audits the whole history. [PROVENANCE.md](PROVENANCE.md) gives the details and the commands to check them.

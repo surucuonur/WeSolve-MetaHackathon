@@ -1,7 +1,7 @@
 """Shared rules for keeping the Muse agent's work apart from Claude's (PROVENANCE.md).
 
 The Muse agent is the Meta model working on muse-agent in a round: Muse Spark
-in round 1, Muse Wonder Full from round 2 (claude/adr/0008-muse-wonder-full.md).
+in round 1, Muse Wonder from round 2 (claude/adr/0008-muse-wonder.md).
 Used by the git hooks in tools/githooks/, tools/provenance_check.py,
 tools/export_transcript.py and tools/muse-agent/start.sh.
 """
@@ -30,6 +30,10 @@ MUSE_AUTHORS = {
         "Muse Wonder Full",
         "Co-Authored-By: Muse Wonder Full (Muse Code) <muse-wonder-full@muse-code.invalid>",
     ),
+    "muse-wonder-": (
+        "Muse Wonder",
+        "Co-Authored-By: Muse Wonder (Meta Model API) <muse-wonder@meta-model-api.invalid>",
+    ),
 }
 SECRET_NAMES = ("MODEL_API_KEY", "HUGGINGFACE_API_KEY")
 # In the main checkout; the second holds the key tools/muse-agent/start.sh uses.
@@ -53,9 +57,10 @@ def is_muse(name):
 
 def muse_author(model):
     """(name, co-author line) for a Meta model id, such as muse-spark-1.3-contributor."""
-    for prefix, author in MUSE_AUTHORS.items():
+    # The longest prefix wins, so muse-wonder-full- is never read as muse-wonder-.
+    for prefix in sorted(MUSE_AUTHORS, key=len, reverse=True):
         if model.startswith(prefix):
-            return author
+            return MUSE_AUTHORS[prefix]
     raise ValueError(f"no Muse author for model {model!r}; add it to MUSE_AUTHORS")
 
 

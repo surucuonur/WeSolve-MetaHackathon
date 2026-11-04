@@ -4,7 +4,7 @@ Checks, over the history of the given branches (default: HEAD, plus
 muse-agent when it exists):
 
 - every commit is authored and committed by surucuonur;
-- no commit names both a Muse agent (Muse Spark, Muse Wonder Full) and Claude as
+- no commit names both a Muse agent (Muse Spark, Muse Wonder) and Claude as
   co-authors;
 - from the tag agent-era on: Muse agent commits change only muse-spark/, and
   every other commit that isn't a merge of muse-agent leaves muse-spark/ alone;

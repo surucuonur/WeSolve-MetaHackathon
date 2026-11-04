@@ -10,7 +10,7 @@ The hackathon rules require judges to tell what was built during the event, and 
 |---|---|---|---|
 | **surucuonur** (the entrant) | Direction and every decision; ran the machine; started the Muse agent's sessions; reviewed the results | every commit | Author and committer of every commit |
 | **Claude Code** (Claude Opus 5.5, Anthropic) | The benchmark, grader and provenance code, the measurements, every write-up, and Muse Spark's brief and round skill | `bench/`, `claude/`, `tools/`, `.agents/skills/`, `README.md`, this page, and the Markdown in `results/` | Commits co-authored by `Claude Opus 5.5 <noreply@anthropic.com>`, which GitHub shows as the `claude` account; a byline under each document's title |
-| **The Muse agent**, Meta's model working in Muse Code, Meta's own coding agent: **Muse Spark** (`muse-spark-1.3-contributor`, Meta Model API) in round 1, **Muse Wonder Full** (`muse-wonder-full-1.0`, Muse Code subscription) from round 2 | Its analysis of the code, hypotheses, kernels and notes, the logs of both phases, and the transcripts of its sessions, every agent of the swarm included | `muse-spark/`: round 1 at its top, each later round in `muse-spark/round-<N>/`; committed on the branch `muse-agent` and merged with `--no-ff` | Commits co-authored by `Muse Spark (Meta Model API)` in round 1 and `Muse Wonder Full (Muse Code)` from round 2, subjects starting with that name; the transcript records the model behind every model call |
+| **The Muse agent**, Meta's model working in Muse Code, Meta's own coding agent: **Muse Spark** (`muse-spark-1.3-contributor`, Meta Model API) in round 1, **Muse Wonder** (`muse-wonder-1.0`, Meta Model API) from round 2 | Its analysis of the code, hypotheses, kernels and notes, the logs of both phases, and the transcripts of its sessions, every agent of the swarm included | `muse-spark/`: round 1 at its top, each later round in `muse-spark/round-<N>/`; committed on the branch `muse-agent` and merged with `--no-ff` | Commits co-authored by `Muse Spark (Meta Model API)` in round 1 and `Muse Wonder (Meta Model API)` from round 2, subjects starting with that name; the transcript records the model behind every model call |
 | **Others, before the event** | vLLM, vllm-metal, mlx-lm, MLX, and Meta's MobileMoE-S weights | `third_party/` (pinned submodules) and the installed wheels; the weights are downloaded, not committed | Their own authors and licences |
 
 ## How the work is kept apart
@@ -24,12 +24,12 @@ branch: main                          branch: muse-agent
 Author: surucuonur                    Author: surucuonur
 Co-Authored-By: Claude Opus 5.5       Co-Authored-By: Muse Spark (Meta Model API)
   <noreply@anthropic.com>               <muse-spark@meta-model-api.invalid>      (round 1)
-Claude-Session: <session link>        Co-Authored-By: Muse Wonder Full (Muse Code)
-never changes muse-spark/               <muse-wonder-full@muse-code.invalid>     (round 2 on)
+Claude-Session: <session link>        Co-Authored-By: Muse Wonder (Meta Model API)
+never changes muse-spark/               <muse-wonder@meta-model-api.invalid>     (round 2 on)
                                       changes only muse-spark/
 ```
 
-The Muse agent works in Muse Code, Meta's own coding agent, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)). That script is the only way to start one. It ran Muse Spark in round 1 and runs Muse Wonder Full from round 2 ([ADR 0008](claude/adr/0008-muse-wonder-full.md)). Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md), which Claude wrote and committed before the round that uses it. Its version number is in its header and its history in [its changelog](.agents/skills/muse-round/CHANGELOG.md), and each round records the version it ran. In it, the Muse agent works as a swarm ([ADR 0007](claude/adr/0007-muse-spark-swarm.md)):
+The Muse agent works in Muse Code, Meta's own coding agent, which surucuonur starts with `tools/muse-agent/start.sh` ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md)). That script is the only way to start one. It ran Muse Spark in round 1 and runs Muse Wonder from round 2 ([ADR 0008](claude/adr/0008-muse-wonder.md)). Each round follows the skill [.agents/skills/muse-round/SKILL.md](.agents/skills/muse-round/SKILL.md), which Claude wrote and committed before the round that uses it. Its version number is in its header and its history in [its changelog](.agents/skills/muse-round/CHANGELOG.md), and each round records the version it ran. In it, the Muse agent works as a swarm ([ADR 0007](claude/adr/0007-muse-spark-swarm.md)):
 - explorers map the code and the measurements into a shared analysis;
 - builders write and grade competing kernels;
 - the lead coordinates, and only the lead commits;
@@ -116,7 +116,7 @@ Commit ids changed as a result. Raw run records (`results/runs/2026-10-29-baseli
 git log --all --format='%h %an | committer %cn | %(trailers:key=Co-Authored-By,valueonly,separator=%x2C )'
 
 # Only the Muse agent's commits, and which files they change
-git log --all --stat --grep='Co-Authored-By: Muse \(Spark\|Wonder Full\)'
+git log --all --stat --grep='Co-Authored-By: Muse \(Spark\|Wonder\)'
 
 # The files each finished round froze
 git tag --list -n1 'muse-round-*'

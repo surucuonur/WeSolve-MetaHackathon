@@ -6,7 +6,7 @@ status: accepted
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../../PROVENANCE.md).*
 
-*From round 2, each round writes its shared documents in its own folder, finished rounds are frozen, and attempts must beat the best attempt so far ([ADR 0009](0009-rounds-build-on-each-other.md)); the model becomes Muse Wonder Full ([ADR 0008](0008-muse-wonder-full.md)). The swarm itself is unchanged.*
+*From round 2, each round writes its shared documents in its own folder, finished rounds are frozen, and attempts must beat the best attempt so far ([ADR 0009](0009-rounds-build-on-each-other.md)); the model becomes Muse Wonder ([ADR 0008](0008-muse-wonder.md)). The swarm itself is unchanged.*
 
 **The change.** From 2026-11-03, before round 1, the round skill ([.agents/skills/muse-round/](../../.agents/skills/muse-round/SKILL.md)) runs a **swarm**. This replaces the lead with short-lived helpers that [ADR 0006](0006-muse-spark-in-muse-code.md) described. The round has two phases, in surucuonur's words:
 

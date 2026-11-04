@@ -2,8 +2,8 @@
 # Start a Muse agent session in Muse Code, Meta's own coding agent, kept apart
 # from Claude's work (PROVENANCE.md, claude/adr/0006-muse-spark-in-muse-code.md).
 #
-#   tools/muse-agent/start.sh login              # once: sign in to your Muse Code subscription
 #   tools/muse-agent/start.sh [exec] [muse flags]   # run from anywhere; you start it, Claude only when asked
+#   MUSE_AUTH=account tools/muse-agent/start.sh login   # only for a subscription model, once
 #
 # The session's first prompt is fixed here (PROMPT): run the round skill,
 # .agents/skills/muse-round/SKILL.md, as the model it names, with the co-author
@@ -12,17 +12,18 @@
 # session runs headless (muse exec) instead of in the terminal UI.
 #
 # This script is the only way to start one. It
-# - runs MUSE_MODEL (default muse-wonder-full-1.0, Muse Wonder Full; ADR 0008)
-#   at reasoning effort MUSE_EFFORT (default max), with contributor mode
-#   MUSE_CONTRIBUTOR (default on), all three passed explicitly so the session
-#   log records them;
+# - runs MUSE_MODEL (default muse-wonder-1.0, Muse Wonder; ADR 0008) at
+#   reasoning effort MUSE_EFFORT (default max), both passed explicitly so the
+#   session log records them;
 # - signs in as MUSE_AUTH says:
-#   - account (default): your Muse Code subscription, which Muse Wonder Full
-#     needs. META_API_KEY is unset, because an API key always takes priority
-#     over the account login. Sign in once with `start.sh login`;
-#   - key: the pay-as-you-go API key (MODEL_API_KEY) from
+#   - key (default): the pay-as-you-go API key (MODEL_API_KEY) from
 #     legal-agent-workshop/agent/.env, given only to muse, as META_API_KEY; it
-#     is never printed or stored. Muse Spark's round 1 ran this way;
+#     is never printed or stored. Round 1 (Muse Spark) ran this way too;
+#   - account: a Muse Code subscription, which Muse Wonder Full
+#     (muse-wonder-full-1.0) needs. META_API_KEY is unset, because an API key
+#     always takes priority over the account login. Sign in once with
+#     `MUSE_AUTH=account start.sh login`. Contributor mode MUSE_CONTRIBUTOR
+#     (default on) is a subscription setting, passed only here;
 # - works in its own git worktree on branch muse-agent, created from the tag
 #   muse-code-era (the commit that registers the skill and ADR 0006);
 # - fast-forwards muse-agent to main when main already contains it (after a
@@ -46,10 +47,10 @@ set -euo pipefail
 
 MAIN="$(cd "$(dirname "$0")/../.." && pwd)"
 WT="${MUSE_WORKTREE:-$(dirname "$MAIN")/Hackathon-muse}"
-MODEL="${MUSE_MODEL:-muse-wonder-full-1.0}"
+MODEL="${MUSE_MODEL:-muse-wonder-1.0}"
 EFFORT="${MUSE_EFFORT:-max}"
 CONTRIBUTOR="${MUSE_CONTRIBUTOR:-on}"
-AUTH="${MUSE_AUTH:-account}"
+AUTH="${MUSE_AUTH:-key}"
 MUSE_HOME="${MUSE_HOME:-$HOME/.muse-spark}"  # also read by tools/provenance.py
 TAG="muse-code-era"
 ENV_FILE="$MAIN/legal-agent-workshop/agent/.env"  # also scanned by tools/provenance.py
@@ -70,9 +71,11 @@ COAUTHOR="${AUTHOR#*$'\t'}"
 PROMPT="${MUSE_PROMPT:-Run the muse-round skill: read .agents/skills/muse-round/SKILL.md and follow it. You are $NAME ($MODEL). Start every commit subject with \"$NAME:\" and end every commit message with this line: $COAUTHOR}"
 
 unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL
+SIGNIN=()
 case "$AUTH" in
   account)
-    unset META_API_KEY ;;
+    unset META_API_KEY
+    SIGNIN=(--contributor-mode "$CONTRIBUTOR") ;;
   key)
     KEY="$("$PY" -c 'import sys; from dotenv import dotenv_values; sys.stdout.write(dotenv_values(sys.argv[1]).get("MODEL_API_KEY") or "")' "$ENV_FILE")"
     [ -n "$KEY" ] || { echo "MODEL_API_KEY is not set in $ENV_FILE" >&2; exit 1; }
@@ -125,9 +128,9 @@ elif ! git merge-base --is-ancestor main muse-agent; then
 fi
 
 cd "$WT"
-echo "Muse agent session in Muse Code: $NAME, model $MODEL, effort $EFFORT, contributor mode $CONTRIBUTOR, sign-in $AUTH"
+echo "Muse agent session in Muse Code: $NAME, model $MODEL, effort $EFFORT, sign-in $AUTH${SIGNIN[*]:+, contributor mode $CONTRIBUTOR}"
 echo "Worktree $WT, branch muse-agent at $(git rev-parse --short HEAD), home $MUSE_HOME"
 echo "First prompt: $PROMPT"
 isolate_home
-exec muse ${SUB:+"$SUB"} --model "$MODEL" --reasoning-effort "$EFFORT" --contributor-mode "$CONTRIBUTOR" \
+exec muse ${SUB:+"$SUB"} --model "$MODEL" --reasoning-effort "$EFFORT" ${SIGNIN[@]+"${SIGNIN[@]}"} \
   --workspace "$WT" --trust-workspace --disable-sandbox -c agents.execution_capacity=12 "$@" "$PROMPT"

@@ -2,7 +2,7 @@
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](../PROVENANCE.md).*
 
-The Muse agent, Meta's model working in Muse Code (Muse Spark in round 1, Muse Wonder Full from round 2; [ADR 0008](adr/0008-muse-wonder-full.md)), improves the MobileMoE-S decode step as a **swarm**: several agents in one Muse Code session, each covering part of the problem, sharing what they find in documents that all of them read. This page explains how one round runs, step by step, and where to watch it.
+The Muse agent, Meta's model working in Muse Code (Muse Spark in round 1, Muse Wonder Full from round 2; [ADR 0008](adr/0008-muse-wonder.md)), improves the MobileMoE-S decode step as a **swarm**: several agents in one Muse Code session, each covering part of the problem, sharing what they find in documents that all of them read. This page explains how one round runs, step by step, and where to watch it.
 
 - **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 4. This page describes it.
 - **Why it is built this way:** [ADR 0007](adr/0007-muse-spark-swarm.md) records the decision.
@@ -120,7 +120,7 @@ Each phase folder, `<round>/exploration/` and `<round>/implementation/`, holds t
 | `log.md` | every agent, appending one line per event | time, agent, and what happened |
 
 Every version is raised by a single writer, so no number is taken twice:
-- **Phase versions.** Each checkpoint raises the README's version and is exactly one commit, whose subject names it: `<name>: exploration v5: …`, for example `Muse Wonder Full: exploration v5: …` in round 2. `git diff` between two version commits shows what changed.
+- **Phase versions.** Each checkpoint raises the README's version and is exactly one commit, whose subject names it: `<name>: exploration v5: …`, for example `Muse Wonder: exploration v5: …` in round 2. `git diff` between two version commits shows what changed.
 - **Entry versions** are raised by the entry's owner, by the verifier with its verdict, or by the lead for hypothesis entries.
 - **The skill's own version** is in its header and its [changelog](../.agents/skills/muse-round/CHANGELOG.md), and each round records the version it ran.
 

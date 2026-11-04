@@ -17,7 +17,7 @@ You are the **lead** of a Muse Code session in your own worktree on the branch `
 4. **Files** (ADR 0007, [ADR 0009](../../../claude/adr/0009-rounds-build-on-each-other.md)). Each round writes in its own **round folder**: round 1 at the top of `muse-spark/`, round N from 2 on in `muse-spark/round-<N>/`. It holds `exploration/` and `implementation/`, the round's shared documents, which replace `strategy.md`; `kernels/<slot-folder>/attempt-<M>/`; and `summary.md`. tracking.md writes it `<round>/`.
 5. **Rounds build on each other** (ADR 0009). A finished round's files are frozen: read them and cite them, and the hooks refuse any change to them. From round 2 on, each slot has a **baseline**, the best attempt so far for it, and a new attempt must beat it in the same grader run.
 
-The rest of the brief stands. The goal: kernels that pass G1 and G2, beat the compiled reference at 1, 8 and 32 rows and, from round 2 on, beat the slot's baseline too, faster because they remove a cause you can name. The Muse agent was Muse Spark in round 1 and is Muse Wonder Full from round 2 ([ADR 0008](../../../claude/adr/0008-muse-wonder-full.md)); documents written in earlier rounds say "Muse Spark".
+The rest of the brief stands. The goal: kernels that pass G1 and G2, beat the compiled reference at 1, 8 and 32 rows and, from round 2 on, beat the slot's baseline too, faster because they remove a cause you can name. The Muse agent was Muse Spark in round 1 and is Muse Wonder from round 2 ([ADR 0008](../../../claude/adr/0008-muse-wonder.md)); documents written in earlier rounds say "Muse Spark".
 
 ## The swarm
 
@@ -172,12 +172,12 @@ You are the only agent that commits. Commit only on `muse-agent`.
   - a checkpoint's subject is `<name>: <phase> v<N>: <what changed>`, the version it records;
   - every message ends with the first prompt's co-author line, exactly.
 
-For example, in round 2 as Muse Wonder Full:
+For example, in round 2 as Muse Wonder:
 
 ```bash
 git add muse-spark/round-2/exploration muse-spark/round-2/implementation muse-spark/round-2/kernels/<slot-folder>/attempt-<M>
-git commit -m "Muse Wonder Full: implementation v4: experts attempt 3 graded, beats baseline" \
-  -m "Co-Authored-By: Muse Wonder Full (Muse Code) <muse-wonder-full@muse-code.invalid>"
+git commit -m "Muse Wonder: implementation v4: experts attempt 3 graded, beats baseline" \
+  -m "Co-Authored-By: Muse Wonder (Meta Model API) <muse-wonder@meta-model-api.invalid>"
 ```
 
 Use no other co-author. The hooks refuse a commit without a Muse agent's co-author, a commit outside `muse-spark/`, a change to a finished round's files, a new file outside this round's folder, and any merge. Push, merge, rebase, tags, git config and hook skipping stay with surucuonur.
