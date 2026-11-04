@@ -1,9 +1,14 @@
 """Grade one kernel attempt: compile it, test it on captured inputs, time it.
 
 The independent grader for the Muse agent's kernels (claude/muse-agent-brief.md).
-It runs on the inputs `slots.py capture` recorded from a real decode step,
-prints its verdict as JSON, and writes it to --out when given. It never
-writes into the attempt folder, which holds only the Muse agent's files.
+G2 tests it on the inputs `slots.py capture` recorded from a real decode step
+(1, 8 and 32 rows), and on every layer's inputs in a prefill, recorded as
+it runs (127, 1,016 and 2,048 rows): every output must be identical to the
+reference's, bit for bit, since only then are the model's tokens identical
+(claude/adr/0010-exact-at-every-size.md). The timing chains the 20 layers, so
+each call waits for the one before, as in a decode step. The grader prints
+its verdict as JSON, and writes it to --out when given. It never writes into
+the attempt folder, which holds only the Muse agent's files.
 
   .venv/bin/python bench/grader/check_candidate.py <attempt folder> <slot> [--out FILE]
       [--baseline [SLOT=]FOLDER ...]
@@ -82,6 +87,18 @@ def ulp_bf16(r):
     return 2.0 ** (exp - 7)
 
 
+def differences(g, r):
+    """Elements of *g* that aren't *r*'s bit for bit, and the largest gap in units
+    in the last place (floored at |r| = 0.001); "at" is the flat index of it."""
+    differ = (g != r) & ~(np.isnan(g) & np.isnan(r))
+    out = {"differ": int(differ.sum()), "max_ulp": 0.0}
+    if out["differ"]:
+        with np.errstate(over="ignore", invalid="ignore"):
+            over = np.nan_to_num(np.abs(g - r) / ulp_bf16(r), nan=1e9, posinf=1e9)
+        out |= {"max_ulp": float(min(over.max(), 1e9)), "at": int(over.argmax())}
+    return out
+
+
 def check_routing(fn, layer):
     ref_inds, ref_w = slots.ref_routing(layer["x"], layer["w_router"], layer["bias"])
     got = fn(x=layer["x"], w_router=layer["w_router"], bias=layer["bias"])
@@ -99,33 +116,24 @@ def check_routing(fn, layer):
     ref_inds, ref_w = np.array(ref_inds), np.array(ref_w)
     if inds.max() >= slots.E:
         return {"error": f"expert index {int(inds.max())} out of range (60 experts)"}
-    scores = np.array(mx.sigmoid(layer["x"].astype(mx.float32) @ layer["w_router"].T))
-    biased = np.sort(scores + np.array(layer["bias"]), axis=-1)[:, ::-1]
-    wrong, ties, worst, example = 0, 0, 0.0, None
-    for r in range(rows):
-        if set(inds[r]) != set(ref_inds[r]):
-            if biased[r, 3] - biased[r, 4] < 1e-6:
-                ties += 1
-            else:
-                wrong += 1
-                example = example or (
-                    f"row {r}: experts {sorted(inds[r].tolist())}, "
-                    f"want {sorted(ref_inds[r].tolist())}"
-                )
-            continue
-        ref = dict(zip(ref_inds[r], ref_w[r]))
-        for e, v in zip(inds[r], w[r]):
-            err = abs(v - ref[e]) / max(abs(ref[e]), 1e-12)
-            if err > worst:
-                worst = err
-                if err > 1e-4:
-                    example = f"row {r} expert {e}: weight {v:.7g}, want {ref[e]:.7g}"
+    # Exact, in order: combine sums the 4 pairs in this order.
+    differ = (inds != ref_inds).any(axis=1) | (w != ref_w).any(axis=1)
+    same_order = (inds == ref_inds).all(axis=1)
+    rel = np.abs(w - ref_w)[same_order] / np.maximum(np.abs(ref_w[same_order]), 1e-12)
     out = {
-        "rows_wrong_experts": wrong,
-        "near_tie_rows": ties,
-        "max_rel_err": float(worst),
+        "rows_differ": int(differ.sum()),
+        "rows_other_experts": int(
+            sum(set(a) != set(b) for a, b in zip(inds.tolist(), ref_inds.tolist()))
+        ),
+        "max_rel_err": float(rel.max()) if rel.size else 0.0,
     }
-    return out | ({"example": example} if example else {})
+    if out["rows_differ"]:
+        r = int(differ.argmax())
+        out["example"] = (
+            f"row {r}: experts {inds[r].tolist()}, weights {w[r].tolist()}; "
+            f"want {ref_inds[r].tolist()}, {ref_w[r].tolist()}"
+        )
+    return out
 
 
 def check_combine(fn, layer):
@@ -135,11 +143,9 @@ def check_combine(fn, layer):
         return {"error": f"out {got.shape} {got.dtype}; want {ref.shape} bfloat16"}
     r = np.array(ref.astype(mx.float32))
     g = np.array(got.astype(mx.float32))
-    with np.errstate(over="ignore", invalid="ignore"):
-        over = np.nan_to_num(np.abs(g - r) / ulp_bf16(r), nan=1e9, posinf=1e9)
-    out = {"max_ulp": float(min(over.max(), 1e9)), "bad": int((over > 2).sum())}
-    if out["bad"]:
-        i, j = np.unravel_index(over.argmax(), over.shape)
+    out = differences(g, r)
+    if out["differ"]:
+        i, j = np.unravel_index(out.pop("at"), g.shape)
         out["example"] = f"row {i} column {j}: {g[i, j]:.6g}, want {r[i, j]:.6g}"
     return out
 
@@ -153,11 +159,9 @@ def check_experts(fn, layer):
         return {"error": f"y {got.shape} {got.dtype}; want {ref.shape} bfloat16"}
     r = np.array(ref.astype(mx.float32)).reshape(ref.shape[0], -1)
     g = np.array(got.astype(mx.float32)).reshape(ref.shape[0], -1)
-    with np.errstate(over="ignore", invalid="ignore"):
-        over = np.nan_to_num(np.abs(g - r) / ulp_bf16(r), nan=1e9, posinf=1e9)
-    out = {"max_ulp": float(min(over.max(), 1e9)), "bad": int((over > 2).sum())}
-    if out["bad"]:
-        i, j = np.unravel_index(over.argmax(), over.shape)
+    out = differences(g, r)
+    if out["differ"]:
+        i, j = np.unravel_index(out.pop("at"), g.shape)
         k, d = divmod(j, slots.D)
         out["example"] = (
             f"row {i} expert slot {k} column {d}: {g[i, j]:.6g}, want {r[i, j]:.6g}"
@@ -168,29 +172,50 @@ def check_experts(fn, layer):
 def passes(part, s):
     if "error" in s:
         return False
-    if part == "routing":
-        return s["rows_wrong_experts"] == 0 and s["max_rel_err"] <= 1e-4
-    return s["bad"] == 0
+    return s["rows_differ" if part == "routing" else "differ"] == 0
+
+
+@mx.compile
+def link(a, prev):
+    """*a* unchanged, computed after *prev*: one small fused kernel."""
+    return a + (prev.reshape(-1)[:1] * 0).astype(a.dtype)
+
+
+def chained(fn, layers, names):
+    """All 20 layers' calls, each one waiting for the one before, as in a decode step.
+
+    A call's smallest input is linked to the previous call's last output, the
+    same for every function timed. Without the wait, the GPU overlaps the
+    calls and hides a slow call's latency; mx.depends orders only the graph.
+    """
+    small = min(names, key=lambda n: layers[0][n].size)
+    outs = []
+    for layer in layers:
+        args = {n: layer[n] for n in names}
+        if outs:
+            args[small] = link(args[small], outs[-1][-1])
+        out = fn(**args)
+        if isinstance(out, dict):
+            out = list(out.values())
+        outs.append(list(out) if isinstance(out, (tuple, list)) else [out])
+    return outs
 
 
 def timed(fn, layers, names):
-    """Median µs per layer: all 20 layers' calls, then one wait for the GPU."""
+    """Median µs per layer: the 20 layers' chained calls, then one wait for the GPU."""
     for _ in range(3):
-        mx.eval([fn(**{n: layer[n] for n in names}) for layer in layers])
+        mx.eval(chained(fn, layers, names))
     times = []
     for _ in range(REPEATS):
         t0 = time.perf_counter()
-        mx.eval([fn(**{n: layer[n] for n in names}) for layer in layers])
+        mx.eval(chained(fn, layers, names))
         times.append((time.perf_counter() - t0) / len(layers))
     return round(statistics.median(times) * 1e6, 1)
 
 
 def paired_times(fns, layers, names):
     """Per-repeat µs per layer of each function, in rotating order within each repeat."""
-    calls = [
-        lambda f=f: mx.eval([f(**{n: layer[n] for n in names}) for layer in layers])
-        for f in fns
-    ]
+    calls = [lambda f=f: mx.eval(chained(f, layers, names)) for f in fns]
     for _ in range(3):
         for call in calls:
             call()
@@ -241,10 +266,17 @@ def main():
         }
     try:
         fns = load(attempt, slot)
-        weights = slots.load_expert_weights() if slot == "experts" else None
+        model = slots.load_model()
+        weights = slots.model_expert_weights(model) if slot == "experts" else None
         stats = {}
-        for rows in ROWS:
-            layers = slots.load_inputs(rows, weights)
+        sizes = [("rows", lambda r=r: slots.load_inputs(r, weights)) for r in ROWS]
+        sizes += [
+            ("prefill rows", lambda r=r: slots.capture_prefill(model, r, weights))
+            for r in slots.PROMPT_REQUESTS
+        ]
+        for kind, inputs in sizes:
+            layers = inputs()
+            size = f"{kind} {layers[0]['x'].shape[0]}"
             for part, fn in fns.items():
                 check = {
                     "routing": check_routing,
@@ -254,7 +286,7 @@ def main():
                 per_layer = [check(fn, layer) for layer in layers]
                 errors = [s["error"] for s in per_layer if "error" in s]
                 if errors:
-                    stats[f"{part} rows {rows}"] = {"error": errors[0]}
+                    stats[f"{part} {size}"] = {"error": errors[0]}
                     continue
                 agg = {
                     k: (max if k.startswith("max") else sum)(s[k] for s in per_layer)
@@ -269,7 +301,8 @@ def main():
                 ]
                 if examples:
                     agg["worst_example"] = examples[0]
-                stats[f"{part} rows {rows}"] = agg
+                stats[f"{part} {size}"] = agg
+            del layers
         result["g1"] = True
         result["correctness"] = stats
         result["g2"] = all(s.get("pass") for s in stats.values())

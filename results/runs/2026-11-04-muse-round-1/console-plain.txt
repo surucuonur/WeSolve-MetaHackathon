@@ -1,0 +1,129 @@
+plain check        base rows  1: 866 kernels
+plain check compiled-experts rows  1: 866 kernels, exact True
+plain check muse-experts rows  1: 746 kernels, exact False
+plain check compiled-routing rows  1: 806 kernels, exact True
+plain check muse-routing rows  1: 666 kernels, exact False
+plain check compiled-combine rows  1: 826 kernels, exact True
+plain check muse-combine rows  1: 786 kernels, exact False
+plain check compiled-all rows  1: 766 kernels, exact True
+plain check    muse-all rows  1: 466 kernels, exact True
+plain check        base rows 32: 986 kernels
+plain check compiled-experts rows 32: 986 kernels, exact True
+plain check muse-experts rows 32: 746 kernels, exact False
+plain check compiled-routing rows 32: 926 kernels, exact True
+plain check muse-routing rows 32: 786 kernels, exact False
+plain check compiled-combine rows 32: 946 kernels, exact True
+plain check muse-combine rows 32: 906 kernels, exact False
+plain check compiled-all rows 32: 886 kernels, exact True
+plain check    muse-all rows 32: 466 kernels, exact False
+plain rep0 muse-experts rows  1:   6.222 ms/step
+plain rep0 muse-combine rows  8:  12.788 ms/step
+plain rep0    muse-all rows  1:   6.122 ms/step
+plain rep0 compiled-all rows  1:   4.465 ms/step
+plain rep0 muse-experts rows 32:  24.803 ms/step
+plain rep0        base rows  8:  13.513 ms/step
+plain rep0 compiled-combine rows  1:   4.881 ms/step
+plain rep0 compiled-routing rows  1:   4.708 ms/step
+plain rep0 compiled-all rows 32:  28.241 ms/step
+plain rep0 muse-combine rows  1:   4.141 ms/step
+plain rep0 compiled-routing rows  8:  13.278 ms/step
+plain rep0        base rows  1:   5.140 ms/step
+plain rep0    muse-all rows 32:  26.965 ms/step
+plain rep0 muse-experts rows  8:  12.725 ms/step
+plain rep0 muse-combine rows 32:  28.263 ms/step
+plain rep0        base rows 32:  28.496 ms/step
+plain rep0 compiled-combine rows 32:  28.345 ms/step
+plain rep0 compiled-experts rows  1:   4.758 ms/step
+plain rep0 compiled-combine rows  8:  13.186 ms/step
+plain rep0 muse-routing rows  8:  13.180 ms/step
+plain rep0 compiled-routing rows 32:  28.365 ms/step
+plain rep0 muse-routing rows  1:   5.313 ms/step
+plain rep0 compiled-all rows  8:  12.967 ms/step
+plain rep0 compiled-experts rows 32:  28.309 ms/step
+plain rep0    muse-all rows  8:  14.421 ms/step
+plain rep0 muse-routing rows 32:  28.181 ms/step
+plain rep0 compiled-experts rows  8:  13.470 ms/step
+plain rep1        base rows  1:   4.998 ms/step
+plain rep1 compiled-all rows  8:  13.016 ms/step
+plain rep1 compiled-routing rows  8:  13.421 ms/step
+plain rep1 muse-experts rows 32:  25.213 ms/step
+plain rep1    muse-all rows  1:   5.924 ms/step
+plain rep1 compiled-all rows 32:  28.261 ms/step
+plain rep1 muse-combine rows 32:  28.039 ms/step
+plain rep1 muse-routing rows  8:  13.147 ms/step
+plain rep1 muse-routing rows  1:   5.152 ms/step
+plain rep1        base rows 32:  28.579 ms/step
+plain rep1 compiled-experts rows  1:   4.978 ms/step
+plain rep1 compiled-experts rows  8:  13.434 ms/step
+plain rep1 compiled-all rows  1:   4.380 ms/step
+plain rep1    muse-all rows 32:  26.935 ms/step
+plain rep1 compiled-experts rows 32:  28.580 ms/step
+plain rep1 muse-combine rows  8:  12.832 ms/step
+plain rep1 compiled-combine rows  1:   4.685 ms/step
+plain rep1 compiled-routing rows  1:   4.681 ms/step
+plain rep1 muse-experts rows  8:  12.709 ms/step
+plain rep1    muse-all rows  8:  14.662 ms/step
+plain rep1 compiled-combine rows  8:  13.142 ms/step
+plain rep1        base rows  8:  13.541 ms/step
+plain rep1 muse-routing rows 32:  28.067 ms/step
+plain rep1 compiled-routing rows 32:  28.552 ms/step
+plain rep1 compiled-combine rows 32:  28.424 ms/step
+plain rep1 muse-experts rows  1:   6.226 ms/step
+plain rep1 muse-combine rows  1:   4.060 ms/step
+plain rep2 muse-combine rows 32:  28.090 ms/step
+plain rep2 muse-routing rows 32:  28.178 ms/step
+plain rep2 compiled-experts rows  1:   4.705 ms/step
+plain rep2        base rows  1:   4.728 ms/step
+plain rep2 compiled-routing rows  8:  13.341 ms/step
+plain rep2    muse-all rows 32:  26.547 ms/step
+plain rep2 compiled-combine rows  1:   4.625 ms/step
+plain rep2 muse-experts rows  8:  12.642 ms/step
+plain rep2 muse-experts rows  1:   6.260 ms/step
+plain rep2        base rows 32:  28.354 ms/step
+plain rep2 muse-combine rows  1:   4.275 ms/step
+plain rep2    muse-all rows  8:  14.339 ms/step
+plain rep2 compiled-combine rows  8:  13.412 ms/step
+plain rep2 muse-experts rows 32:  24.835 ms/step
+plain rep2 compiled-all rows 32:  28.236 ms/step
+plain rep2        base rows  8:  13.771 ms/step
+plain rep2 muse-routing rows  8:  13.204 ms/step
+plain rep2 compiled-routing rows  1:   4.703 ms/step
+plain rep2 muse-routing rows  1:   5.230 ms/step
+plain rep2 compiled-all rows  8:  13.363 ms/step
+plain rep2    muse-all rows  1:   5.918 ms/step
+plain rep2 compiled-combine rows 32:  28.396 ms/step
+plain rep2 compiled-experts rows 32:  28.375 ms/step
+plain rep2 compiled-routing rows 32:  28.422 ms/step
+plain rep2 muse-combine rows  8:  12.775 ms/step
+plain rep2 compiled-all rows  1:   4.228 ms/step
+plain rep2 compiled-experts rows  8:  13.452 ms/step
+
+plain: median step ms over 3 repeats (change against base)
+  rows  1        base:   4.998 [4.728-5.140]
+  rows  1 compiled-experts:   4.758 [4.705-4.978] (-0.240 ms, -4.8%)
+  rows  1 muse-experts:   6.226 [6.222-6.260] (+1.228 ms, +24.6%)
+  rows  1 compiled-routing:   4.703 [4.681-4.708] (-0.294 ms, -5.9%)
+  rows  1 muse-routing:   5.230 [5.152-5.313] (+0.233 ms, +4.7%)
+  rows  1 compiled-combine:   4.685 [4.625-4.881] (-0.313 ms, -6.3%)
+  rows  1 muse-combine:   4.141 [4.060-4.275] (-0.857 ms, -17.1%)
+  rows  1 compiled-all:   4.380 [4.228-4.465] (-0.617 ms, -12.4%)
+  rows  1    muse-all:   5.924 [5.918-6.122] (+0.927 ms, +18.5%)
+  rows  8        base:  13.541 [13.513-13.771]
+  rows  8 compiled-experts:  13.452 [13.434-13.470] (-0.089 ms, -0.7%)
+  rows  8 muse-experts:  12.709 [12.642-12.725] (-0.832 ms, -6.1%)
+  rows  8 compiled-routing:  13.341 [13.278-13.421] (-0.199 ms, -1.5%)
+  rows  8 muse-routing:  13.180 [13.147-13.204] (-0.361 ms, -2.7%)
+  rows  8 compiled-combine:  13.186 [13.142-13.412] (-0.354 ms, -2.6%)
+  rows  8 muse-combine:  12.788 [12.775-12.832] (-0.753 ms, -5.6%)
+  rows  8 compiled-all:  13.016 [12.967-13.363] (-0.524 ms, -3.9%)
+  rows  8    muse-all:  14.421 [14.339-14.662] (+0.881 ms, +6.5%)
+  rows 32        base:  28.496 [28.354-28.579]
+  rows 32 compiled-experts:  28.375 [28.309-28.580] (-0.121 ms, -0.4%)
+  rows 32 muse-experts:  24.835 [24.803-25.213] (-3.661 ms, -12.8%)
+  rows 32 compiled-routing:  28.422 [28.365-28.552] (-0.074 ms, -0.3%)
+  rows 32 muse-routing:  28.178 [28.067-28.181] (-0.318 ms, -1.1%)
+  rows 32 compiled-combine:  28.396 [28.345-28.424] (-0.100 ms, -0.3%)
+  rows 32 muse-combine:  28.090 [28.039-28.263] (-0.406 ms, -1.4%)
+  rows 32 compiled-all:  28.241 [28.236-28.261] (-0.255 ms, -0.9%)
+  rows 32    muse-all:  26.935 [26.547-26.965] (-1.560 ms, -5.5%)
+plain exit 0

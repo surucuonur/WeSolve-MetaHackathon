@@ -33,7 +33,7 @@ surucuonur chose to name the real model wherever the author is identified.
   - Round 1's tokens (86.8M input, 83.5M of them cached, and 1.04M output) cost about $0.70. The same tokens at Muse Wonder's prices cost about $50.
   - At `max` effort the output, the dearest part, is likely to grow; the round has no attempt limit, so the cost has no fixed ceiling. The session log counts the tokens.
 - **Rate limits:** 3,000 requests and 4M tokens per minute per team, enough for 12 agents.
-- **Round 2 changes several things at once:** the model, the effort, and the skill (version 4, [ADR 0009](0009-rounds-build-on-each-other.md)). A difference between the rounds can't be put down to the model alone, and the write-up says so.
+- **Round 2 changes several things at once:** the model, the effort, the skill (version 5, [ADR 0009](0009-rounds-build-on-each-other.md)) and the grader's rules ([ADR 0010](0010-exact-at-every-size.md)). A difference between the rounds can't be put down to the model alone, and the write-up says so.
 - **Muse Wonder is in preview,** in Meta's words.
 
 ## Considered options

@@ -132,11 +132,11 @@ _Avoid_: iteration, cycle
 Where one round writes all its files: round 1 at the top of `muse-spark/`, each later round in `muse-spark/round-<N>/`.
 
 **Starting point**:
-The plan each round from round 2 on begins with, drawn from the earlier rounds and Claude's measurement: each slot's baseline and its end-to-end effect, what is left to build, the refuted claims, and the territories to explore again.
+The plan each round from round 2 on begins with, drawn from the earlier rounds and Claude's measurement: each slot's baseline, or the attempt to start from where it has none, with its end-to-end effect; what is left to build; the refuted claims; and the territories to explore again.
 _Avoid_: recap, retrospective
 
-**Baseline**:
-A slot's best attempt so far, named in Claude's measurement of the previous round, which every new attempt for that slot must beat in the same grader run.
+**Baseline** (of a slot):
+A slot's best attempt so far that passes the current G2, named in Claude's measurement of the previous round, which every new attempt for that slot must beat in the same grader run. A slot may have none.
 _Avoid_: reference (that is the original MLX code and its compiled version)
 
 **Swarm**:

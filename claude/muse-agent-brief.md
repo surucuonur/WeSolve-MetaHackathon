@@ -176,20 +176,26 @@ List one or two targets, in the order you work on them.
 
 ## How each attempt is judged
 
-The pass criteria are the same as in the API-stage brief and were fixed before this session, as written here.
+The pass criteria were fixed before the first round. From round 2, G2 is exact and also covers the prefill, and the piece timing chains the layers ([ADR 0010](adr/0010-exact-at-every-size.md)); round 1 was judged by the earlier rules, in which G2 allowed small rounding differences and tested decode steps only.
 
-1. **G1, runs.** It compiles and runs on real inputs at 1, 8 and 32 rows.
-2. **G2, correct.** It is tested on inputs captured from all 20 layers during a real decode step, at 1, 8 and 32 rows.
-   - **`routing`:** each row selects the same 4 experts. The only exception is a row whose 4th and 5th biased scores in the reference are within 1e-6 of each other; such rows are counted and reported. The weights, matched by expert, are within 1e-4 relative.
-   - **`combine` and `experts`:** every element is within 2 bfloat16 units in the last place of the reference value. For values smaller than 0.001 in magnitude, the unit at 0.001 applies, so summing in a different order near zero is not a failure.
+1. **G1, runs.** It compiles and runs on real inputs.
+2. **G2, correct: identical to the reference, bit for bit.** The slot runs in every call of `MoE.__call__`, the prefill included, so it is tested on every layer's inputs at two kinds of size:
+   - **a decode step:** inputs captured from all 20 layers during a real decode step, at 1, 8 and 32 rows;
+   - **a prefill:** the first chunk of a prefill with 128-token prompts, recorded while the grader runs it, at 1, 8 and 32 requests: 127, 1,016 and 2,048 rows. From 60 rows on, MLX's own experts kernel changes (`gather_qmm_rhs` instead of `gather_qvm`), and so does its rounding.
+
+   At every size:
+   - **`routing`:** each row's 4 experts and their 4 weights equal the reference's, in the same order, since combine sums the pairs in that order. That includes the reference's choice between tied 4th and 5th experts.
+   - **`combine` and `experts`:** every element equals the reference's.
+
+   **Why exact:** the end-to-end check below asks for the same greedy tokens, and greedy decoding turns any difference into different tokens. In round 1, routing weights within 10⁻⁵ of the reference, relative, changed 7 to 9 of 32 sequences.
    - **Then, end to end:** the same greedy tokens as the original model over 24 generated tokens, at 1 and 32 requests, in both plain MLX and vLLM.
 3. **G3, faster.** The decode step's period is the median over 3 repeats in shuffled order, with 128-token prompts, at 1, 8 and 32 requests. It must be lower than both the original model's and an `mx.compile` of the same reference code. The gap must exceed the spread between repeats.
 
 **What the grader prints for an attempt** (JSON):
 - `g1` false and the compiler's error message;
-- or the correctness results, with counts and the worst example per check;
+- or the correctness results per size: for routing, the rows that differ; for combine and experts, the elements that differ and the largest gap in units in the last place; with the first example;
 - or, when the attempt is correct, `timing_us_per_layer`: its time per call next to the original's and the compiled reference's, and `beats_compiled`.
 
-The piece timing runs the slot on all 20 layers' captured inputs and waits for the GPU once at the end. It takes the median of 30 repeats, per layer. It is a guide; G3 decides.
+**The piece timing** runs the slot on all 20 layers' captured decode inputs, at 1, 8 and 32 rows, and waits for the GPU once at the end. Each layer's call waits for the previous one's output, as in the model: one small kernel links them, the same for every function timed. Without that wait, the GPU overlaps the 20 calls and hides how long one takes; in round 1, an experts kernel 29% faster on overlapped calls was 66% slower on chained ones at 1 row. It takes the median of 30 repeats, per layer. It is a guide; G3 decides.
 
 **When a slot stops.** Work on a slot stops at the first attempt that passes G1 and G2 and beats the compiled reference in the piece timing at all three row counts, or after 5 attempts. Name your final attempt per slot in `muse-spark/summary.md`; it goes to the end-to-end and G3 checks, which surucuonur's team runs after merging your branch.

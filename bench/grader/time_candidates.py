@@ -1,18 +1,20 @@
-"""Muse Spark's kernels in the real decode step, against two baselines.
+"""The Muse agent's kernels in the real decode step, against two baselines.
 
 Variants, applied at runtime to MoE.__call__ in every layer:
 
-  base          the port's MoE, unchanged
-  compiled      the same slot's reference code under mx.compile (our baseline)
-  muse          Muse Spark's best attempt for the slot
-  claude_fixed  a separately labelled Claude version, only if one exists
+  base                the port's MoE, unchanged
+  compiled-<slot>     the slot's reference code under mx.compile (our baseline)
+  muse-<slot>         the Muse agent's attempt for the slot
+  compiled-all        with several slots: all their references compiled at once
+  muse-all            with several slots: all the attempts at once
+  claude-fixed-<slot> a separately labelled Claude version, only if one exists
 
 G2 end to end: each variant's greedy tokens over 24 generated tokens, at 1
 and 32 requests, must equal base's. G3: the steady decode step period, as
 repeat_fixes.py measures it (3 repeats, shuffled), at 1, 8 and 32 requests.
 
-  .venv/bin/python bench/grader/time_candidates.py plain results/runs/<date>-muse <slot> <attempt dir>
-  .venv/bin/python bench/grader/time_candidates.py vllm  results/runs/<date>-muse <slot> <attempt dir>
+  .venv/bin/python bench/grader/time_candidates.py plain results/runs/<date>-muse <slot>=<attempt dir> ...
+  .venv/bin/python bench/grader/time_candidates.py vllm  results/runs/<date>-muse <slot>=<attempt dir> ...
 """
 
 import argparse
@@ -26,7 +28,7 @@ import breakdown as bd  # noqa: E402  sets the vLLM environment before importing
 import gpu_lock  # noqa: E402
 import mlx.core as mx  # noqa: E402
 import repeat_fixes as rf  # noqa: E402
-from check_candidate import load  # noqa: E402
+from check_candidate import load, parts  # noqa: E402
 from mlx_lm.models import mobilemoe  # noqa: E402
 
 import slots  # noqa: E402
@@ -57,18 +59,35 @@ def implementation(parts):
     return {p: wrap[p](fn) for p, fn in parts.items()}
 
 
+def attempt_arg(value):
+    """SLOT=FOLDER -> (slot, folder)."""
+    slot, sep, folder = value.partition("=")
+    if not sep or slot not in slots.SLOTS:
+        raise argparse.ArgumentTypeError(
+            f"{value!r}: give SLOT=FOLDER, SLOT one of {', '.join(slots.SLOTS)}"
+        )
+    return slot, Path(folder)
+
+
 class Variants:
-    def __init__(self, slot, attempts):
+    def __init__(self, attempts, claude_fixed=()):
+        """*attempts*: (slot, folder) pairs whose slots share no part."""
         self.original = mobilemoe.MoE.__call__
-        part_names = ["routing", "combine"] if slot == "routing+combine" else [slot]
-        compiled = {p: mx.compile(slots.REFERENCE[p]) for p in part_names}
-        self.calls = {
-            "base": self.original,
-            "compiled": slots.make_moe_call(**compiled),
-        }
-        for name, attempt in attempts.items():
-            self.calls[name] = slots.make_moe_call(
-                **implementation(load(attempt, slot))
+        self.calls = {"base": self.original}
+        compiled, muse = {}, {}
+        for slot, folder in attempts:
+            ref = {p: mx.compile(slots.REFERENCE[p]) for p in parts(slot)}
+            fns = implementation(load(folder, slot))
+            self.calls[f"compiled-{slot}"] = slots.make_moe_call(**ref)
+            self.calls[f"muse-{slot}"] = slots.make_moe_call(**fns)
+            compiled |= ref
+            muse |= fns
+        if len(attempts) > 1:
+            self.calls["compiled-all"] = slots.make_moe_call(**compiled)
+            self.calls["muse-all"] = slots.make_moe_call(**muse)
+        for slot, folder in claude_fixed:
+            self.calls[f"claude-fixed-{slot}"] = slots.make_moe_call(
+                **implementation(load(folder, slot))
             )
         self.names = list(self.calls)
 
@@ -105,24 +124,32 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("engine", choices=("plain", "vllm"))
     ap.add_argument("out", type=Path)
-    ap.add_argument("slot", choices=tuple(slots.SLOTS))
-    ap.add_argument("muse", type=Path, help="Muse Spark's attempt folder")
-    ap.add_argument("--claude-fixed", type=Path, help="Claude's labelled version")
+    ap.add_argument(
+        "attempts", nargs="+", type=attempt_arg, metavar="SLOT=FOLDER",
+        help="the Muse agent's attempt folder per slot",
+    )
+    ap.add_argument(
+        "--claude-fixed", type=attempt_arg, action="append", default=[],
+        metavar="SLOT=FOLDER", help="Claude's labelled version of a slot",
+    )
     ap.add_argument("--tokens", type=int, default=256, help="output tokens per run")
     args = ap.parse_args()
-    gpu_lock.hold(f"time_candidates.py {args.engine} {args.slot} {args.muse}")
+    taken = [p for slot, _ in args.attempts for p in parts(slot)]
+    if len(taken) != len(set(taken)):
+        ap.error(f"two attempts replace the same part: {sorted(taken)}")
+    gpu_lock.hold(
+        f"time_candidates.py {args.engine} "
+        + " ".join(f"{s}={f}" for s, f in args.attempts)
+    )
     args.out.mkdir(parents=True, exist_ok=True)
     log = args.out / f"muse-{args.engine}.jsonl"
-    attempts = {"muse": args.muse}
-    if args.claude_fixed:
-        attempts["claude_fixed"] = args.claude_fixed
 
     if args.engine == "plain":
         from mlx_lm.utils import load_model
 
         model, _ = load_model(Path(bd.MODEL))
         mx.eval(model.parameters())
-        variants = Variants(args.slot, attempts)
+        variants = Variants(args.attempts, args.claude_fixed)
         checks = plain_checks(model, variants)
         run = lambda r, p, s: bd.run_plain(model, r, p, args.tokens, s)  # noqa: E731
     else:
@@ -141,7 +168,7 @@ def main():
         )
         run = lambda r, p, s: bd.run_vllm(llm, r, p, args.tokens, s)  # noqa: E731
         run(1, 16, 0)  # warm-up; captures the runner
-        variants = Variants(args.slot, attempts)
+        variants = Variants(args.attempts, args.claude_fixed)
         checks = rf.vllm_checks(llm, variants)
 
     rf.time_variants(args.engine, variants, checks, run, log)

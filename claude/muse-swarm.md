@@ -4,7 +4,7 @@
 
 The Muse agent, Meta's model working in Muse Code (Muse Spark in round 1, Muse Wonder Full from round 2; [ADR 0008](adr/0008-muse-wonder.md)), improves the MobileMoE-S decode step as a **swarm**: several agents in one Muse Code session, each covering part of the problem, sharing what they find in documents that all of them read. This page explains how one round runs, step by step, and where to watch it.
 
-- **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 4. This page describes it.
+- **The source of truth** is the round skill, [.agents/skills/muse-round/](../.agents/skills/muse-round/SKILL.md), at version 5. This page describes it.
 - **Why it is built this way:** [ADR 0007](adr/0007-muse-spark-swarm.md) records the decision.
 - **The diagrams:** [diagrams/muse-swarm.drawio](diagrams/muse-swarm.drawio) opens in draw.io, with one page each for the overview, exploration and implementation. The images below are exported from it.
 
@@ -29,7 +29,7 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
 
 ![Exploration: explorers write entries and log lines in the shared folder; the verifier confirms or refutes inefficiencies; the lead checkpoints and commits](diagrams/muse-swarm-exploration.svg)
 
-1. **The lead opens the phase.** It writes `<round>/exploration/README.md` with its version line (v1, skill version 4), a tracker table and an empty log, and commits it as `exploration v1`. From round 2 on, the README opens with the round's **starting point** (see *Rounds build on each other*).
+1. **The lead opens the phase.** It writes `<round>/exploration/README.md` with its version line (v1, skill version 5), a tracker table and an empty log, and commits it as `exploration v1`. From round 2 on, the README opens with the round's **starting point** (see *Rounds build on each other*).
 2. **The explorers and the verifier start at once,** one explorer per territory. Round 1 started with eight:
    - **Code:**
      - the model's layer around the slots (`mobilemoe.py`);
@@ -74,12 +74,12 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
 1. **Rank and choose.** The confirmed inefficiencies inside the slots are taken in order of predicted saving, at most two at a time, and in different slots so their attempts never touch.
 2. **Open a hypothesis.** The lead writes `implementation/hyp-<n>-<slug>.md`: the inefficiency, the slot, and the status `boundary`.
 3. **Draw the boundary.** The boundary agent writes down what the solution must keep identical, so the steps before and after the slot work exactly as before:
-   - the slot's inputs and outputs, with shapes and dtypes at 1, 8 and 32 rows;
+   - the slot's inputs and outputs, with shapes and dtypes at decode and prefill sizes;
    - the rounding points and the tie rule for the 4th and 5th expert;
    - what runs just before and after;
    - the GPU's limits.
    
-   It also lists what the grader can't see. G2 checks only 1, 8 and 32 rows of captured inputs, while a real decode step can have any row count from 1 to 32.
+   It also lists what the grader can't see. G2 checks 1, 8 and 32 rows of a decode step and 127, 1,016 and 2,048 rows of a prefill, bit for bit ([ADR 0010](adr/0010-exact-at-every-size.md)), while a real decode step can have any row count from 1 to 32.
 4. **Builders compete.** Two or three builders each take a different direction from the analysis, for example fusing kernels, reading each weight byte once, or a different threadgroup shape. Each builder:
    1. claims the next attempt number with `mkdir`, which fails if another builder took it first;
    2. writes the kernels and a `notes.md` with the cause it removes and its predicted time per layer;
@@ -89,7 +89,7 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
 5. **Commit and check.** When a builder returns, the lead commits its attempt as the next implementation version. The boundary agent then checks every attempt that passed G2 for what the grader can't see: other row counts, threadgroup memory read before it is written, and results that depend on thread timing.
 6. **Harden or close.**
    - **Harden:** if the best attempt still has a cause that can be named and removed, a builder makes its next single change.
-   - **Ready:** once it passes G1, G2 and its boundary check, and beats the compiled reference at 1, 8 and 32 rows, the hypothesis is `ready`. Its Decision states what G3 should show.
+   - **Ready:** once it passes G1, G2 and its boundary check, and beats the compiled reference at 1, 8 and 32 rows and any baseline, the hypothesis is `ready`. Its Decision states what G3 should show.
    - **Dropped:** a hypothesis that doesn't pay off is `dropped`, with the reason.
 7. **Next, and finish.**
    - Then comes the next-ranked inefficiency. There is no attempt limit; the lead ends the phase when it judges no remaining inefficiency will pay, and says why.
@@ -101,13 +101,13 @@ A round is one Muse Code session on the branch `muse-agent`, with up to 12 agent
 From round 2 on, a round starts where the earlier ones stopped ([ADR 0009](adr/0009-rounds-build-on-each-other.md)).
 - **Finished rounds are frozen.** After a round's transcripts are committed, Claude tags its last commit `muse-round-<N>` (round 1: `muse-round-1`). The hooks then refuse any change to that round's files, and new files anywhere but the current round's folder and the transcripts.
 - **The starting point.** The lead first reads the earlier rounds' final documents, the best attempts' notes and Claude's G3 report on the previous round. It writes the plan at the top of the round's exploration README:
-  - per slot, the best attempt so far, the **baseline**, and how its G3 effect compared with its prediction;
+  - per slot, the best attempt so far that passes G2, the **baseline**, or where none does, the attempt to start from; and how its G3 effect compared with its prediction;
   - what is left to build;
   - the refuted claims;
   - the territories to explore again.
 
   Without Claude's report the round stops.
-- **The baseline is the bar.** A new attempt must beat its slot's baseline in the same grader run (`check_candidate.py --baseline`). The two are timed in alternating repeats, and the attempt must win at least 22 of 30 at each row count. A slot that nothing beats keeps its baseline for G3.
+- **The baseline is the bar.** Where a slot has one, a new attempt must beat it in the same grader run (`check_candidate.py --baseline`). The two are timed in alternating repeats, and the attempt must win at least 22 of 30 at each row count. A slot that nothing beats keeps its baseline for G3. A slot without one is measured against the compiled reference, as in round 1.
 
 ## Shared documents and versions
 

@@ -1,0 +1,13 @@
+rows  1 independent reference:    86.0 us per layer
+rows  1 independent      muse:    61.0 us per layer
+rows  1     chained reference:    80.3 us per layer
+rows  1     chained      muse:   132.9 us per layer
+rows  8 independent reference:   219.1 us per layer
+rows  8 independent      muse:   165.1 us per layer
+rows  8     chained reference:   239.6 us per layer
+rows  8     chained      muse:   175.9 us per layer
+rows 32 independent reference:   767.3 us per layer
+rows 32 independent      muse:   535.0 us per layer
+rows 32     chained reference:   797.6 us per layer
+rows 32     chained      muse:   587.6 us per layer
+[exited with code 0]

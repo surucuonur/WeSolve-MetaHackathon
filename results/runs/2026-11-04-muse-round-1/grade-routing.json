@@ -1,0 +1,43 @@
+{
+ "slot": "routing",
+ "g1": true,
+ "g2": true,
+ "beats_compiled": true,
+ "correctness": {
+  "routing rows 1": {
+   "rows_wrong_experts": 0,
+   "near_tie_rows": 0,
+   "max_rel_err": 2.6221068765153177e-06,
+   "pass": true
+  },
+  "routing rows 8": {
+   "rows_wrong_experts": 0,
+   "near_tie_rows": 0,
+   "max_rel_err": 2.1312746412149863e-06,
+   "pass": true
+  },
+  "routing rows 32": {
+   "rows_wrong_experts": 0,
+   "near_tie_rows": 0,
+   "max_rel_err": 2.1663161078322446e-06,
+   "pass": true
+  }
+ },
+ "timing_us_per_layer": {
+  "rows 1": {
+   "reference": 39.9,
+   "compiled": 31.5,
+   "candidate": 25.3
+  },
+  "rows 8": {
+   "reference": 83.5,
+   "compiled": 42.7,
+   "candidate": 24.3
+  },
+  "rows 32": {
+   "reference": 101.2,
+   "compiled": 87.6,
+   "candidate": 68.9
+  }
+ }
+}

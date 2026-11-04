@@ -25,7 +25,12 @@ A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by
 
 [claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs.
 
-Next: a Meta model working in Muse Code, Meta's own coding agent, works as a swarm of agents: Muse Spark in round 1, Muse Wonder Full from round 2. They analyse the code and these findings together, then write GPU kernels against the inefficiencies they confirm. An independent grader checks them, and each round must beat the best kernels of the rounds before it ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md), [ADR 0007](claude/adr/0007-muse-spark-swarm.md), [ADR 0008](claude/adr/0008-muse-wonder.md), [ADR 0009](claude/adr/0009-rounds-build-on-each-other.md)).
+A Meta model working in Muse Code, Meta's own coding agent, works as a swarm of agents: Muse Spark in round 1, Muse Wonder from round 2. They analyse the code and these findings together, then write GPU kernels against the inefficiencies they confirm. An independent grader checks them, and each round starts from the results of the rounds before it ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md), [ADR 0007](claude/adr/0007-muse-spark-swarm.md), [ADR 0008](claude/adr/0008-muse-wonder.md), [ADR 0009](claude/adr/0009-rounds-build-on-each-other.md)).
+
+**Round 1, measured** ([claude/findings/muse-round-1.md](claude/findings/muse-round-1.md)): Muse Spark's three kernels passed the grader, but in the model they changed the generated tokens.
+- All three together made the vLLM decode step 18% slower with 1 request, and 6% faster with 32.
+- The grader had tested decode sizes only, allowed small rounding differences, and timed calls the GPU could overlap.
+- From round 2 the grader asks for bit-exact outputs at decode and prefill sizes, and chains the layers when timing ([ADR 0010](claude/adr/0010-exact-at-every-size.md)).
 
 ## How Meta's models are used
 
@@ -37,7 +42,7 @@ Next: a Meta model working in Muse Code, Meta's own coding agent, works as a swa
     - the lead coordinates and commits.
     
     Both phases are tracked live in shared documents in the round's folder: `muse-spark/exploration/` and `muse-spark/implementation/` for round 1, `muse-spark/round-<N>/` for each later round. [How the swarm works](claude/muse-swarm.md), with diagrams.
-  - From round 2 on, a round starts from the earlier rounds' results, and each new kernel must beat its slot's best so far. A finished round's files are frozen (tag `muse-round-<N>`).
+  - From round 2 on, a round starts from the earlier rounds' results, and each new kernel must beat its slot's best so far, where one passes the current grader. A finished round's files are frozen (tag `muse-round-<N>`).
   - Its work goes to `muse-spark/` on the branch `muse-agent`, with the transcripts of its sessions. Its task was committed and tagged `agent-era` ([brief](claude/muse-agent-brief.md)); the move to Muse Code and the skill were committed and tagged `muse-code-era` before its first Muse Code session.
 
 ## Who made what

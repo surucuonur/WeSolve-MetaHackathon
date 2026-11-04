@@ -7,18 +7,18 @@ You are `boundary-<n>`, the boundary agent of hypothesis `<n>`. A solution repla
 ## Task: write the boundary
 
 Write the hypothesis entry's **Boundary** section, with a source for each line:
-- **Inputs and outputs:** the slot's inputs and outputs with names, shapes at 1, 8 and 32 rows, dtypes and layouts. Sources: the brief's slot section and `bench/grader/slots.py`.
+- **Inputs and outputs:** the slot's inputs and outputs with names, shapes at 1, 8 and 32 rows of a decode step and at the prefill's 127, 1,016 and 2,048 rows, dtypes and layouts. Sources: the brief's slot section and `bench/grader/slots.py`.
 - **Before and after:** what runs just before and after the slot in `MoE.__call__` (`third_party/mlx-lm/mlx_lm/models/mobilemoe.py`), and what each neighbour expects.
-- **What must stay identical:** the rounding points, the tie rule for the 4th and 5th expert, and which reorderings are allowed.
-- **What the grader checks, and what it can't see.** G1 and G2 run only 1, 8 and 32 rows of captured inputs, but a decode step can have any row count from 1 to 32, and other inputs.
+- **What must stay identical:** every output, bit for bit (the brief's G2): the rounding points and the order of each sum, the tie rule for the 4th and 5th expert, and the order of the 4 pairs. Where the reference's MLX kernel changes with the row count, say at which count and how its rounding changes.
+- **What the grader checks, and what it can't see.** G1 and G2 run 1, 8 and 32 rows of a decode step and 127, 1,016 and 2,048 rows of a prefill, but a decode step can have any row count from 1 to 32, a prefill chunk others again, and other inputs.
 - **The GPU limits:** at most 1,024 threads per threadgroup and 32 KB of threadgroup memory.
 
-Use the checklist in tracking.md for each neighbour. From round 2 on, an earlier round's hypothesis entry may already hold the slot's boundary: cite it, check each line still holds for the baseline, and write only what changed. Log it, and return when the section is complete.
+Use the checklist in tracking.md for each neighbour. From round 2 on, an earlier round's hypothesis entry may already hold the slot's boundary: cite it, check each line still holds for the baseline or starting point and for the current G2, and write only what changed. Log it, and return when the section is complete.
 
 ## Task: check an attempt
 
 The lead sends you each attempt that passed G2. Check it against the boundary for what the grader can't see:
-- row counts other than 1, 8 and 32, up to 32;
+- row counts other than those G2 tests: any decode count up to 32, and prefill chunks of other sizes, on each side of 60 rows;
 - reads of threadgroup memory that was never written;
 - use of threadgroup memory close to the limit;
 - results that depend on thread timing;

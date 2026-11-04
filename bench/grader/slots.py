@@ -186,8 +186,8 @@ def save_inputs(model):
         print(f"captured {len(layers)} layers at {rows} rows", flush=True)
 
 
-def load_expert_weights():
-    """Every layer's SwitchGLU weights, from the served checkpoint."""
+def load_model():
+    """The served checkpoint, with its weights in memory."""
     import sys
 
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "micro"))
@@ -195,17 +195,69 @@ def load_expert_weights():
     from mlx_lm.utils import load_model
 
     model, _ = load_model(Path(__file__).resolve().parents[2] / bd.MODEL)
-    weights = [
-        expert_weights(layer.feed_forward.experts) for layer in model.model.layers
-    ]
-    mx.eval(weights)
-    return weights
+    mx.eval(model.parameters())
+    return model
+
+
+def model_expert_weights(model):
+    return [expert_weights(layer.feed_forward.experts) for layer in model.model.layers]
+
+
+def load_expert_weights():
+    """Every layer's SwitchGLU weights, from the served checkpoint."""
+    return model_expert_weights(load_model())
+
+
+PROMPT_REQUESTS = (1, 8, 32)
+
+
+def capture_prefill(model, requests, with_weights=None):
+    """Every layer's slot inputs in the first chunk of a prefill, as load_inputs.
+
+    The same MoE.__call__ runs the prefill. With 128-token prompts and
+    breakdown.py's 2,048-token chunks, 1, 8 and 32 requests give the slots
+    127, 1,016 and 2,048 rows; from 60 rows MLX's own experts kernel changes
+    (gather_qmm_rhs). The prompts are time_candidates.py's.
+    """
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "micro"))
+    import breakdown as bd
+    from mlx_lm.models import mobilemoe
+    from mlx_lm.models.cache import make_prompt_cache
+
+    seen = []
+
+    def routing(x, w_router, bias):
+        inds, weights = ref_routing(x, w_router, bias)
+        seen.append({"x": x, "w_router": w_router, "bias": bias, "inds": inds})
+        return inds, weights
+
+    def combine(y, weights, shared):
+        seen[-1].update(y=y, weights=weights, shared=shared)
+        return ref_combine(y, weights, shared)
+
+    mx.random.seed(requests)
+    ids = mx.random.randint(0, 100000, (requests, 128))
+    chunk = min(bd.PREFILL_TOKENS // requests, ids.shape[1] - 1)
+    original = mobilemoe.MoE.__call__
+    mobilemoe.MoE.__call__ = make_moe_call(routing, combine)
+    try:
+        model(ids[:, :chunk], cache=make_prompt_cache(model))
+    finally:
+        mobilemoe.MoE.__call__ = original
+    for i, layer in enumerate(seen):
+        layer["inds"] = layer["inds"].astype(mx.uint32)
+        if with_weights is not None:
+            layer.update(with_weights[i])
+    mx.eval(seen)
+    return seen
 
 
 def load_inputs(rows, with_weights=None):
     """[{name: mx.array}] per layer, with bfloat16 restored where the model had it.
 
-    *with_weights*, from load_expert_weights, adds each layer's expert weights.
+    *with_weights*, from load_expert_weights or model_expert_weights, adds each layer's expert weights.
     """
     data = np.load(INPUTS / f"rows{rows}.npz")
     bf16 = {"x", "y", "shared"}

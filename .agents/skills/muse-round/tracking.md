@@ -30,7 +30,7 @@ Every shared document carries a version number, so a reader knows which version 
 **Phase versions.** Each README opens with its version line:
 
 ```markdown
-**Version:** v5 · 2026-11-04T09:40Z · skill version 4
+**Version:** v5 · 2026-11-04T09:40Z · skill version 5
 ```
 
 - **Who raises it:** the lead, at every checkpoint, and each version is exactly one commit.
@@ -62,7 +62,7 @@ Implementation, `implementation/README.md`:
 |---|---|---|---|---|
 | `hyp-1-fused-gather` | `experts` | `builder-1-a`, `builder-1-b` | 3: pass, pass, 41 / 55 / 180 (48 / 70 / 260) | hardening |
 
-From round 2 on, the attempts column also gives the baseline's time from the same run, and whether `beats_baseline` is true.
+From round 2 on, where the slot has a baseline, the attempts column also gives its time from the same run, and whether `beats_baseline` is true.
 
 ## Entries
 
@@ -106,9 +106,9 @@ Entries are named so that two agents never pick the same name:
 ### Hypothesis entry
 
 1. Status block. The lead owns it; the statuses are `boundary`, `building`, `hardening`, `ready` and `dropped`.
-2. **Inefficiency** it removes, the slot, and from round 2 on the slot's baseline folder.
+2. **Inefficiency** it removes, the slot, and from round 2 on the slot's baseline folder, or `none` and its starting point.
 3. **Boundary**, written by the boundary agent: what the solution must keep identical (see `boundary.md`).
-4. **One section per builder:** its direction, its attempts (folder, predicted and measured µs per layer at 1, 8 and 32 rows, G1, G2, and from round 2 on the baseline's time and `beats_baseline`), and what each attempt taught.
+4. **One section per builder:** its direction, its attempts (folder, predicted and measured µs per layer at 1, 8 and 32 rows, G1, G2, and where the slot has a baseline its time and `beats_baseline`), and what each attempt taught.
 5. **Boundary checks** of the attempts that passed G2.
 6. **Decision:** the best attempt and why. When the status is `ready`, it states what G3 should show.
 
@@ -116,12 +116,12 @@ Entries are named so that two agents never pick the same name:
 
 Fill it in for each piece of code you inspect, so that no piece is judged without its neighbours:
 
-- **Callers:** who calls it, and with what shapes at 1, 8 and 32 rows.
+- **Callers:** who calls it, and with what shapes at 1, 8 and 32 rows of a decode step and in a prefill.
 - **Callees:** what it calls, down to the Metal kernel it launches.
 - **Data:** each input and output with shape, dtype and layout. Where it is produced, and where it is consumed next.
 - **Neighbours:** what runs just before and after it in the decode step, and what a replacement must keep identical.
 - **Cost:** the kernels it launches, the bytes it reads and writes (weight bytes counted per read), and its measured time with the table the time comes from.
-- **Invariants:** what correctness depends on: the G2 tolerances, the tie rule for the 4th and 5th expert, the bfloat16 rounding points.
+- **Invariants:** what correctness depends on: G2's bit-exact rule at every size, the tie rule for the 4th and 5th expert, the bfloat16 rounding points, and which MLX kernel the reference uses at each size.
 
 ## The log
 

@@ -1,0 +1,43 @@
+{
+ "slot": "combine",
+ "g1": true,
+ "g2": false,
+ "beats_compiled": false,
+ "correctness": {
+  "combine rows 1": {
+   "differ": 0,
+   "max_ulp": 0.0,
+   "pass": true
+  },
+  "combine rows 8": {
+   "differ": 2,
+   "max_ulp": 2.0,
+   "pass": false,
+   "worst_example": "layer 8, row 0 column 439: 0.00250244, want 0.00248718"
+  },
+  "combine rows 32": {
+   "differ": 2,
+   "max_ulp": 1.0,
+   "pass": false,
+   "worst_example": "layer 16, row 9 column 739: -0.0035553, want -0.00354004"
+  },
+  "combine prefill rows 127": {
+   "differ": 6,
+   "max_ulp": 1.0,
+   "pass": false,
+   "worst_example": "layer 2, row 15 column 490: -3.93391e-06, want -4.05312e-06"
+  },
+  "combine prefill rows 1016": {
+   "differ": 50,
+   "max_ulp": 16.0,
+   "pass": false,
+   "worst_example": "layer 0, row 956 column 446: 0.0281982, want 0.0280762"
+  },
+  "combine prefill rows 2048": {
+   "differ": 130,
+   "max_ulp": 32.0,
+   "pass": false,
+   "worst_example": "layer 0, row 649 column 520: -0.00159454, want -0.00157928"
+  }
+ }
+}
