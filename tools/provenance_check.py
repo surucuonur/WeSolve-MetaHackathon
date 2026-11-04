@@ -70,12 +70,15 @@ def is_muse_merge(commit, agent_tips):
     )
 
 
-def check_transcripts(problems):
+def check_transcripts(problems, notes):
+    """Every model call in a transcript is by a Meta model, and every transcript
+    records one, except a session cancelled before its first call completed that
+    ran no tool: a model call is recorded only once it completes."""
     models = Counter()
     for path in sorted(Path("muse-spark/transcripts").glob("*.jsonl")):
         calls = 0
-        for n, line in enumerate(path.read_text().splitlines(), 1):
-            row = json.loads(line)
+        rows = [json.loads(line) for line in path.read_text().splitlines()]
+        for n, row in enumerate(rows, 1):
             if row.get("event") != "model_completed":
                 continue
             calls += 1
@@ -83,7 +86,11 @@ def check_transcripts(problems):
             models[model] += 1
             if not pv.is_meta_model(model):
                 problems.append(f"{path}:{n}: model call by {model!r}, not a Meta model")
-        if not calls:
+        cancelled = bool(rows) and rows[-1].get("terminal") == "cancelled"
+        tools = any(r.get("event") == "assistant_tool_calls_committed" for r in rows)
+        if not calls and cancelled and not tools:
+            notes.append(f"{path}: cancelled before its first model call completed, no tool run; no model recorded")
+        elif not calls:
             problems.append(f"{path}: no model calls recorded")
     return models
 
@@ -129,7 +136,7 @@ def main():
     except subprocess.CalledProcessError:
         era = set()
     agent_tips = set(pv.git("rev-list", pv.MUSE_BRANCH).split()) if branches else set()
-    problems, rows, muse_authors = [], Counter(), Counter()
+    problems, notes, rows, muse_authors = [], [], Counter(), Counter()
     for c in commits(refs):
         muse_authors.update(n.split(" <")[0] for n in c["muse"])
         tag = c["hash"][:7]
@@ -155,7 +162,7 @@ def main():
             problems.append(
                 f"{tag}: a commit not by a Muse agent changes {pv.MUSE_DIR}: {in_muse[:5]}"
             )
-    models = check_transcripts(problems)
+    models = check_transcripts(problems, notes)
     rounds = check_rounds(refs, problems)
     secrets = check_secrets(problems)
 
@@ -167,6 +174,8 @@ def main():
     print(f"finished rounds, files frozen: {', '.join(rounds) or 'none yet'}")
     print(f"transcript model calls by model: {dict(models) or 'none yet'}")
     print(f"secret scan: {secrets}")
+    for note in notes:
+        print(f"note: {note}")
     print("\n".join(problems) if problems else "OK: no mixed authorship found")
     sys.exit(1 if problems else 0)
 
