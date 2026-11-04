@@ -1,0 +1,79 @@
+{
+ "session": "01a1a6ee-ca88-7281-83f4-e927246569a0",
+ "first": "2026-11-04T14:20:32.617286+00:00",
+ "last": "2026-11-04T14:20:39.217671+00:00",
+ "recorded_by": "Muse Code 1.4.14 (dec7d7497f)",
+ "agents": [
+  {
+   "session": "01a1a6ee-ca88-7281-83f4-e927246569a0",
+   "agent": "lead",
+   "model_calls": 1
+  },
+  {
+   "session": "01a1a6ee-ddd6-7a52-9851-45aaf3f30b36",
+   "agent": "reminder goal-reminder",
+   "model_calls": 1
+  },
+  {
+   "session": "01a1a6ee-de16-7053-beeb-8dc8e5d4019f",
+   "agent": "reminder verify-reminder",
+   "model_calls": 1
+  }
+ ],
+ "model_calls_by_model": {
+  "muse-spark-1.3-contributor": 3
+ },
+ "tokens": {
+  "input_tokens": 31621,
+  "output_tokens": 397,
+  "reasoning_tokens": 187
+ },
+ "tool_calls_by_approval": {},
+ "dropped": "Muse Code's instructions and context blocks, reminder prompts, encrypted reasoning and runtime bookkeeping",
+ "dropped_records": {
+  "reminder prompt": 2,
+  "run.model.configured": 3,
+  "runtime.command_intake.received": 1,
+  "runtime.command_intake.session_name.received": 1,
+  "runtime.command_intake.settled": 2,
+  "runtime.retained_fact": 1,
+  "runtime.session": 2,
+  "runtime.session.accepted": 8,
+  "runtime.session.capture_selection": 3,
+  "runtime.session.completed": 8,
+  "runtime.session.context_block_diagnostic": 10,
+  "runtime.session.goal_usage_attribution": 8,
+  "runtime.session.memory_reminder_child_session_linked": 3,
+  "runtime.session.metadata": 3,
+  "runtime.session.model_input_trace_recorded": 3,
+  "runtime.session.model_request_configured": 3,
+  "runtime.session.model_response_created": 3,
+  "runtime.session.output": 2,
+  "runtime.session.proposed": 8,
+  "runtime.session.provider_request_options_configured": 3,
+  "runtime.session.reasoning_committed": 3,
+  "runtime.session.reminder_proposal": 3,
+  "runtime.session.reminder_reconciler_outcome": 3,
+  "runtime.session.resource_usage_sampled": 3,
+  "runtime.session.scheduled": 8,
+  "runtime.session.side_effect_intent": 6,
+  "runtime.session.skill_reminder_decision": 1,
+  "runtime.session.started": 8,
+  "runtime.session.status": 6,
+  "runtime.session.task.accepted": 1,
+  "runtime.session.task.completed": 1,
+  "runtime.session.task.proposed": 1,
+  "runtime.session.task.scheduled": 1,
+  "runtime.session.task.side_effect_intent": 1,
+  "runtime.session.task.started": 1,
+  "runtime.session.task_stream_linked": 8,
+  "runtime.session_start.intake_v3": 1,
+  "runtime.user_intent.accepted": 1,
+  "runtime.user_intent.materialized": 1,
+  "session.end": 1,
+  "session.name.changed": 1,
+  "session.opened.observed": 1,
+  "session.started": 1,
+  "session.workspace_branch.observed": 2
+ }
+}
