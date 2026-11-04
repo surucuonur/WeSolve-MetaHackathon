@@ -2,7 +2,7 @@
 
 - **Owner:** lead
 - **Status:** dropped
-- **Version:** 5
+- **Version:** 6
 - **Updated:** 2026-11-04T22:05:00Z
 - **Next:** boundary-3 writes the Boundary section
 
@@ -106,7 +106,7 @@ G1+G2 pass (`muse-spark/round-4/kernels/combine/attempt-1/grade.json`: `g1` true
 
 **Predicted change in whole requests (PREDICTION):** this slot's own contribution, from its same-run margins × 20 layers, is about −0.16 / −0.30 / −0.53 ms per decode step at 1 / 8 / 32 requests against the compiled reference; the set's whole-request change is measured only by the ready check and is not a sum of slots.
 
-**Ready check (measured, whole request):** `../checks/ready-1/ready-verdict.json` FAILS this attempt alone and in the three-slot set, and `../checks/ready-2/ready-verdict.json` FAILS it alone and in the routing+combine pair (every phase `not slower` in both runs — range overlaps, same tokens everywhere). Decode medians vs base: ready-1 +0.03 / −1.15 / −0.36 / +1.12 ms, ready-2 −0.44 / −1.04 / −1.21 / +0.58 ms at 1×128 / 8×128 / 32×128 / 32×1024. Against the PREDICTION above (−0.16 / −0.30 / −0.53 vs compiled): the 8/32-request medians meet or beat it in both runs; the 1-request and 32×1024 medians flip sign between runs. **Dropped:** no ready check remains, and spread names no kernel change (the slot is at its floor). Slot keeps the reference.
+**Ready check (measured, whole request):** `../checks/ready-1/ready-verdict.json` FAILS this attempt alone and in the three-slot set, and `../checks/ready-2/ready-verdict.json` FAILS it alone and in the routing+combine pair (every phase `not slower` in both runs — range overlaps, same tokens everywhere). Decode medians vs base: ready-1 +0.03 / −1.15 / −0.36 / +1.12 ms, ready-2 −0.44 / −1.04 / −1.21 / +0.58 ms at 1×128 / 8×128 / 32×128 / 32×1024. Against the PREDICTION above (−0.16 / −0.30 / −0.53 vs compiled): the 8-request medians beat it in both runs, the 32×128 median beats it in ready-2 but not ready-1 (−0.36 vs −0.53); the 1-request median flips sign between runs and the 32×1024 median is positive in both. **Dropped:** no ready check remains, and spread names no kernel change (the slot is at its floor). Slot keeps the reference.
 
 ## Failure ledger
 
