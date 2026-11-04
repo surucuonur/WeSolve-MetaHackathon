@@ -77,7 +77,7 @@ Commit it as exploration v1. **Done** when every slot has its baseline or starti
 
 ### 2. Exploration
 
-1. **Set up the folder.** Write `<round>/exploration/README.md` with a heading, its version line (v1, with skill version 6), the tracker (one row per territory) and `## Versions`, and an empty `log.md`.
+1. **Set up the folder.** Write `<round>/exploration/README.md` with a heading, its version line (v1, with skill version 7), the tracker (one row per territory) and `## Versions`, and an empty `log.md`.
 2. **Start the explorers and the verifier,** all at once.
    - **Round 1** starts with these territories:
 
