@@ -2,7 +2,7 @@
 
 - **Owner:** lead
 - **Status:** hardening
-- **Version:** 6
+- **Version:** 7
 - **Updated:** 2026-11-04T21:49:10Z
 - **Next:** builders grading
 
@@ -329,8 +329,17 @@ No graded attempt lost: attempts 1 and 2 both pass G1, G2 and `beats_compiled`. 
 
 ## Unverified
 
-*(starts from the boundary's can't-see list.)*
+- The exact hand-off bounds: the grader cannot tell `min_rows: 2` from 3–8 (which would hand off serving decode counts 2–7) nor grade the bounds themselves; only reading `spec.json` (`min_rows: 2`, `max_rows: 59`, plain ints) distinguishes them. Boundary check verified both by reading the spec.
+- Kernel speed at ungraded decode counts 2–7 and 9–31 and (attempt-1 only) at 33–59 rows is unmeasured; correctness there rests on the per-pair, rows-independent construction round 3 checked, not on G2.
+- Sizes above 2,048 rows, prefill beyond the first seeded chunk, other prompt lengths/distributions and mixed batches are untested.
+- The 1-request consequence: with 1 request this slot runs MLX's own code for the whole workload (1-row hand-off), so it adds nothing there and the set passes at 1×128 only on routing+combine. Only the ready check / G3 measures this.
+- The three-slot interaction at 8 requests (+2.13 to +2.86 ms/step in rounds 1–2) is untested by the piece timing; only the ready check's `muse-all` measures it with these kernels.
+- Unwritten threadgroup reads and thread-timing dependence: checked by hand in the boundary check (pass), not by the grader. Threadgroup memory 3,840 B against the 32 KB limit, counted by hand. NaN-vs-NaN counts as equal in G2.
 
 ## Checks
 
-*(checker-1 writes here before candidate.)*
+- **checker-1, 2026-11-04T22:02:20Z — check: fail** (defects below; do not close as `candidate` until fixed):
+  1. `muse-spark/round-4/implementation/hyp-1-experts-minrows.md:330-332` — **Unverified** is only the placeholder “(starts from the boundary's can't-see list.)” and covers none of the boundary's can't-see list at `muse-spark/round-4/implementation/hyp-1-experts-minrows.md:164-192`: exact hand-off bounds indistinguishable at graded sizes (`min_rows` 2–8, `max_rows` 32–59; only reading `spec.json` distinguishes them), ungraded row counts (kernel speed/correctness at decode 2–7 and 9–31 and, for direction (a), 33–59; sizes above 2,048, prefill beyond the first chunk, other lengths/distributions and mixed batches), the 1-request whole-request consequence (visible only to the ready check / G3; this slot can pass only inside a faster set), the three-slot interaction at 8 requests, and unwritten threadgroup reads / thread-timing dependence / the 32 KB limit, NaN-vs-NaN equality and 1-request G3 noise. Mentions scattered in builder/boundary notes do not substitute for the **Unverified** list.
+  2. `muse-spark/round-4/implementation/hyp-1-experts-minrows.md:245-247` — a cost is called zero without a measurement: “at zero kernel cost”. Byte-identity proves no kernel change, not zero timing cost; attempt-1 and the starting point were graded in separate runs with an acknowledged level shift (compiled bar 86.6 → 73.9 µs/layer at 1 row, `:242-243`), so no measurement isolates the spec/hand-off cost as zero.
+  3. `muse-spark/round-4/implementation/hyp-1-experts-minrows.md:287-288` — a cost is called zero without a measurement: narrowing to 2–32 rows “costs nothing at any graded size”. Attempts 1 and 2 were graded in separate runs (compiled 232.1 / 832.6 vs 236.8 / 823.2 µs/layer; candidate 157.6 vs 170.5 µs/layer at 8 rows), so only the verdict kind matching (`:278-280`) is measured, not a zero difference. (The 33–59 hand-off cost is correctly left unmeasured at `:289-290`.)
+- **Verified (no defect):** every measured piece number was found in its cited `grade.json` at the named size/key and the arithmetic redone — attempt-1 (`muse-spark/round-4/kernels/experts/attempt-1/grade.json`): G1/G2 pass, differ 0 / max_ulp 0.0 at all six sizes; candidate/reference/compiled 73.9/76.2/73.9 handed off, 157.6/233.0/232.1 faster (30 wins), 571.1/842.5/832.6 faster (30 wins), prefill 1026.6/1016.0/1026.6, 4013.4/4070.0/4013.4, 7412.5/7452.5/7412.5 handed off; margins 232.1−157.6=74.5 and 832.6−571.1=261.5 µs/layer; prediction misses −14.7/−6.7/+3.0/−9.2/−2.9/−1.9% (none over 20%). Attempt-2 (`muse-spark/round-4/kernels/experts/attempt-2/grade.json`): 76.1/79.2/76.1 handed off, 170.5/237.2/236.8 and 538.1/809.1/823.2 faster (30 wins each), prefill 991.6/1043.8/991.6, 3998.9/4090.0/3998.9, 7441.5/7440.4/7441.5 handed off; margins 236.8−170.5=66.3 and 823.2−538.1=285.1 µs/layer; misses −12.1/+0.9/−3.0/−12.3/−3.3/−1.5%. Boundary-check equalities (handed-off candidate = compiled) match both grade files. Predictions are labelled with arithmetic counting only this slot's own measured effect (builder predictions 238.2−168.9=69.3, 883.4−554.7=328.7 µs/layer; Decision `:322` is labelled PREDICTION: same-run margins × 20 layers = 74.5×20=1.49 ms and 261.5×20=5.23 ms per decode step); no combination gain is summed from slots (the +2.13 to +2.86 ms/step three-slot term at `:320` is quoted as untested historical context, not added to this slot's gain). Failure ledger (`:324-328`) recounts correctly: neither grade file lost — both attempts pass G1, G2 and `beats_compiled` with no `slower` size or phase, so there is nothing to harden against.
