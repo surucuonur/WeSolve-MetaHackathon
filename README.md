@@ -1,16 +1,18 @@
 # WeSolve: a swarm of Meta AI agents that makes vLLM faster on a Mac
 
+**Author:** Onur Sürücü · [o.surucu97@gmail.com](mailto:o.surucu97@gmail.com) · [LinkedIn](https://www.linkedin.com/in/onur-surucu/)
+
 [![WeSolve: AI Agents Rewrote vLLM’s GPU Code and Made It 21% Faster (watch on YouTube)](https://img.youtube.com/vi/nS6i200dKHg/maxresdefault.jpg)](https://www.youtube.com/watch?v=nS6i200dKHg)
 
 ▶ **[Watch the video on YouTube](https://www.youtube.com/watch?v=nS6i200dKHg)**
 
-> WeSolve, an agent swarm, sped up a mixture-of-experts LLM (Meta's MobileMoE-S) on a local Apple Silicon Mac (M1 Pro, vLLM) by up to 21% end to end, prompt reading and generation together (430 → 519 tokens/s), with bit-identical output. Generation alone got up to 27% faster, and prompt reading up to 11%.
+> WeSolve, an agent swarm, sped up a mixture-of-experts LLM (Meta's MobileMoE-S) on a local Apple Silicon Mac (M1 Pro, vLLM) by up to 21% end to end, prompt reading and generation together (430 → 519 tokens/s), with bit-identical output. Generation alone got up to 27% faster, and prompt reading took up to 11% less time.
 
 <sub>32 concurrent requests, 256 new tokens each, medians of 5 runs against vLLM as shipped: 1,024-token prompts 430 → 519 tokens/s (+21%), 128-token prompts 911 → 1,097 (+20%). In the 1,024-token run unchanged vLLM was slower than in earlier runs; against MLX's compiled code, timed alongside, that gain is 11% (see *Limits*).</sub>
 
 An indie-track project for the Meta Global AI Developer Hackathon (Oct 26 – Nov 4, 2026).
 
-**What we did.** We built **WeSolve**, a swarm of AI agents running Meta's own models (Muse Spark and Muse Wonder) in Meta's coding agent, Muse Code. We pointed it at vLLM serving Meta's on-device model MobileMoE-S on an Apple M1 Pro. The swarm read the code and our measurements, found where the time goes, and wrote new GPU kernels for the model's mixture-of-experts layers. With its best kernels, **a whole request, reading the prompt and generating the answer, finishes up to 21% faster with 32 concurrent requests**. Generation alone is up to 27% faster and prompt reading up to 11%, and every answer stays the same, token for token.
+**What we did.** We built **WeSolve**, a swarm of AI agents running Meta's own models (Muse Spark and Muse Wonder) in Meta's coding agent, Muse Code. We pointed it at vLLM serving Meta's on-device model MobileMoE-S on an Apple M1 Pro. The swarm read the code and our measurements, found where the time goes, and wrote new GPU kernels for the model's mixture-of-experts layers. With its best kernels, **a whole request, reading the prompt and generating the answer, finishes up to 21% faster with 32 concurrent requests**. Generation alone is up to 27% faster, prompt reading takes up to 11% less time, and every answer stays the same, token for token.
 
 **How WeSolve works, in plain words.** One agent can look at one thing at a time; a team can look at everything at once. WeSolve splits the problem among many agents: explorers each study a different part of the code, a verifier checks what they claim, several builders compete to write the fix, and a lead coordinates. They all write in shared notebooks, so each one sees what the others found and changes course when someone else's finding points to a better path. Nothing counts until a referee has measured it: the new code must give exactly the same answers and be faster in the real engine. Each round starts from what the last one learned.
 
@@ -26,7 +28,7 @@ The best version, **WeSolve**, is the swarm's experts and routing kernels from r
 
 | Requests × prompt tokens | Whole request, generated tokens/s | Generation only, tokens/s | Prompt reading time |
 |---|---|---|---|
-| 1 × 128 | 156 → 165 (**+6%**) | 164 → 173 (+6%) | 65 → 69 ms (+7%, within the spread between runs) |
+| 1 × 128 | 156 → 165 (**+5%**) | 164 → 173 (+6%) | 65 → 69 ms (+7%, within the spread between runs) |
 | 8 × 128 | 491 → 533 (**+9%**) | 516 → 574 (+11%) | 232 → 215 ms (−7%) |
 | 32 × 128 | 911 → 1,097 (**+20%**) | 1,004 → 1,233 (+23%) | 855 → 838 ms (−2%) |
 | 32 × 1,024 | 430 → 519 (**+21%**) | 710 → 899 (+27%) | 7.66 → 6.85 s (−11%) |
@@ -51,9 +53,9 @@ Generation only, decode steps:
 | 32 × 128 | 1,086 | 1,334 | 1,004 | 1,005 | **1,233** |
 | 32 × 1,024 | 837 | 1,014 | 710 | 757 | **899** |
 
-- **Against compiled MLX code**, WeSolve's whole requests are 3%, 9%, 20% and 11% faster.
+- **Against compiled MLX code**, WeSolve's whole requests are 3%, 10%, 20% and 11% faster.
 - **With 8 and 32 requests,** vLLM + WeSolve serves more tokens per second than MLX alone.
-- **With 1 request, MLX alone is fastest.** vLLM spends about 2 ms of engine CPU time per single-request step.
+- **With 1 request, MLX on its own is fastest.** Its decode step is 4.9 ms, against vLLM's 6.1 ms.
 
 **Memory bandwidth used during generation.** Bytes each decode step must read (the weights of the experts it uses, the other weights and the attention cache, as counted in the [baseline](#baseline-results)) divided by the step's time, against the M1 Pro's peak of about 200 GB/s:
 
@@ -66,7 +68,7 @@ Generation only, decode steps:
 WeSolve turns more of the bandwidth into tokens, but the engine still uses less than a fifth of it. [The study below](#the-study-where-does-the-memory-bandwidth-go) shows where the rest goes.
 
 **Conditions.**
-- **Hardware:** Apple M1 Pro, 16-core GPU, 16 GB unified memory, about 200 GB/s peak memory bandwidth and 5.2 TFLOPS; macOS 15.7.4, on AC power.
+- **Hardware:** Apple M1 Pro, 16-core GPU, 16 GB unified memory, about 200 GB/s peak memory bandwidth and 5.2 TFLOPS; macOS 15.7.4. The power adapter was plugged in, but the power log shows 132 one-second switches to battery during the vLLM run and 17 during the MLX run, likely the adapter falling short under full load.
 - **Model:** `facebook/MobileMoE-S-QAT`, Meta's int4 on-device mixture-of-experts model: about 1.3B parameters, about 272M used per token; 20 layers, 60 experts per layer, 4 per token ([GLOSSARY.md](claude/GLOSSARY.md)).
 - **Engines:** vLLM 0.32.0 with vllm-metal 0.32.0.dev20261028121433 and MLX 0.32.4. *MLX alone* is mlx_lm running the model directly, one batch at a time, with no server; it doesn't time prompt reading on its own, so it appears in the whole-request and generation tables only.
 - **Workloads:** 1, 8 or 32 requests at once, random-token prompts of 128 or 1,024 tokens, 256 generated tokens each, greedy decoding.
@@ -77,19 +79,17 @@ WeSolve turns more of the bandwidth into tokens, but the engine still uses less 
   - *WeSolve* is `muse-spark/round-4/kernels/experts/attempt-1` with `routing/attempt-1`.
 
 **Limits.**
-- **The 1,024-token baseline ran slow.** In this run, unchanged vLLM took 45.1 ms per decode step with 32 requests of 1,024 tokens, against 39.4 to 40.9 ms in earlier runs. Its gains there are likely a few points high. Against compiled MLX code, timed in the same run, WeSolve is 11% faster on whole requests and 19% on generation. With 128-token prompts the baseline was normal, and the gain is 20% against both.
+- **The 1,024-token baseline ran slow.** In this run, unchanged vLLM took 45.1 ms per decode step with 32 requests of 1,024 tokens, against 39.4 to 40.9 ms in earlier runs. Its gains there are likely a few points high. Against compiled MLX code, timed in the same run, WeSolve is 11% faster on whole requests and 19% on generation. With 128-token prompts the baseline was close to earlier runs (31.9 ms, against 30.1 to 31.3), and the gain is 20% against both.
 - **Prompt reading with 1 request** was 6.8% slower by median. Its runs spread from 51 to 85 ms, against WeSolve's 57 to 70, so the difference is inside the noise. With 8 and 32 requests, prompt reading got faster.
 - **Our own acceptance rule isn't met.** It asks the 5 runs' ranges not to overlap the bars' in any workload. On this machine, which had 16–17 GB of swap in use, they overlap somewhere for every variant. No measurement is slower beyond the spread.
 - **The engines ran one after the other,** not interleaved, so compare across them with care.
 
-The data is in [results/runs/2026-11-04-muse-round-4/](results/runs/2026-11-04-muse-round-4/) (vLLM) and [results/runs/2026-11-04-muse-round-4-mlx/](results/runs/2026-11-04-muse-round-4-mlx/) (MLX alone). To reproduce the vLLM run, about 45 minutes:
+The data is in [results/runs/2026-11-04-muse-round-4/](results/runs/2026-11-04-muse-round-4/) (vLLM) and [results/runs/2026-11-04-muse-round-4-mlx/](results/runs/2026-11-04-muse-round-4-mlx/) (MLX alone). To reproduce the vLLM comparison, about 25 minutes (`muse-all` is WeSolve, `compiled-all` the compiled MLX code):
 
 ```bash
 K=muse-spark/round-4/kernels
 .venv/bin/python bench/grader/time_candidates.py vllm results/runs/<date>-check \
-  experts=$K/experts/attempt-1 routing=$K/routing/attempt-1 \
-  --variant muse-experts-routing:experts=$K/experts/attempt-1+routing=$K/routing/attempt-1 \
-  --variant compiled-experts-routing:experts=compiled+routing=compiled
+  experts=$K/experts/attempt-1 routing=$K/routing/attempt-1
 ```
 
 ## What the swarm built, round by round
@@ -101,12 +101,12 @@ WeSolve ran four rounds on 2026-11-03 and 04. Each wrote in its own folder, `mus
 | 1 | Muse Spark | Its kernels passed the first grader, but in the model they changed the generated tokens. The grader now asks for bit-exact outputs at every size ([ADR 0010](claude/adr/0010-exact-at-every-size.md)). | [round 1](claude/findings/muse-round-1.md) |
 | 2 | Muse Wonder | Exact kernels. Routing sped up decode steps but slowed prompts by 7–10%. An improvement must now hold in both phases ([ADR 0011](claude/adr/0011-decode-and-prefill.md)). | [round 2](claude/findings/muse-round-2.md) |
 | 3 | Muse Spark (contributor) | The swarm ran the same end-to-end measurement itself before calling anything ready ([ADR 0013](claude/adr/0013-measure-what-you-claim.md)). Its routing + combine pair shortened decode steps by 1.6–16.5%, with nothing slower. | [round 3](claude/findings/muse-round-3.md) |
-| 4 | Muse Wonder | With a new rule, kernels may hand the sizes they lose at to MLX's own code ([ADR 0015](claude/adr/0015-sets-and-hand-off-below.md)). That unlocked the experts kernel: 31% faster than compiled MLX at 8 and 32 rows. Experts + routing is the best version, above. | [round 4](claude/findings/muse-round-4.md) |
+| 4 | Muse Wonder | With a new rule, kernels may hand the sizes they lose at to MLX's own code ([ADR 0015](claude/adr/0015-sets-and-hand-off-below.md)). That unlocked the experts kernel: it takes 31–32% less time than compiled MLX at 8 and 32 rows. Experts + routing is the best version, above. | [round 4](claude/findings/muse-round-4.md) |
 
 - **What the kernels do:**
   - The **experts kernel** fuses each token's routed experts into one GPU kernel for 2 to 59 rows, the decode sizes, and hands 1-row steps and prompts to MLX's own code.
   - The **routing kernel** picks each token's 4 experts in one kernel, bit-exact with MLX's choice, ties included.
-- **A limit we found:** all three swarm kernels together (experts, routing and combine) lose 8% with 8 requests, though every pair gains there. That is why the best version is a pair.
+- **A limit we found:** with all three swarm kernels together (experts, routing and combine), the decode step is 8% slower with 8 requests, though every pair is faster there. That is why the best version is a pair.
 
 ## The study: where does the memory bandwidth go?
 
@@ -203,7 +203,7 @@ for f in $(cd $W && ls metal/*.metallib metal/_paged_ops.* pytorch_backend/_mps_
 done
 ```
 
-`.env` is not committed. It holds `MODEL_API_KEY` for Muse Spark on Meta's API (round 1) and `HUGGINGFACE_API_KEY` for downloading the gated model; the scripts pass the second one to Hugging Face tools as `HF_TOKEN`.
+`.env` is not committed. It holds `MODEL_API_KEY` for the Muse agent on Meta's Model API and `HUGGINGFACE_API_KEY` for downloading the gated model; the scripts pass the second one to Hugging Face tools as `HF_TOKEN`.
 
 The int4 model is converted to MLX's format once. The serving copy has bfloat16 scales; the float32 copy keeps the scales exact for the correctness check. Both go to `models/` (git-ignored):
 
