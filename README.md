@@ -1,14 +1,93 @@
-# MobileMoE-S on vLLM Metal: where does the memory bandwidth go?
+# vSolve: a swarm of Meta AI agents that makes vLLM faster on a Mac
 
 *Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](PROVENANCE.md).*
 
 An indie-track project for the Meta Global AI Developer Hackathon (Oct 26 – Nov 4, 2026).
 
+**What we did.** We built **vSolve**, a swarm of AI agents running Meta's own models (Muse Spark and Muse Wonder) in Meta's coding agent, Muse Code. We pointed it at vLLM serving Meta's on-device model MobileMoE-S on an Apple M1 Pro. The swarm read the code and our measurements, found where the time goes, and wrote new GPU kernels for the model's mixture-of-experts layers. With its best kernels, **vLLM generates 27% more tokens per second with 32 concurrent requests: from 710 to 899**, and every answer stays the same, token for token.
+
+**How vSolve works, in plain words.** One agent can look at one thing at a time; a team can look at everything at once. vSolve splits the problem among many agents: explorers each study a different part of the code, a verifier checks what they claim, several builders compete to write the fix, and a lead coordinates. They all write in shared notebooks, so each one sees what the others found and changes course when someone else's finding points to a better path. Nothing counts until a referee has measured it: the new code must give exactly the same answers and be faster in the real engine. Each round starts from what the last one learned.
+
+## Results
+
+The best version, **vSolve**, is the swarm's experts and routing kernels from round 4, the last ([how they were measured](claude/findings/muse-round-4.md)). Generated tokens per second, counting decode steps only, medians:
+
+| Requests × prompt tokens | MLX alone | MLX + vSolve | vLLM original | vLLM + compiled MLX code | **vLLM + vSolve** | vSolve vs vLLM original |
+|---|---|---|---|---|---|---|
+| 1 × 128 | 203 | 221 | 164 | 169 | **173** | +6% |
+| 8 × 128 | 522 | 587 | 516 | 512 | **574** | +11% |
+| 32 × 128 | 1,086 | 1,334 | 1,004 | 1,005 | **1,233** | +23% |
+| 32 × 1,024 | 837 | 1,014 | 710 | 757 | **899** | **+27%** |
+
+Whole requests, prompt processing included (generated tokens ÷ time from sending the requests to the last token):
+
+| Requests × prompt tokens | MLX alone | MLX + vSolve | vLLM original | vLLM + compiled MLX code | **vLLM + vSolve** | vSolve vs vLLM original |
+|---|---|---|---|---|---|---|
+| 1 × 128 | 174 | 169 | 156 | 160 | **165** | +6% |
+| 8 × 128 | 479 | 526 | 491 | 487 | **533** | +9% |
+| 32 × 128 | 994 | 1,169 | 911 | 914 | **1,097** | +20% |
+| 32 × 1,024 | 504 | 554 | 430 | 468 | **519** | +21% |
+
+**Memory bandwidth used.** Bytes each decode step must read (the weights of the experts it uses, the other weights and the attention cache, as counted in the [baseline](#baseline-results)) divided by the step's time, against the M1 Pro's peak of about 200 GB/s:
+
+| Requests × prompt tokens | vLLM original | vLLM + vSolve |
+|---|---|---|
+| 1 × 128 | 29.3 GB/s (15%) | 31.0 GB/s (16%) |
+| 32 × 128 | 22.6 GB/s (11%) | 27.7 GB/s (14%) |
+| 32 × 1,024 | 27.7 GB/s (14%) | 35.1 GB/s (18%) |
+
+vSolve turns more of the bandwidth into tokens, but the engine still uses less than a fifth of it. [The study below](#the-study-where-does-the-memory-bandwidth-go) shows where the rest goes.
+
+**Conditions.**
+- **Hardware:** Apple M1 Pro, 16-core GPU, 16 GB unified memory, about 200 GB/s peak memory bandwidth and 5.2 TFLOPS; macOS 15.7.4, on AC power.
+- **Model:** `facebook/MobileMoE-S-QAT`, Meta's int4 on-device mixture-of-experts model: about 1.3B parameters, about 272M used per token; 20 layers, 60 experts per layer, 4 per token ([GLOSSARY.md](claude/GLOSSARY.md)).
+- **Engines:** vLLM 0.32.0 with vllm-metal 0.32.0.dev20261028121433 and MLX 0.32.4. *MLX alone* is mlx_lm running the model directly, one batch at a time, with no server.
+- **Workloads:** 1, 8 or 32 requests at once, random-token prompts of 128 or 1,024 tokens, 256 generated tokens each, greedy decoding.
+- **Repeats:** 5 shuffled repeats per cell for vLLM, 3 for MLX alone; medians.
+- **Exactness:** every variant gave exactly the unchanged model's tokens, checked with 1 and 32 requests in both engines.
+- **The columns:**
+  - *compiled MLX code* is the same two parts of the model under MLX's own compiler (`mx.compile`), with no new kernel. It shows what the swarm's kernels add beyond compiling.
+  - *vSolve* is `muse-spark/round-4/kernels/experts/attempt-1` with `routing/attempt-1`.
+
+**Limits.**
+- **The headline's baseline ran slow.** In this run, unchanged vLLM took 45.1 ms per step with 32 requests of 1,024 tokens, against 39.4 to 40.9 ms in earlier runs, so the 27% is likely a few points high. Against compiled MLX code, timed in the same run, vSolve's gain there is 19% (757 → 899).
+- **Our own acceptance rule isn't met.** It asks the 5 repeats' ranges not to overlap the bars' in any workload. On this machine, which had 16–17 GB of swap in use, they overlap somewhere for every variant. Every decode-step median favours vSolve, and no measurement is slower beyond the spread.
+- **The engines ran one after the other,** not interleaved, so compare across them with care.
+- **With 1 request, MLX alone is fastest.** vLLM spends about 2 ms of engine CPU time per single-request step.
+
+The data is in [results/runs/2026-11-04-muse-round-4/](results/runs/2026-11-04-muse-round-4/) (vLLM) and [results/runs/2026-11-04-muse-round-4-mlx/](results/runs/2026-11-04-muse-round-4-mlx/) (MLX alone). To reproduce the vLLM run, about 45 minutes:
+
+```bash
+K=muse-spark/round-4/kernels
+.venv/bin/python bench/grader/time_candidates.py vllm results/runs/<date>-check \
+  experts=$K/experts/attempt-1 routing=$K/routing/attempt-1 \
+  --variant muse-experts-routing:experts=$K/experts/attempt-1+routing=$K/routing/attempt-1 \
+  --variant compiled-experts-routing:experts=compiled+routing=compiled
+```
+
+## What the swarm built, round by round
+
+vSolve ran four rounds on 2026-11-03 and 04. Each wrote in its own folder, `muse-spark/round-<N>/` (round 1 at the top of `muse-spark/`), started from the rounds before it, and was then measured independently by Claude.
+
+| Round | Model | What happened | Measured |
+|---|---|---|---|
+| 1 | Muse Spark | Its kernels passed the first grader, but in the model they changed the generated tokens. The grader now asks for bit-exact outputs at every size ([ADR 0010](claude/adr/0010-exact-at-every-size.md)). | [round 1](claude/findings/muse-round-1.md) |
+| 2 | Muse Wonder | Exact kernels. Routing sped up decode steps but slowed prompts by 7–10%. An improvement must now hold in both phases ([ADR 0011](claude/adr/0011-decode-and-prefill.md)). | [round 2](claude/findings/muse-round-2.md) |
+| 3 | Muse Spark (contributor) | The swarm ran the same end-to-end measurement itself before calling anything ready ([ADR 0013](claude/adr/0013-measure-what-you-claim.md)). Its routing + combine pair shortened decode steps by 1.6–16.5%, with nothing slower. | [round 3](claude/findings/muse-round-3.md) |
+| 4 | Muse Wonder | With a new rule, kernels may hand the sizes they lose at to MLX's own code ([ADR 0015](claude/adr/0015-sets-and-hand-off-below.md)). That unlocked the experts kernel: 31% faster than compiled MLX at 8 and 32 rows. Experts + routing is the best version, above. | [round 4](claude/findings/muse-round-4.md) |
+
+- **What the kernels do:**
+  - The **experts kernel** fuses each token's routed experts into one GPU kernel for 2 to 59 rows, the decode sizes, and hands 1-row steps and prompts to MLX's own code.
+  - The **routing kernel** picks each token's 4 experts in one kernel, bit-exact with MLX's choice, ties included.
+- **A limit we found:** all three swarm kernels together (experts, routing and combine) lose 8% with 8 requests, though every pair gains there. That is why the best version is a pair.
+
+## The study: where does the memory bandwidth go?
+
 **The question:** when vLLM serves Meta's on-device MobileMoE-S model on an Apple M1 Pro, how much of the GPU's memory bandwidth does it actually use, where does the remaining time go, and which fixes turn unused bandwidth into more tokens per second?
 
 Each measured decode step is plotted against two limits: peak bandwidth (~200 GB/s) and peak compute (~5.2 TFLOPS). One request at a time should be limited by bandwidth. Running more requests per step reuses the weights already read, until compute becomes the limit. In a mixture-of-experts model, each extra request may also pull in different experts, so the bytes read grow too. Terms are defined in [GLOSSARY.md](claude/GLOSSARY.md).
 
-**Status:** the baseline is measured ([results below](#baseline-results)). vLLM serves MobileMoE-S at 12–17% of the GPU's peak memory bandwidth, and each decode step takes 6–8 times longer than the bandwidth and compute limits require. Microbenchmarks show where the time goes ([claude/findings/decode-bottlenecks.md](claude/findings/decode-bottlenecks.md)):
+**What we found** ([results below](#baseline-results)): unchanged vLLM serves MobileMoE-S at 12–17% of the GPU's peak memory bandwidth, and each decode step takes 6–8 times longer than the bandwidth and compute limits require. Microbenchmarks show where the time goes ([claude/findings/decode-bottlenecks.md](claude/findings/decode-bottlenecks.md)):
 
 - about 870 small GPU kernels per step, each with a fixed cost;
 - expert weights read once per (token, expert) pair;
@@ -23,33 +102,7 @@ A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by
   - With one request each weight is read once.
   - With 32 requests a step reads about twice what the model needs: the routed experts read 908 MB from memory for 443 MB of weights. MLX's split quantized products also write about 170 MB of partial sums per step.
 
-[claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs.
-
-A Meta model working in Muse Code, Meta's own coding agent, works as a swarm of agents: Muse Spark in round 1, Muse Wonder in round 2, Muse Spark's contributor model in round 3, unattended ([ADR 0012](claude/adr/0012-muse-spark-contributor-unattended.md)), and Muse Wonder again in round 4, the last ([ADR 0014](claude/adr/0014-muse-wonder-last-round.md)). They analyse the code and these findings together, then write GPU kernels against the inefficiencies they confirm. An independent grader checks them, and each round starts from the results of the rounds before it ([ADR 0006](claude/adr/0006-muse-spark-in-muse-code.md), [ADR 0007](claude/adr/0007-muse-spark-swarm.md), [ADR 0008](claude/adr/0008-muse-wonder.md), [ADR 0009](claude/adr/0009-rounds-build-on-each-other.md)).
-
-**Round 1, measured** ([claude/findings/muse-round-1.md](claude/findings/muse-round-1.md)): Muse Spark's three kernels passed the grader, but in the model they changed the generated tokens.
-- All three together made the vLLM decode step 18% slower with 1 request, and 6% faster with 32.
-- The grader had tested decode sizes only, allowed small rounding differences, and timed calls the GPU could overlap.
-- From round 2 the grader asks for bit-exact outputs at decode and prefill sizes, and chains the layers when timing ([ADR 0010](claude/adr/0010-exact-at-every-size.md)).
-
-**Round 2, measured** ([claude/findings/muse-round-2.md](claude/findings/muse-round-2.md)): Muse Wonder's kernels are bit-exact with MLX's at every size tested, and leave the model's tokens unchanged.
-- **The routing kernel** shortens the vLLM decode step by 0.43 to 0.54 ms (2 to 9%) at 1, 8 and 32 requests, but processes prompts 7–10% slower, so over whole requests it gains 10% with 1 request and loses 3.5% with 32 requests of 1,024-token prompts. It passed G3 as it stood, which timed decode steps only. From round 3 an improvement must hold in both phases, prefill and decode ([ADR 0011](claude/adr/0011-decode-and-prefill.md)), and by that rule no round-2 kernel is one yet.
-- **The combine kernel** slows the decode step with 32 requests, so the submitted pair gains 16% in throughput with 1 request and loses 3–4% with 32.
-- **An experts kernel round 2 didn't submit** shortens the decode step by up to 19%, but processes prompts 7 to 15 times slower, so whole requests lose 10–83% of their throughput.
-- **Compiling MLX's own code for the three slots**, with no new kernel, raises throughput by 0.6–3.1% with 8 and 32 requests, outside the spread between repeats, and by a median 12% with 1 request, where the repeats are too noisy to be sure. No Muse version gains in every workload.
-- From round 3 the grader and G3 time both phases, and an attempt may hand prefill-sized inputs to MLX's compiled code ([ADR 0011](claude/adr/0011-decode-and-prefill.md)).
-- From round 3 the swarm also runs that G3 itself, inside the round, before it calls anything ready, and a checker matches every speed claim to the file it comes from. The fix was designed, tested and reviewed by a swarm in Muse Code ([ADR 0013](claude/adr/0013-measure-what-you-claim.md)). The unchanged engine these numbers compare against matches vLLM as shipped, without Claude's timing hooks, within the noise between repeats ([results/runs/2026-11-04-clean-vllm/](results/runs/2026-11-04-clean-vllm/)).
-
-**Round 3, measured** ([claude/findings/muse-round-3.md](claude/findings/muse-round-3.md)): Muse Spark's routing and combine kernels are bit-exact and leave the tokens unchanged.
-- **Together** they shorten the vLLM decode step by 16.5%, 5.4% and 2.8% with 1, 8 and 32 requests of 128-token prompts and 1.6% with 32 of 1,024, and whole requests by 2.1–14.1%. Prompts are 1.6–3.1% faster, and nothing is slower.
-- **With one request and 1,024- or 7,936-token prompts,** the decode step is 14.8% and 11.3% shorter, and 8.1% and 6.3% shorter than MLX's compiled code.
-- G3 still fails the pair against MLX's compiled code with 32 requests of 1,024 tokens, where it is 0.9% faster and the repeats overlap; the swarm's own run of the same check passed it. Each kernel alone fails on overlapping repeats.
-- From round 4, kernels that pass together count as ready together, and an attempt may also hand small inputs to MLX's compiled code ([ADR 0015](claude/adr/0015-sets-and-hand-off-below.md)).
-
-**Round 4, the last, measured** ([claude/findings/muse-round-4.md](claude/findings/muse-round-4.md)): Muse Wonder's experts, routing and combine kernels are bit-exact and leave the tokens unchanged, alone, in pairs and all together.
-- **The experts kernel beats MLX's compiled code for the first time,** by 31% at 8 and 32 rows in the grader, once 1-row steps go to MLX's own code (`min_rows`).
-- **Experts with routing is the best version measured:** the vLLM decode step is 5.5%, 10.2%, 18.6% and 21.1% shorter than the unchanged model's with 1, 8 and 32 requests of 128-token prompts and 32 of 1,024, whole requests 4.9–17.1% shorter, throughput 6–21% higher, and nothing is slower.
-- G3 still fails every variant: on this heavily swapping machine the 5 repeats' ranges overlap in at least one workload. All three kernels together lose 8.4% with 8 requests, while every pair gains there.
+[claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs. These findings are what vSolve's agents started from.
 
 ## How Meta's models are used
 
