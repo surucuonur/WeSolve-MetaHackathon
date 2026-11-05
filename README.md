@@ -46,6 +46,11 @@ A Meta model working in Muse Code, Meta's own coding agent, works as a swarm of 
 - G3 still fails the pair against MLX's compiled code with 32 requests of 1,024 tokens, where it is 0.9% faster and the repeats overlap; the swarm's own run of the same check passed it. Each kernel alone fails on overlapping repeats.
 - From round 4, kernels that pass together count as ready together, and an attempt may also hand small inputs to MLX's compiled code ([ADR 0015](claude/adr/0015-sets-and-hand-off-below.md)).
 
+**Round 4, the last, measured** ([claude/findings/muse-round-4.md](claude/findings/muse-round-4.md)): Muse Wonder's experts, routing and combine kernels are bit-exact and leave the tokens unchanged, alone, in pairs and all together.
+- **The experts kernel beats MLX's compiled code for the first time,** by 31% at 8 and 32 rows in the grader, once 1-row steps go to MLX's own code (`min_rows`).
+- **Experts with routing is the best version measured:** the vLLM decode step is 5.5%, 10.2%, 18.6% and 21.1% shorter than the unchanged model's with 1, 8 and 32 requests of 128-token prompts and 32 of 1,024, whole requests 4.9–17.1% shorter, throughput 6–21% higher, and nothing is slower.
+- G3 still fails every variant: on this heavily swapping machine the 5 repeats' ranges overlap in at least one workload. All three kernels together lose 8.4% with 8 requests, while every pair gains there.
+
 ## How Meta's models are used
 
 - **MobileMoE-S** (open weights) is the model under study, served by vLLM through vllm-metal. The baseline serves the int4 `facebook/MobileMoE-S-QAT` ([why](claude/adr/0002-int4-qat-baseline.md)); the bfloat16 `facebook/MobileMoE-S-SFT` is used to check the port.

@@ -1,0 +1,92 @@
+plain check        base rows  1: 866 kernels
+plain check compiled-experts rows  1: 866 kernels, exact True
+plain check muse-experts rows  1: 866 kernels, exact True
+plain check muse-experts-routing rows  1: 666 kernels, exact True
+plain check compiled-experts-routing rows  1: 806 kernels, exact True
+plain check        base rows 32: 986 kernels
+plain check compiled-experts rows 32: 986 kernels, exact True
+plain check muse-experts rows 32: 746 kernels, exact True
+plain check muse-experts-routing rows 32: 546 kernels, exact True
+plain check compiled-experts-routing rows 32: 926 kernels, exact True
+plain rep0 compiled-experts rows 32 prompt 1024:  34.051 ms/step
+plain rep0 muse-experts-routing rows 32 prompt 1024:  31.556 ms/step
+plain rep0 compiled-experts-routing rows 32 prompt 1024:  35.964 ms/step
+plain rep0        base rows  1 prompt 128:   4.956 ms/step
+plain rep0        base rows 32 prompt 128:  31.206 ms/step
+plain rep0        base rows 32 prompt 1024:  38.799 ms/step
+plain rep0 muse-experts-routing rows  8 prompt 128:  14.018 ms/step
+plain rep0 muse-experts rows  8 prompt 128:  14.676 ms/step
+plain rep0 muse-experts rows 32 prompt 128:  28.549 ms/step
+plain rep0 compiled-experts-routing rows  8 prompt 128:  15.668 ms/step
+plain rep0        base rows  8 prompt 128:  15.877 ms/step
+plain rep0 muse-experts rows  1 prompt 128:   5.214 ms/step
+plain rep0 compiled-experts rows 32 prompt 128:  33.288 ms/step
+plain rep0 compiled-experts-routing rows  1 prompt 128:   4.954 ms/step
+plain rep0 muse-experts rows 32 prompt 1024:  33.315 ms/step
+plain rep0 muse-experts-routing rows  1 prompt 128:   4.406 ms/step
+plain rep0 compiled-experts rows  8 prompt 128:  13.962 ms/step
+plain rep0 compiled-experts-routing rows 32 prompt 128:  29.437 ms/step
+plain rep0 muse-experts-routing rows 32 prompt 128:  23.981 ms/step
+plain rep0 compiled-experts rows  1 prompt 128:   5.043 ms/step
+plain rep1 muse-experts-routing rows  1 prompt 128:   4.516 ms/step
+plain rep1 compiled-experts-routing rows 32 prompt 1024:  34.460 ms/step
+plain rep1 muse-experts-routing rows 32 prompt 1024:  28.830 ms/step
+plain rep1 muse-experts-routing rows  8 prompt 128:  12.496 ms/step
+plain rep1        base rows 32 prompt 128:  29.478 ms/step
+plain rep1        base rows  8 prompt 128:  13.972 ms/step
+plain rep1 compiled-experts rows  8 prompt 128:  13.967 ms/step
+plain rep1 compiled-experts rows 32 prompt 1024:  34.298 ms/step
+plain rep1 compiled-experts rows  1 prompt 128:   5.052 ms/step
+plain rep1 compiled-experts-routing rows  1 prompt 128:   4.728 ms/step
+plain rep1 muse-experts rows  8 prompt 128:  12.798 ms/step
+plain rep1        base rows 32 prompt 1024:  33.865 ms/step
+plain rep1 muse-experts rows  1 prompt 128:   4.961 ms/step
+plain rep1 muse-experts rows 32 prompt 128:  24.089 ms/step
+plain rep1        base rows  1 prompt 128:   4.887 ms/step
+plain rep1 muse-experts-routing rows 32 prompt 128:  23.538 ms/step
+plain rep1 muse-experts rows 32 prompt 1024:  28.632 ms/step
+plain rep1 compiled-experts-routing rows  8 prompt 128:  14.385 ms/step
+plain rep1 compiled-experts rows 32 prompt 128:  30.501 ms/step
+plain rep1 compiled-experts-routing rows 32 prompt 128:  30.494 ms/step
+plain rep2 muse-experts-routing rows 32 prompt 128:  26.708 ms/step
+plain rep2 muse-experts rows 32 prompt 128:  26.257 ms/step
+plain rep2 compiled-experts rows 32 prompt 1024:  35.405 ms/step
+plain rep2        base rows  8 prompt 128:  15.332 ms/step
+plain rep2 muse-experts-routing rows 32 prompt 1024:  32.584 ms/step
+plain rep2        base rows 32 prompt 1024:  38.232 ms/step
+plain rep2 compiled-experts-routing rows  1 prompt 128:   4.649 ms/step
+plain rep2        base rows 32 prompt 128:  28.284 ms/step
+plain rep2 muse-experts rows  1 prompt 128:   4.801 ms/step
+plain rep2        base rows  1 prompt 128:   4.921 ms/step
+plain rep2 compiled-experts-routing rows 32 prompt 128:  32.469 ms/step
+plain rep2 muse-experts-routing rows  8 prompt 128:  13.618 ms/step
+plain rep2 compiled-experts rows 32 prompt 128:  30.569 ms/step
+plain rep2 muse-experts rows  8 prompt 128:  13.264 ms/step
+plain rep2 compiled-experts-routing rows 32 prompt 1024:  35.641 ms/step
+plain rep2 muse-experts-routing rows  1 prompt 128:   4.530 ms/step
+plain rep2 compiled-experts-routing rows  8 prompt 128:  14.050 ms/step
+plain rep2 compiled-experts rows  8 prompt 128:  14.451 ms/step
+plain rep2 muse-experts rows 32 prompt 1024:  29.260 ms/step
+plain rep2 compiled-experts rows  1 prompt 128:   5.157 ms/step
+
+plain: median step ms over 3 repeats (change against base)
+  rows  1 prompt  128        base:   4.921 [4.887-4.956]
+  rows  1 prompt  128 compiled-experts:   5.052 [5.043-5.157] (+0.130 ms, +2.6%)
+  rows  1 prompt  128 muse-experts:   4.961 [4.801-5.214] (+0.040 ms, +0.8%)
+  rows  1 prompt  128 muse-experts-routing:   4.516 [4.406-4.530] (-0.406 ms, -8.2%)
+  rows  1 prompt  128 compiled-experts-routing:   4.728 [4.649-4.954] (-0.194 ms, -3.9%)
+  rows  8 prompt  128        base:  15.332 [13.972-15.877]
+  rows  8 prompt  128 compiled-experts:  13.967 [13.962-14.451] (-1.366 ms, -8.9%)
+  rows  8 prompt  128 muse-experts:  13.264 [12.798-14.676] (-2.068 ms, -13.5%)
+  rows  8 prompt  128 muse-experts-routing:  13.618 [12.496-14.018] (-1.714 ms, -11.2%)
+  rows  8 prompt  128 compiled-experts-routing:  14.385 [14.050-15.668] (-0.947 ms, -6.2%)
+  rows 32 prompt  128        base:  29.478 [28.284-31.206]
+  rows 32 prompt  128 compiled-experts:  30.569 [30.501-33.288] (+1.091 ms, +3.7%)
+  rows 32 prompt  128 muse-experts:  26.257 [24.089-28.549] (-3.221 ms, -10.9%)
+  rows 32 prompt  128 muse-experts-routing:  23.981 [23.538-26.708] (-5.497 ms, -18.6%)
+  rows 32 prompt  128 compiled-experts-routing:  30.494 [29.437-32.469] (+1.016 ms, +3.4%)
+  rows 32 prompt 1024        base:  38.232 [33.865-38.799]
+  rows 32 prompt 1024 compiled-experts:  34.298 [34.051-35.405] (-3.934 ms, -10.3%)
+  rows 32 prompt 1024 muse-experts:  29.260 [28.632-33.315] (-8.972 ms, -23.5%)
+  rows 32 prompt 1024 muse-experts-routing:  31.556 [28.830-32.584] (-6.676 ms, -17.5%)
+  rows 32 prompt 1024 compiled-experts-routing:  35.641 [34.460-35.964] (-2.591 ms, -6.8%)
