@@ -1,5 +1,9 @@
 # WeSolve: a swarm of Meta AI agents that makes vLLM faster on a Mac
 
+> WeSolve, an agent swarm, sped up a mixture-of-experts LLM (Meta's MobileMoE-S) on a local Apple Silicon Mac (M1 Pro, vLLM) by up to 20% in generation speed (183 → 220 tokens/s) and up to 3% in prompt processing, with bit-identical output.
+
+<sub>Round 3's routing + combine kernels, 1 request with a 128-token prompt: 183.2 → 219.6 tokens/s, prompts up to 3.1% faster ([measurement](claude/findings/muse-round-3.md)). Round 4's kernels, below, go further with more concurrent requests.</sub>
+
 An indie-track project for the Meta Global AI Developer Hackathon (Oct 26 – Nov 4, 2026).
 
 **What we did.** We built **WeSolve**, a swarm of AI agents running Meta's own models (Muse Spark and Muse Wonder) in Meta's coding agent, Muse Code. We pointed it at vLLM serving Meta's on-device model MobileMoE-S on an Apple M1 Pro. The swarm read the code and our measurements, found where the time goes, and wrote new GPU kernels for the model's mixture-of-experts layers. With its best kernels, **vLLM generates 27% more tokens per second with 32 concurrent requests: from 710 to 899**, and every answer stays the same, token for token.
