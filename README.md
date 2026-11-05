@@ -178,8 +178,8 @@ results/traces/       Metal GPU traces (large, not committed)
 Requirements: Apple Silicon, macOS 15 or later, [uv](https://docs.astral.sh/uv/), and Hugging Face access to `facebook/MobileMoE-S-SFT`. Full Xcode 26.2 or later is only needed to record GPU counters (`bench/micro/gpu_counters.py`), open GPU traces and rebuild vllm-metal's kernels.
 
 ```bash
-git clone --recurse-submodules https://github.com/surucuonur/meta-hackathon.git
-cd meta-hackathon
+git clone --recurse-submodules https://github.com/surucuonur/WeSolve-MetaHackathon.git
+cd WeSolve-MetaHackathon
 uv venv .venv --python-preference only-managed --python cpython-3.12-macos-aarch64 --seed
 source .venv/bin/activate
 uv pip install "https://github.com/vllm-project/vllm/releases/download/v0.32.0/vllm-0.32.0%2Bcpu-cp38-abi3-macosx_11_0_arm64.whl"
