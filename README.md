@@ -1,18 +1,16 @@
-# vSolve: a swarm of Meta AI agents that makes vLLM faster on a Mac
-
-*Written by Claude Code (Claude Opus 5.5), directed by surucuonur. [Who made what](PROVENANCE.md).*
+# WeSolve: a swarm of Meta AI agents that makes vLLM faster on a Mac
 
 An indie-track project for the Meta Global AI Developer Hackathon (Oct 26 – Nov 4, 2026).
 
-**What we did.** We built **vSolve**, a swarm of AI agents running Meta's own models (Muse Spark and Muse Wonder) in Meta's coding agent, Muse Code. We pointed it at vLLM serving Meta's on-device model MobileMoE-S on an Apple M1 Pro. The swarm read the code and our measurements, found where the time goes, and wrote new GPU kernels for the model's mixture-of-experts layers. With its best kernels, **vLLM generates 27% more tokens per second with 32 concurrent requests: from 710 to 899**, and every answer stays the same, token for token.
+**What we did.** We built **WeSolve**, a swarm of AI agents running Meta's own models (Muse Spark and Muse Wonder) in Meta's coding agent, Muse Code. We pointed it at vLLM serving Meta's on-device model MobileMoE-S on an Apple M1 Pro. The swarm read the code and our measurements, found where the time goes, and wrote new GPU kernels for the model's mixture-of-experts layers. With its best kernels, **vLLM generates 27% more tokens per second with 32 concurrent requests: from 710 to 899**, and every answer stays the same, token for token.
 
-**How vSolve works, in plain words.** One agent can look at one thing at a time; a team can look at everything at once. vSolve splits the problem among many agents: explorers each study a different part of the code, a verifier checks what they claim, several builders compete to write the fix, and a lead coordinates. They all write in shared notebooks, so each one sees what the others found and changes course when someone else's finding points to a better path. Nothing counts until a referee has measured it: the new code must give exactly the same answers and be faster in the real engine. Each round starts from what the last one learned.
+**How WeSolve works, in plain words.** One agent can look at one thing at a time; a team can look at everything at once. WeSolve splits the problem among many agents: explorers each study a different part of the code, a verifier checks what they claim, several builders compete to write the fix, and a lead coordinates. They all write in shared notebooks, so each one sees what the others found and changes course when someone else's finding points to a better path. Nothing counts until a referee has measured it: the new code must give exactly the same answers and be faster in the real engine. Each round starts from what the last one learned.
 
 ## Results
 
-The best version, **vSolve**, is the swarm's experts and routing kernels from round 4, the last ([how they were measured](claude/findings/muse-round-4.md)). Generated tokens per second, counting decode steps only, medians:
+The best version, **WeSolve**, is the swarm's experts and routing kernels from round 4, the last ([how they were measured](claude/findings/muse-round-4.md)). Generated tokens per second, counting decode steps only, medians:
 
-| Requests × prompt tokens | MLX alone | MLX + vSolve | vLLM original | vLLM + compiled MLX code | **vLLM + vSolve** | vSolve vs vLLM original |
+| Requests × prompt tokens | MLX alone | MLX + WeSolve | vLLM original | vLLM + compiled MLX code | **vLLM + WeSolve** | WeSolve vs vLLM original |
 |---|---|---|---|---|---|---|
 | 1 × 128 | 203 | 221 | 164 | 169 | **173** | +6% |
 | 8 × 128 | 522 | 587 | 516 | 512 | **574** | +11% |
@@ -21,7 +19,7 @@ The best version, **vSolve**, is the swarm's experts and routing kernels from ro
 
 Whole requests, prompt processing included (generated tokens ÷ time from sending the requests to the last token):
 
-| Requests × prompt tokens | MLX alone | MLX + vSolve | vLLM original | vLLM + compiled MLX code | **vLLM + vSolve** | vSolve vs vLLM original |
+| Requests × prompt tokens | MLX alone | MLX + WeSolve | vLLM original | vLLM + compiled MLX code | **vLLM + WeSolve** | WeSolve vs vLLM original |
 |---|---|---|---|---|---|---|
 | 1 × 128 | 174 | 169 | 156 | 160 | **165** | +6% |
 | 8 × 128 | 479 | 526 | 491 | 487 | **533** | +9% |
@@ -30,13 +28,13 @@ Whole requests, prompt processing included (generated tokens ÷ time from sendin
 
 **Memory bandwidth used.** Bytes each decode step must read (the weights of the experts it uses, the other weights and the attention cache, as counted in the [baseline](#baseline-results)) divided by the step's time, against the M1 Pro's peak of about 200 GB/s:
 
-| Requests × prompt tokens | vLLM original | vLLM + vSolve |
+| Requests × prompt tokens | vLLM original | vLLM + WeSolve |
 |---|---|---|
 | 1 × 128 | 29.3 GB/s (15%) | 31.0 GB/s (16%) |
 | 32 × 128 | 22.6 GB/s (11%) | 27.7 GB/s (14%) |
 | 32 × 1,024 | 27.7 GB/s (14%) | 35.1 GB/s (18%) |
 
-vSolve turns more of the bandwidth into tokens, but the engine still uses less than a fifth of it. [The study below](#the-study-where-does-the-memory-bandwidth-go) shows where the rest goes.
+WeSolve turns more of the bandwidth into tokens, but the engine still uses less than a fifth of it. [The study below](#the-study-where-does-the-memory-bandwidth-go) shows where the rest goes.
 
 **Conditions.**
 - **Hardware:** Apple M1 Pro, 16-core GPU, 16 GB unified memory, about 200 GB/s peak memory bandwidth and 5.2 TFLOPS; macOS 15.7.4, on AC power.
@@ -47,11 +45,11 @@ vSolve turns more of the bandwidth into tokens, but the engine still uses less t
 - **Exactness:** every variant gave exactly the unchanged model's tokens, checked with 1 and 32 requests in both engines.
 - **The columns:**
   - *compiled MLX code* is the same two parts of the model under MLX's own compiler (`mx.compile`), with no new kernel. It shows what the swarm's kernels add beyond compiling.
-  - *vSolve* is `muse-spark/round-4/kernels/experts/attempt-1` with `routing/attempt-1`.
+  - *WeSolve* is `muse-spark/round-4/kernels/experts/attempt-1` with `routing/attempt-1`.
 
 **Limits.**
-- **The headline's baseline ran slow.** In this run, unchanged vLLM took 45.1 ms per step with 32 requests of 1,024 tokens, against 39.4 to 40.9 ms in earlier runs, so the 27% is likely a few points high. Against compiled MLX code, timed in the same run, vSolve's gain there is 19% (757 → 899).
-- **Our own acceptance rule isn't met.** It asks the 5 repeats' ranges not to overlap the bars' in any workload. On this machine, which had 16–17 GB of swap in use, they overlap somewhere for every variant. Every decode-step median favours vSolve, and no measurement is slower beyond the spread.
+- **The headline's baseline ran slow.** In this run, unchanged vLLM took 45.1 ms per step with 32 requests of 1,024 tokens, against 39.4 to 40.9 ms in earlier runs, so the 27% is likely a few points high. Against compiled MLX code, timed in the same run, WeSolve's gain there is 19% (757 → 899).
+- **Our own acceptance rule isn't met.** It asks the 5 repeats' ranges not to overlap the bars' in any workload. On this machine, which had 16–17 GB of swap in use, they overlap somewhere for every variant. Every decode-step median favours WeSolve, and no measurement is slower beyond the spread.
 - **The engines ran one after the other,** not interleaved, so compare across them with care.
 - **With 1 request, MLX alone is fastest.** vLLM spends about 2 ms of engine CPU time per single-request step.
 
@@ -67,7 +65,7 @@ K=muse-spark/round-4/kernels
 
 ## What the swarm built, round by round
 
-vSolve ran four rounds on 2026-11-03 and 04. Each wrote in its own folder, `muse-spark/round-<N>/` (round 1 at the top of `muse-spark/`), started from the rounds before it, and was then measured independently by Claude.
+WeSolve ran four rounds on 2026-11-03 and 04. Each wrote in its own folder, `muse-spark/round-<N>/` (round 1 at the top of `muse-spark/`), started from the rounds before it, and was then measured independently by Claude.
 
 | Round | Model | What happened | Measured |
 |---|---|---|---|
@@ -102,7 +100,7 @@ A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by
   - With one request each weight is read once.
   - With 32 requests a step reads about twice what the model needs: the routed experts read 908 MB from memory for 443 MB of weights. MLX's split quantized products also write about 170 MB of partial sums per step.
 
-[claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs. These findings are what vSolve's agents started from.
+[claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs. These findings are what WeSolve's agents started from.
 
 ## How Meta's models are used
 

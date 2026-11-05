@@ -167,7 +167,7 @@ What no one measured, listed as such in a hypothesis and in the round's final cl
 A slot's best attempt so far that passes the current G2 and that Claude's G3 accepted, named in Claude's measurement of the previous round; every new attempt for that slot must beat it in the same grader run. A slot may have none.
 _Avoid_: reference (that is the original MLX code and its compiled version)
 
-**vSolve**:
+**WeSolve**:
 The project's name for the Muse agent's swarm and what it built: Meta models in Muse Code that explore the code together, build kernels, and keep only what an independent measurement confirms.
 _Avoid_: using it for Claude's measurement or grader
 
