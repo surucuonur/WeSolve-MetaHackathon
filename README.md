@@ -57,9 +57,9 @@ Generation only, decode steps:
 
 - **Against compiled MLX code**, WeSolve's whole requests are 3%, 10%, 20% and 11% faster.
 - **With 8 and 32 requests,** vLLM + WeSolve serves more tokens per second than MLX alone.
-- **With 1 request, MLX on its own is fastest.** Its decode step is 4.9 ms, against vLLM's 6.1 ms.
+- **With 1 request, MLX without a server is fastest:** 174 tokens/s for whole requests, against 165 for vLLM + WeSolve. Its decode step is 4.9 ms, against vLLM's 6.1 ms.
 
-**Memory bandwidth used during generation.** Bytes each decode step must read (the weights of the experts it uses, the other weights and the attention cache, as counted in the [baseline](#baseline-results)) divided by the step's time, against the M1 Pro's peak of about 200 GB/s:
+**Memory bandwidth used during generation.** Bytes each decode step must read (the weights of the experts it uses, the other weights and the attention cache, as counted by the [first benchmark sweep](results/runs/2026-10-29-baseline/summary.md)) divided by the step's time in the run above, against the M1 Pro's peak of about 200 GB/s:
 
 | Requests × prompt tokens | vLLM original | vLLM + WeSolve |
 |---|---|---|
@@ -67,7 +67,7 @@ Generation only, decode steps:
 | 32 × 128 | 22.6 GB/s (11%) | 27.7 GB/s (14%) |
 | 32 × 1,024 | 27.7 GB/s (14%) | 35.1 GB/s (18%) |
 
-WeSolve turns more of the bandwidth into tokens, but the engine still uses less than a fifth of it. [The study below](#the-study-where-does-the-memory-bandwidth-go) shows where the rest goes.
+WeSolve turns more of the bandwidth into tokens, but the engine still uses less than a fifth of it. [Below](#why-vllm-leaves-the-bandwidth-unused-and-what-wesolve-changed) is where the rest goes.
 
 **Conditions.**
 - **Hardware:** Apple M1 Pro, 16-core GPU, 16 GB unified memory, about 200 GB/s peak memory bandwidth and 5.2 TFLOPS; macOS 15.7.4. The power adapter was plugged in, but the power log shows 132 one-second switches to battery during the vLLM run and 17 during the MLX run, likely the adapter falling short under full load.
@@ -104,8 +104,8 @@ WeSolve ran four rounds on 2026-11-03 and 04. Each wrote in its own folder, `mus
 | Round | Model | What happened | Measured |
 |---|---|---|---|
 | 1 | Muse Spark | Its kernels passed the first grader, but in the model they changed the generated tokens. The grader now asks for bit-exact outputs at every size ([ADR 0010](claude/adr/0010-exact-at-every-size.md)). | [round 1](claude/findings/muse-round-1.md) |
-| 2 | Muse Wonder | Exact kernels. Routing sped up decode steps but slowed prompts by 7–10%. An improvement must now hold in both phases ([ADR 0011](claude/adr/0011-decode-and-prefill.md)). | [round 2](claude/findings/muse-round-2.md) |
-| 3 | Muse Spark (contributor) | The swarm ran the same end-to-end measurement itself before calling anything ready ([ADR 0013](claude/adr/0013-measure-what-you-claim.md)). Its routing + combine pair shortened decode steps by 1.6–16.5%, with nothing slower. | [round 3](claude/findings/muse-round-3.md) |
+| 2 | Muse Wonder | Exact kernels. Routing sped up generation but slowed prompt reading. An improvement must now hold in both phases ([ADR 0011](claude/adr/0011-decode-and-prefill.md)). | [round 2](claude/findings/muse-round-2.md) |
+| 3 | Muse Spark (contributor) | The swarm ran the same end-to-end measurement itself before calling anything ready ([ADR 0013](claude/adr/0013-measure-what-you-claim.md)). Its routing + combine pair was faster with nothing slower, but narrowly missed our strict acceptance rule. | [round 3](claude/findings/muse-round-3.md) |
 | 4 | Muse Wonder | With a new rule, kernels may hand the sizes they lose at to MLX's own code ([ADR 0015](claude/adr/0015-sets-and-hand-off-below.md)). That unlocked the experts kernel: it takes 31–32% less time than compiled MLX at 8 and 32 rows. Experts + routing is the best version, above. | [round 4](claude/findings/muse-round-4.md) |
 
 - **What the kernels do:**
@@ -113,28 +113,17 @@ WeSolve ran four rounds on 2026-11-03 and 04. Each wrote in its own folder, `mus
   - The **routing kernel** picks each token's 4 experts in one kernel, bit-exact with MLX's choice, ties included.
 - **A limit we found:** with all three swarm kernels together (experts, routing and combine), the decode step is 8% slower with 8 requests, though every pair is faster there. That is why the best version is a pair.
 
-## The study: where does the memory bandwidth go?
+## Why vLLM leaves the bandwidth unused, and what WeSolve changed
 
-**The question:** when vLLM serves Meta's on-device MobileMoE-S model on an Apple M1 Pro, how much of the GPU's memory bandwidth does it actually use, where does the remaining time go, and which fixes turn unused bandwidth into more tokens per second?
+Generating a token means reading the model's weights from memory, so on a Mac the speed limit should be memory bandwidth. In the run above, unchanged vLLM uses only 11–15% of the M1 Pro's 200 GB/s, and with WeSolve 14–18% (the bandwidth table). The time goes elsewhere:
 
-Each measured decode step is plotted against two limits: peak bandwidth (~200 GB/s) and peak compute (~5.2 TFLOPS). One request at a time should be limited by bandwidth. Running more requests per step reuses the weights already read, until compute becomes the limit. In a mixture-of-experts model, each extra request may also pull in different experts, so the bytes read grow too. Terms are defined in [GLOSSARY.md](claude/GLOSSARY.md).
+- **Many small GPU kernels.** Unchanged vLLM launches 967 GPU kernels per decode step with 1 request and 1,087 with 32, each with a fixed cost. With WeSolve's two kernels, 767 and 647: 21% and 40% fewer.
+- **The routed experts.** Below 60 rows per step, MLX runs one small product per (token, expert) pair, so an expert used by several tokens is read several times; only from 60 rows does it switch to its grouped kernel. WeSolve's experts kernel replaces that path for 2 to 59 rows, the decode sizes, and leaves 1-row steps and prompts on MLX's code.
+- **Routing.** Picking each token's 4 of 60 experts takes many small operations; WeSolve does it in one kernel, with exactly the same choices.
+- **Attention, which WeSolve didn't touch.** vllm-metal's grouped-query attention kernel doesn't support MobileMoE-S's 12/4 head layout, so the keys and values are read three times. It is the next target.
+- **Engine overhead with 1 request.** vLLM's decode step takes 6.1 ms, against 4.9 ms when MLX runs the model directly.
 
-**What we found** ([results below](#baseline-results)): unchanged vLLM serves MobileMoE-S at 12–17% of the GPU's peak memory bandwidth, and each decode step takes 6–8 times longer than the bandwidth and compute limits require. Microbenchmarks show where the time goes ([claude/findings/decode-bottlenecks.md](claude/findings/decode-bottlenecks.md)):
-
-- about 870 small GPU kernels per step, each with a fixed cost;
-- expert weights read once per (token, expert) pair;
-- attention reading each key/value head three times.
-
-A piece-by-piece measurement inside the real step, in vLLM and plain MLX side by side, is in [claude/findings/step-breakdown.md](claude/findings/step-breakdown.md):
-- vLLM's scheduler and runner are small, 0.5–1.6 ms per step.
-- vLLM's extra 7–20% over plain MLX is in vllm-metal's attention path.
-- With one request, the mixture-of-experts block's routing and combine cost more than its expert products. With 32 requests, the routed experts take half the step.
-- Piece by piece, only the output layer gets near peak bandwidth (about 160 GB/s with one request).
-- The GPU's own counters, recorded with Xcode, show the GPU busy 92–98% of the time at only 17–28% of peak bandwidth, with most of its thread slots empty.
-  - With one request each weight is read once.
-  - With 32 requests a step reads about twice what the model needs: the routed experts read 908 MB from memory for 443 MB of weights. MLX's split quantized products also write about 170 MB of partial sums per step.
-
-[claude/findings/bottleneck-explained.md](claude/findings/bottleneck-explained.md) explains where the bottleneck is in plain English, with each number worked through from its inputs. These findings are what WeSolve's agents started from.
+The kernel counts are from the same run (`console-vllm.txt`). Our first, deeper study of the unchanged engine, from 2026-10-29 to 11-02, explains each cause with measurements: [in plain English](claude/findings/bottleneck-explained.md), [inside a real step](claude/findings/step-breakdown.md), [cause by cause](claude/findings/decode-bottlenecks.md), and the [first benchmark](claude/benchmark/). Its numbers come from earlier runs on a less loaded machine, so they differ slightly from the tables above.
 
 ## How Meta's models are used
 
@@ -239,50 +228,3 @@ float32 is the correctness gate: same greedy tokens, same top-1 token at every p
 | MobileMoE-S-QAT (int4) | PASS, logits within 0.0001 | PASS (1.43; the bfloat16 scales round each group of 32 weights together) |
 
 A second check confirms that serving through vLLM gives the same tokens as plain mlx_lm, because vllm-metal runs its own attention code instead of the port's: 0 failures in 80 requests for both models ([SFT](results/port/MobileMoE-S-SFT-serving-parity.md), [QAT](results/port/MobileMoE-S-QAT-serving-parity.md)).
-
-## Baseline results
-
-The unmodified engine (vLLM 0.32.0, vllm-metal 0.32.0.dev20261028121433, mlx 0.32.4) serving MobileMoE-S-QAT on an M1 Pro (16-core GPU, 16 GB, macOS 15.7.4, on AC power). Random-token prompts of 128 or 1,024 tokens, 256 generated tokens each, 1 to 32 requests in flight. Every point ran 3 times in shuffled order. All files are in [results/runs/2026-10-29-baseline/](results/runs/2026-10-29-baseline/), with the [full table](results/runs/2026-10-29-baseline/summary.md). The full write-up, with every measurement and how it was made, is in [claude/benchmark/](claude/benchmark/).
-
-![Roofline and step-time breakdown](results/runs/2026-10-29-baseline/roofline.png)
-
-Steady decode steps only (no prompt tokens in the step). "MB read" is what the step must read: the weights of the experts its rows use, the rest of the weights, and the rows' attention cache. "Lower bound" is the step time at peak bandwidth or peak compute, whichever is slower.
-
-| Prompt | Requests | Step ms | Decode tok/s | Distinct experts / layer | MB read | GB/s (% of peak) | CPU ms in step submit | Lower bound ms |
-|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 128 | 1 | 5.5 | 182 | 4.0 | 179 | 32.6 (16%) | 4.7 | 0.9 |
-| 128 | 4 | 9.7 | 414 | 12.6 | 290 | 30.0 (15%) | 5.2 | 1.5 |
-| 128 | 16 | 21.3 | 753 | 29.1 | 535 | 25.2 (13%) | 6.5 | 2.7 |
-| 128 | 32 | 30.0 | 1,065 | 38.2 | 720 | 24.0 (12%) | 6.9 | 3.6 |
-| 1024 | 1 | 5.9 | 169 | 4.0 | 197 | 33.3 (17%) | 5.0 | 1.0 |
-| 1024 | 32 | 40.0 | 800 | 32.9 | 1,248 | 31.2 (16%) | 7.3 | 6.2 |
-
-What the data shows:
-
-- **No step is bandwidth-bound or compute-bound.** Achieved bandwidth stays at 24–34 GB/s for every setting, and each step takes 6–8 times its lower bound. In the terms of [GLOSSARY.md](claude/GLOSSARY.md), the baseline is overhead-bound everywhere.
-- **Batching helps, but each extra request costs a lot.** With 128-token prompts, 32 requests give 5.9 times the tokens per second of one request. The step grows by about 0.8 ms per request, while the bytes it must read grow by about 17 MB per request, which takes 0.09 ms at peak bandwidth.
-- **With one request, the CPU and the GPU are both near their limit.** vllm-metal's step-submit call uses 4.7 ms of CPU time in a 5.5 ms step, so even a perfect GPU would leave the step near 5 ms.
-- **With more requests, the GPU work sets the pace.** The CPU time grows only to 7 ms at 32 requests. The rest of the submit call is waiting, and macOS reports the GPU busy for 90–100% of every run. The GPU has work queued almost all the time, but that work moves only about 30 GB/s.
-
-Where the time goes, from microbenchmarks run after the sweep ([claude/findings/decode-bottlenecks.md](claude/findings/decode-bottlenecks.md)):
-
-- **Kernel count.** vLLM itself adds 7–20%, mostly in vllm-metal's attention path ([step-breakdown.md](claude/findings/step-breakdown.md)). Each step is about 870 small GPU kernels with a fixed cost each.
-- **Expert reads.** MLX reads each expert's weights once per (token, expert) pair, because it picks its grouped kernel only from 60 rows per step.
-- **Attention.** vllm-metal's grouped-query attention kernel doesn't support MobileMoE-S's 12/4 head layout, so the keys and values are read three times.
-
-The weight layout of Meta's experts is not the main cause.
-
-Limits of these numbers:
-
-- **Swapping:** the Mac swapped out 0–7,567 pages/s during runs (322 pages/s idle). One run (128-token prompts, 16 requests) was 7% slower than its repeats during the heaviest swapping; the medians above are robust to it.
-- **Bytes:** activations are not counted, and the GPU-busy figure is macOS's device-wide counter, which says the GPU had work, not how efficiently it ran.
-- **Prompts:** they are random tokens. Expert routing on real text may pick different numbers of distinct experts.
-
-Reproduce (about 35 minutes):
-
-```bash
-.venv/bin/python bench/sweep.py --label baseline
-.venv/bin/python bench/roofline.py results/runs/<date>-baseline
-```
-
-`bench/steplog` is a vLLM plugin that records every engine step (requests advanced, prompt tokens, context read, time in the step-submit call); `bench/sweep.py` runs the grid against a real `vllm serve`, then repeats it once with distinct-expert counting on; `bench/roofline.py` turns the logs into the table and chart.
