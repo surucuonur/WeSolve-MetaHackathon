@@ -6,6 +6,8 @@
 
 ▶ **[Watch the video on YouTube](https://www.youtube.com/watch?v=nS6i200dKHg)**
 
+**Working demo** (27 s, [demo/wesolve-swarm-live.mp4](demo/wesolve-swarm-live.mp4)): the swarm at work in round 3. On the left, the lead in Muse Code; on the right, every agent's commands, thoughts and messages as they happen, read from Muse Code's session logs.
+
 > WeSolve, an agent swarm, sped up a mixture-of-experts LLM (Meta's MobileMoE-S) on a local Apple Silicon Mac (M1 Pro, vLLM) by up to 21% end to end, prompt reading and generation together (430 → 519 tokens/s), with bit-identical output. Generation alone got up to 27% faster, and prompt reading took up to 11% less time.
 
 <sub>32 concurrent requests, 256 new tokens each, medians of 5 runs against vLLM as shipped: 1,024-token prompts 430 → 519 tokens/s (+21%), 128-token prompts 911 → 1,097 (+20%). In the 1,024-token run unchanged vLLM was slower than in earlier runs; against MLX's compiled code, timed alongside, that gain is 11% (see *Limits*).</sub>
@@ -84,13 +86,16 @@ WeSolve turns more of the bandwidth into tokens, but the engine still uses less 
 - **Our own acceptance rule isn't met.** It asks the 5 runs' ranges not to overlap the bars' in any workload. On this machine, which had 16–17 GB of swap in use, they overlap somewhere for every variant. No measurement is slower beyond the spread.
 - **The engines ran one after the other,** not interleaved, so compare across them with care.
 
-The data is in [results/runs/2026-11-04-muse-round-4/](results/runs/2026-11-04-muse-round-4/) (vLLM) and [results/runs/2026-11-04-muse-round-4-mlx/](results/runs/2026-11-04-muse-round-4-mlx/) (MLX alone). To reproduce the vLLM comparison, about 25 minutes (`muse-all` is WeSolve, `compiled-all` the compiled MLX code):
+The data is in [results/runs/2026-11-04-muse-round-4/](results/runs/2026-11-04-muse-round-4/) (vLLM) and [results/runs/2026-11-04-muse-round-4-mlx/](results/runs/2026-11-04-muse-round-4-mlx/) (MLX alone). **Run the benchmark yourself.** After the [setup](#setup), one command times vLLM as shipped, with compiled MLX code and with WeSolve, checks that the tokens are identical, and prints these tables:
 
 ```bash
-K=muse-spark/round-4/kernels
-.venv/bin/python bench/grader/time_candidates.py vllm results/runs/<date>-check \
-  experts=$K/experts/attempt-1 routing=$K/routing/attempt-1
+.venv/bin/python bench/benchmark.py            # the four workloads, 5 runs each: about 25 minutes
+.venv/bin/python bench/benchmark.py --quick    # 1 and 32 requests of 128 tokens, 3 runs: about 6 minutes
+.venv/bin/python bench/benchmark.py --mlx      # also MLX on its own, no server
+.venv/bin/python bench/benchmark.py --report results/runs/2026-11-04-muse-round-4   # the tables above, from our data
 ```
+
+Results go to `results/runs/<date>-benchmark/`. Quit other heavy apps first: on a 16 GB Mac, swapping makes the runs noisy.
 
 ## What the swarm built, round by round
 
@@ -169,10 +174,11 @@ claude/findings/      where a decode step's time goes, and the fixes it suggests
 muse-spark/           the Muse agent's work: round 1 at the top, round-<N>/ for later rounds, and the session transcripts (branch muse-agent)
 .agents/skills/       the round skill the Muse agent follows in Muse Code (written by Claude)
 third_party/          pinned submodules: vllm-metal and mlx-lm (forks, where changes go), vLLM v0.32.0 (read-only)
-bench/                benchmark sweep, roofline calculation, port correctness check
+bench/                benchmark.py (WeSolve against vLLM as shipped), baseline sweep, roofline calculation, port correctness check
 bench/micro/          microbenchmarks of a decode step's parts
 bench/grader/         the independent grader for the Muse agent's kernels
 tools/                provenance hooks and audit; the Muse agent's launcher
+demo/                 the working demo: the swarm at work, live
 results/runs/         every benchmark run, committed
 results/traces/       Metal GPU traces (large, not committed)
 ```
